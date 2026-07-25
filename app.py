@@ -9,7 +9,7 @@ from course2career.access_services import (
 )
 from course2career.admin_dashboard import render_admin_dashboard
 from course2career.api_key_service import APIKeyService
-from course2career.auth_service import AuthService
+from course2career.auth_service import AdminBootstrapError, AuthService
 from course2career.config import load_settings
 from course2career.key_encryption import (
     APIKeyCipher,
@@ -43,6 +43,18 @@ def get_repository(database_path: str) -> SQLiteProductRepository:
 settings = load_settings()
 repository = get_repository(settings.database_path)
 auth_service = AuthService(repository)
+if settings.bootstrap_admin_username or settings.bootstrap_admin_password:
+    if not (settings.bootstrap_admin_username and settings.bootstrap_admin_password):
+        st.error("管理员初始化配置不完整，请同时设置管理员用户名和密码。")
+        st.stop()
+    try:
+        auth_service.ensure_bootstrap_admin(
+            settings.bootstrap_admin_username,
+            settings.bootstrap_admin_password,
+        )
+    except AdminBootstrapError as exc:
+        st.error(f"管理员初始化失败：{exc}")
+        st.stop()
 usage_service = AIUsageService(repository)
 record_service = AnalysisRecordService(repository)
 dashboard_service = AdminDashboardService(repository)
