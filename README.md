@@ -5,8 +5,11 @@
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.60-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io/)
 [![License](https://img.shields.io/badge/License-MIT-243F37)](LICENSE)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Open_App-C65D3B?logo=streamlit&logoColor=white)](https://mhj-course2career.streamlit.app/)
 
 Course2Career 面向大学生，将课程学习记录与目标岗位 JD 转换为可解释的技能匹配结果、能力差距和学习路线。项目采用“AI 提取语义、Python 规则负责评分”的设计，重点展示 AI 应用工程、结构化输出、权限控制和可解释分析能力。
+
+[在线体验 Course2Career](https://mhj-course2career.streamlit.app/)
 
 ![Course2Career 首页](screenshots/home.png)
 
