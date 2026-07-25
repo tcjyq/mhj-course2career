@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.python-version
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+*.key
+*.pem
+
+# Test, lint and coverage outputs
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.tox/
+.nox/
+.coverage
+coverage.xml
+htmlcov/
+
+# Build and package outputs
+build/
+dist/
+*.egg-info/
+
+# Runtime data
+instance/
+uploads/
+outputs/
+logs/
+*.log
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Local agent and automation state
+.agents/
+.codex/
+output/playwright/
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/

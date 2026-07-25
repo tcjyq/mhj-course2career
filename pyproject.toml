@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "course2career"
+version = "0.1.0"
+description = "课程能力与求职技能映射助手"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+dependencies = [
+    "cryptography>=49,<50",
+    "openai>=2.46,<3",
+    "openpyxl>=3.1,<4",
+    "pandas>=3,<4",
+    "pydantic>=2.13,<3",
+    "python-dotenv>=1.2,<2",
+    "streamlit>=1.60,<2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.1,<10",
+    "ruff>=0.15,<0.16",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["B", "E", "F", "I", "UP"]
