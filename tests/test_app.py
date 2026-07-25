@@ -4,6 +4,8 @@ from pathlib import Path
 import pandas as pd
 from streamlit.testing.v1 import AppTest
 
+from course2career.auth_service import AuthService
+from course2career.permissions import Plan, Role
 from course2career.product_repository import SQLiteProductRepository
 
 
@@ -80,6 +82,27 @@ def test_app_initial_page_is_product_home() -> None:
     assert app.title[0].value == "把学过的课程，翻译成求职能力"
     assert any("使用流程" in block.value for block in app.markdown)
     assert len(app.file_uploader) == 0
+
+
+def test_app_bootstraps_owner_admin_from_environment(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    database_path = tmp_path / "admin-bootstrap.db"
+    monkeypatch.setenv("COURSE2CAREER_DATABASE_PATH", str(database_path))
+    monkeypatch.setenv("ADMIN_USERNAME", "owner_admin")
+    monkeypatch.setenv("ADMIN_PASSWORD", "unique-admin-pass-123")
+    monkeypatch.delenv("ADMIN_PASSWORD_HASH", raising=False)
+
+    app = AppTest.from_file("app.py").run()
+
+    assert not app.exception
+    principal = AuthService(SQLiteProductRepository(database_path)).authenticate(
+        "owner_admin",
+        "unique-admin-pass-123",
+    )
+    assert principal.role == Role.ADMIN
+    assert principal.plan == Plan.ADMIN
 
 
 def test_login_page_has_login_and_registration_forms(tmp_path: Path) -> None:
@@ -253,3 +276,33 @@ render_admin_dashboard(
         "Token消耗",
         "预计费用",
     }.issubset({metric.label for metric in app.metric})
+
+
+def test_admin_dashboard_rejects_normal_user_at_page_boundary(tmp_path: Path) -> None:
+    database_path = (tmp_path / "normal-user-admin-page.db").as_posix()
+    app = AppTest.from_string(
+        f"""
+from course2career.access_services import AdminDashboardService
+from course2career.admin_dashboard import render_admin_dashboard
+from course2career.membership_service import MembershipService
+from course2career.permissions import Plan, Principal, Role
+from course2career.product_repository import SQLiteProductRepository
+
+repository = SQLiteProductRepository(r"{database_path}")
+normal_user = Principal(
+    role=Role.USER,
+    plan=Plan.FREE,
+    user_id="user-test",
+    username="student",
+)
+render_admin_dashboard(
+    normal_user,
+    AdminDashboardService(repository),
+    MembershipService(repository),
+)
+"""
+    ).run()
+
+    assert app.exception
+    assert app.exception[0].message == "当前用户没有执行此操作的权限。"
+    assert any("PermissionDeniedError" in line for line in app.exception[0].stack_trace)

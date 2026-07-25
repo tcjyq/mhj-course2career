@@ -21,7 +21,9 @@ from course2career.permissions import (
         (Role.DEVELOPER, Permission.CONFIGURE_OWN_API_KEY, True),
         (Role.DEVELOPER, Permission.USE_OWN_API_KEY, True),
         (Role.ADMIN, Permission.VIEW_SYSTEM_STATUS, True),
+        (Role.ADMIN, Permission.MANAGE_SYSTEM_CONFIG, True),
         (Role.USER, Permission.VIEW_SYSTEM_STATUS, False),
+        (Role.USER, Permission.MANAGE_SYSTEM_CONFIG, False),
     ],
 )
 def test_role_permissions_are_explicit(

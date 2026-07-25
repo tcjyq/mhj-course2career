@@ -3,7 +3,11 @@ import sqlite3
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from course2career.password_security import hash_password, verify_password
+from course2career.password_security import (
+    hash_password,
+    is_supported_password_hash,
+    verify_password,
+)
 from course2career.permissions import Plan, Principal, Role
 from course2career.user_repository import SQLiteUserRepository, StoredUser
 
@@ -60,7 +64,13 @@ class AuthService:
             raise InvalidCredentialsError("用户名或密码错误。")
         return _to_principal(user)
 
-    def ensure_bootstrap_admin(self, username: str, password: str) -> Principal:
+    def ensure_bootstrap_admin(
+        self,
+        username: str,
+        password: str | None = None,
+        *,
+        password_hash: str | None = None,
+    ) -> Principal:
         """幂等创建初始管理员，且绝不提升已存在的普通账户。"""
 
         cleaned_username = username.strip()
@@ -68,21 +78,21 @@ class AuthService:
             raise AdminBootstrapError(
                 "管理员用户名需要 3 到 32 个字符，只能包含字母、数字、下划线或连字符。"
             )
-        if len(password) < 12:
-            raise AdminBootstrapError("管理员密码至少需要 12 个字符。")
-        if len(password) > 128:
-            raise AdminBootstrapError("管理员密码不能超过 128 个字符。")
+        existing_admin = self.repository.find_admin()
+        if existing_admin is not None:
+            return _to_principal(existing_admin)
 
         normalized_username = cleaned_username.casefold()
         existing_user = self.repository.find_by_normalized_username(normalized_username)
         if existing_user is not None:
             return _existing_admin_or_raise(existing_user)
 
+        encoded_password = _resolve_admin_password_hash(password, password_hash)
         user = StoredUser(
             id=str(uuid4()),
             username=cleaned_username,
             username_normalized=normalized_username,
-            password_hash=hash_password(password),
+            password_hash=encoded_password,
             role=Role.ADMIN,
             plan=Plan.ADMIN,
             created_time=datetime.now(UTC).isoformat(),
@@ -105,6 +115,25 @@ def _existing_admin_or_raise(user: StoredUser) -> Principal:
             "管理员用户名已被普通账户占用，请在 Secrets 中更换用户名。"
         )
     return _to_principal(user)
+
+
+def _resolve_admin_password_hash(
+    password: str | None,
+    password_hash: str | None,
+) -> str:
+    if password and password_hash:
+        raise AdminBootstrapError("管理员密码和密码哈希只能配置一种。")
+    if password_hash:
+        if not is_supported_password_hash(password_hash):
+            raise AdminBootstrapError("管理员密码哈希格式无效。")
+        return password_hash
+    if password is None:
+        raise AdminBootstrapError("管理员密码配置不完整。")
+    if len(password) < 12:
+        raise AdminBootstrapError("管理员密码至少需要 12 个字符。")
+    if len(password) > 128:
+        raise AdminBootstrapError("管理员密码不能超过 128 个字符。")
+    return hash_password(password)
 
 
 def _to_principal(user: StoredUser) -> Principal:

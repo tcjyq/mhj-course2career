@@ -12,25 +12,33 @@
 - `DEEPSEEK_API_KEY`
 - `COURSE2CAREER_KEY_ENCRYPTION_KEY`
 - `COURSE2CAREER_DATABASE_PATH`
-- `COURSE2CAREER_BOOTSTRAP_ADMIN_USERNAME`
-- `COURSE2CAREER_BOOTSTRAP_ADMIN_PASSWORD`
+- `ADMIN_USERNAME`
+- `ADMIN_PASSWORD` 或 `ADMIN_PASSWORD_HASH`（二选一）
 
 只使用本地规则模式时，模型凭证和加密主密钥可以留空。
 
 ## 创建首个管理员
 
-项目不会提供通用默认管理员，也不会把管理员密码写进仓库。部署到 Streamlit Community Cloud 后，在应用的 **Settings → Secrets** 中设置：
+项目不会提供通用默认管理员，也不会把管理员密码写进仓库。生产环境推荐先生成 scrypt 哈希：
+
+```powershell
+python -c "from getpass import getpass; from course2career.password_security import hash_password; print(hash_password(getpass('Admin password: ')))"
+```
+
+命令通过隐藏输入读取密码，不会把密码写进命令历史。部署到 Streamlit Community Cloud 后，在应用的 **Settings → Secrets** 中设置用户名和生成的哈希：
 
 ```toml
-COURSE2CAREER_BOOTSTRAP_ADMIN_USERNAME = "自行设置的管理员用户名"
-COURSE2CAREER_BOOTSTRAP_ADMIN_PASSWORD = "至少12位的独立强密码"
+ADMIN_USERNAME = "自行设置的管理员用户名"
+ADMIN_PASSWORD_HASH = "生成的scrypt哈希"
 ```
 
 保存后应用会重新启动，并创建 `Admin` 套餐的管理员。随后从“登录”页面使用这组凭证登录，左侧会出现“管理员Dashboard”。
 
-初始化是幂等的：管理员已经存在时不会重置密码。如果配置的用户名已被普通账户占用，应用会拒绝自动提权并提示更换用户名。
+本地首次初始化也可使用 `ADMIN_PASSWORD`，应用会立即将其转换成随机盐 scrypt 哈希，数据库不保存明文。密码至少 12 位。不要同时配置 `ADMIN_PASSWORD` 和 `ADMIN_PASSWORD_HASH`。
 
-Streamlit Community Cloud 的本地 SQLite 文件不保证永久保存。保留这两项 Secrets，可以在运行环境重建后重新创建管理员。不要把真实密码提交到 `.env.example`、GitHub Issue、日志或聊天记录。
+初始化是幂等的：数据库中已经存在管理员时不会重复创建，也不会重置密码。如果配置的用户名已被普通账户占用，应用会拒绝自动提权并提示更换用户名。所有者管理员权限不能通过 Dashboard 授予其他用户。
+
+Streamlit Community Cloud 的本地 SQLite 文件不保证永久保存。保留管理员 Secrets，可以在运行环境重建后重新创建管理员。不要把真实密码或哈希提交到 `.env.example`、README、GitHub Issue、日志或聊天记录。
 
 ## 启动
 

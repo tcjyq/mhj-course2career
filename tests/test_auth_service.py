@@ -9,6 +9,7 @@ from course2career.auth_service import (
     InvalidCredentialsError,
     RegistrationError,
 )
+from course2career.password_security import hash_password
 from course2career.permissions import Plan, Role
 from course2career.user_repository import SQLiteUserRepository
 
@@ -102,6 +103,24 @@ def test_bootstrap_admin_is_idempotent_and_does_not_reset_password(
         service.authenticate("course2career_admin", "different-admin-pass-456")
 
 
+def test_bootstrap_admin_does_not_create_second_admin_when_username_changes(
+    repository: SQLiteUserRepository,
+) -> None:
+    service = AuthService(repository)
+    first = service.ensure_bootstrap_admin(
+        "course2career_admin", "unique-admin-pass-123"
+    )
+
+    result = service.ensure_bootstrap_admin("another_admin", "different-admin-pass-456")
+
+    assert result == first
+    with sqlite3.connect(repository.database_path) as connection:
+        admin_count = connection.execute(
+            "SELECT COUNT(*) FROM users WHERE role = 'admin'"
+        ).fetchone()[0]
+    assert admin_count == 1
+
+
 def test_bootstrap_admin_refuses_to_promote_an_existing_normal_user(
     repository: SQLiteUserRepository,
 ) -> None:
@@ -110,3 +129,52 @@ def test_bootstrap_admin_refuses_to_promote_an_existing_normal_user(
 
     with pytest.raises(AdminBootstrapError, match="已被普通账户占用"):
         service.ensure_bootstrap_admin("course2career_admin", "unique-admin-pass-123")
+
+
+def test_bootstrap_admin_accepts_prehashed_password_and_authenticates(
+    repository: SQLiteUserRepository,
+) -> None:
+    service = AuthService(repository)
+    encoded_hash = hash_password("unique-admin-pass-123")
+
+    principal = service.ensure_bootstrap_admin(
+        "course2career_admin",
+        password_hash=encoded_hash,
+    )
+
+    assert principal.role == Role.ADMIN
+    assert principal.plan == Plan.ADMIN
+    assert (
+        service.authenticate("course2career_admin", "unique-admin-pass-123")
+        == principal
+    )
+    with pytest.raises(InvalidCredentialsError, match="用户名或密码错误"):
+        service.authenticate("course2career_admin", "wrong-admin-password")
+    with sqlite3.connect(repository.database_path) as connection:
+        stored_hash = connection.execute(
+            "SELECT password_hash FROM users WHERE id = ?", (principal.user_id,)
+        ).fetchone()[0]
+    assert stored_hash == encoded_hash
+
+
+def test_bootstrap_admin_rejects_ambiguous_or_invalid_password_configuration(
+    repository: SQLiteUserRepository,
+) -> None:
+    service = AuthService(repository)
+
+    with pytest.raises(AdminBootstrapError, match="只能配置一种"):
+        service.ensure_bootstrap_admin(
+            "course2career_admin",
+            "unique-admin-pass-123",
+            password_hash=hash_password("unique-admin-pass-123"),
+        )
+    with pytest.raises(AdminBootstrapError, match="哈希格式无效"):
+        service.ensure_bootstrap_admin(
+            "course2career_admin",
+            password_hash="not-a-valid-password-hash",
+        )
+    with pytest.raises(AdminBootstrapError, match="哈希格式无效"):
+        service.ensure_bootstrap_admin(
+            "course2career_admin",
+            password_hash="scrypt$invalid$8$1$00$00",
+        )

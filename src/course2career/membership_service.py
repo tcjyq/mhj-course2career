@@ -49,6 +49,8 @@ class MembershipService:
         authorize(actor, Permission.MANAGE_MEMBERSHIPS)
         if actor.user_id == user_id and target_plan != Plan.ADMIN:
             raise MembershipChangeError("不能在当前会话中取消自己的管理员权限。")
+        if target_plan == Plan.ADMIN and actor.user_id != user_id:
+            raise MembershipChangeError("所有者管理员权限不能授予其他用户。")
         role = PLAN_ROLES[target_plan]
         if not self.repository.update_membership(user_id, role, target_plan):
             raise UserNotFoundError("目标用户不存在。")

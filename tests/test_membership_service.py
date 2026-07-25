@@ -109,6 +109,23 @@ def test_admin_cannot_remove_own_admin_plan(tmp_path: Path) -> None:
         service.change_plan(admin, "admin-1", Plan.FREE)
 
 
+def test_admin_cannot_grant_owner_admin_plan_to_another_user(
+    tmp_path: Path,
+) -> None:
+    repository = SQLiteProductRepository(tmp_path / "test.db")
+    _add_user(repository, user_id="user-1")
+    service = MembershipService(repository)
+    admin = Principal(
+        role=Role.ADMIN,
+        plan=Plan.ADMIN,
+        user_id="admin-1",
+        username="admin-1",
+    )
+
+    with pytest.raises(MembershipChangeError, match="所有者"):
+        service.change_plan(admin, "user-1", Plan.ADMIN)
+
+
 def test_repository_migrates_legacy_privileged_plans(tmp_path: Path) -> None:
     database_path = tmp_path / "legacy.db"
     with sqlite3.connect(database_path) as connection:

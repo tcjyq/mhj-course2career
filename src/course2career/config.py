@@ -15,8 +15,9 @@ class Settings:
     openai_timeout_seconds: float = 30.0
     database_path: str = "instance/course2career.db"
     key_encryption_key: str | None = field(default=None, repr=False)
-    bootstrap_admin_username: str | None = None
-    bootstrap_admin_password: str | None = field(default=None, repr=False)
+    admin_username: str | None = None
+    admin_password: str | None = field(default=None, repr=False)
+    admin_password_hash: str | None = field(default=None, repr=False)
 
 
 def load_settings() -> Settings:
@@ -36,8 +37,7 @@ def load_settings() -> Settings:
             "COURSE2CAREER_DATABASE_PATH", "instance/course2career.db"
         ),
         key_encryption_key=os.getenv("COURSE2CAREER_KEY_ENCRYPTION_KEY") or None,
-        bootstrap_admin_username=os.getenv("COURSE2CAREER_BOOTSTRAP_ADMIN_USERNAME")
-        or None,
-        bootstrap_admin_password=os.getenv("COURSE2CAREER_BOOTSTRAP_ADMIN_PASSWORD")
-        or None,
+        admin_username=os.getenv("ADMIN_USERNAME") or None,
+        admin_password=os.getenv("ADMIN_PASSWORD") or None,
+        admin_password_hash=os.getenv("ADMIN_PASSWORD_HASH") or None,
     )

@@ -26,6 +26,7 @@ class Permission(StrEnum):
     USE_OWN_API_KEY = "ai:use_own_key"
     VIEW_ADVANCED_REPORT = "report:view_advanced"
     VIEW_SYSTEM_STATUS = "system:view_status"
+    MANAGE_SYSTEM_CONFIG = "system:manage_config"
     MANAGE_MEMBERSHIPS = "membership:manage"
 
 

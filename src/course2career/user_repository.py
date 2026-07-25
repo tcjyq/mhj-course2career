@@ -82,6 +82,28 @@ class SQLiteUserRepository:
             created_time=row["created_time"],
         )
 
+    def find_admin(self) -> StoredUser | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                SELECT * FROM users
+                WHERE role = 'admin' AND plan = 'admin'
+                ORDER BY created_time, id
+                LIMIT 1
+                """
+            ).fetchone()
+        if row is None:
+            return None
+        return StoredUser(
+            id=row["id"],
+            username=row["username"],
+            username_normalized=row["username_normalized"],
+            password_hash=row["password_hash"],
+            role=Role(row["role"]),
+            plan=Plan(row["plan"]),
+            created_time=row["created_time"],
+        )
+
     def update_membership(self, user_id: str, role: Role, plan: Plan) -> bool:
         with self._connect() as connection:
             cursor = connection.execute(

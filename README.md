@@ -75,8 +75,6 @@ Copy-Item .env.example .env
 | `DEEPSEEK_MODEL` | DeepSeek 模型名称 | 否 |
 | `COURSE2CAREER_DATABASE_PATH` | SQLite 数据库路径 | 否 |
 | `COURSE2CAREER_KEY_ENCRYPTION_KEY` | 加密开发者 API Key | 开发者模式 |
-| `COURSE2CAREER_BOOTSTRAP_ADMIN_USERNAME` | 首次启动时创建管理员 | 否 |
-| `COURSE2CAREER_BOOTSTRAP_ADMIN_PASSWORD` | 管理员初始密码，仅存 Secrets | 否 |
 
 生成本地加密主密钥：
 
@@ -138,6 +136,7 @@ course2career/
 - 课程信息不会作为模型 Prompt 发送。
 
 公网部署前请先阅读 [部署说明](docs/deployment.md) 和 [安全策略](SECURITY.md)。
+管理员初始化配置仅记录在部署说明中，README 不提供任何管理员凭证。
 
 ## 项目边界
 

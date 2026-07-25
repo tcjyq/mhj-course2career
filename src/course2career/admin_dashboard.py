@@ -64,7 +64,11 @@ def render_admin_dashboard(
     )
     selected_user = users_by_id[selected_user_id]
     current_plan = Plan(selected_user.plan)
-    plans = list(Plan)
+    plans = (
+        [Plan.ADMIN]
+        if current_plan == Plan.ADMIN
+        else [Plan.FREE, Plan.PRO, Plan.DEVELOPER]
+    )
     with st.form("admin_membership_form"):
         target_plan = st.selectbox(
             "套餐",
