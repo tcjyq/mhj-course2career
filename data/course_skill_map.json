@@ -1,0 +1,16 @@
+[
+  {"course_keywords": ["Python", "程序设计", "编程"], "skills": {"Python": 0.9, "pandas": 0.7, "Git": 0.3}},
+  {"course_keywords": ["数据库", "SQL"], "skills": {"SQL": 0.9, "数据库设计": 0.85, "数据建模": 0.65}},
+  {"course_keywords": ["统计"], "skills": {"统计分析": 0.9, "数据分析": 0.7}},
+  {"course_keywords": ["数据分析", "商务分析"], "skills": {"数据分析": 0.9, "Excel": 0.65, "pandas": 0.65, "数据可视化": 0.6}},
+  {"course_keywords": ["管理信息系统", "信息系统"], "skills": {"信息系统": 0.9, "需求分析": 0.65, "业务流程分析": 0.65}},
+  {"course_keywords": ["系统分析", "系统设计", "软件工程"], "skills": {"需求分析": 0.85, "业务流程分析": 0.7, "项目管理": 0.55, "Git": 0.4}},
+  {"course_keywords": ["项目管理"], "skills": {"项目管理": 0.9, "沟通协作": 0.55}},
+  {"course_keywords": ["运筹"], "skills": {"数据分析": 0.65, "统计分析": 0.6}},
+  {"course_keywords": ["ERP", "企业资源计划"], "skills": {"ERP": 0.9, "业务流程分析": 0.75, "信息系统": 0.7}},
+  {"course_keywords": ["数据挖掘", "机器学习"], "skills": {"机器学习": 0.9, "Python": 0.7, "数据分析": 0.7}},
+  {"course_keywords": ["可视化", "Power BI", "Tableau"], "skills": {"数据可视化": 0.9, "Power BI": 0.75, "Tableau": 0.75}},
+  {"course_keywords": ["Excel", "办公自动化"], "skills": {"Excel": 0.9, "数据分析": 0.55}},
+  {"course_keywords": ["Java"], "skills": {"Java": 0.9, "Git": 0.3}},
+  {"course_keywords": ["管理学", "组织行为"], "skills": {"沟通协作": 0.6, "项目管理": 0.45}}
+]

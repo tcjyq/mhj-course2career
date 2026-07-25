@@ -1,0 +1,10 @@
+{
+  "Python": {"objective": "能用 Python 独立完成数据处理脚本", "action": "复习语法、函数、异常处理与文件操作，并完成练习", "project": "编写课程成绩清洗与汇总脚本", "completion_criteria": "脚本可处理异常输入并通过至少 5 个测试", "estimated_hours": 20},
+  "SQL": {"objective": "能编写常用查询并理解表关联", "action": "练习筛选、聚合、子查询、窗口函数和多表连接", "project": "设计求职信息库并完成 15 条分析查询", "completion_criteria": "能解释查询结果和索引的基本作用", "estimated_hours": 18},
+  "Excel": {"objective": "能用 Excel 完成规范的数据分析", "action": "练习查找函数、数据透视表、图表和数据清洗", "project": "制作课程学习情况分析看板", "completion_criteria": "看板可随源数据更新且计算无错误", "estimated_hours": 12},
+  "数据分析": {"objective": "掌握从问题定义到结论表达的分析流程", "action": "围绕真实问题完成清洗、探索、分析和结论验证", "project": "完成一份校园学习行为分析报告", "completion_criteria": "报告包含可复现数据、方法、图表、结论与局限", "estimated_hours": 24},
+  "数据可视化": {"objective": "能根据业务问题选择合适图表", "action": "练习图表选择、视觉编码和叙事结构", "project": "制作一页交互式岗位技能看板", "completion_criteria": "图表标题、单位、来源完整且无误导表达", "estimated_hours": 14},
+  "需求分析": {"objective": "能将模糊需求转化为可验收功能", "action": "练习访谈提纲、用户故事、流程图和验收标准", "project": "为 Course2Career 编写一份需求规格说明", "completion_criteria": "至少包含角色、场景、边界和验收条件", "estimated_hours": 16},
+  "项目管理": {"objective": "能规划并跟踪一个小型软件项目", "action": "练习任务拆分、里程碑、风险登记和迭代复盘", "project": "使用 GitHub Issues 管理一次两周迭代", "completion_criteria": "任务状态、验收记录和复盘信息完整", "estimated_hours": 12},
+  "Git": {"objective": "能使用分支和提交记录管理开发过程", "action": "练习分支、提交、合并、冲突解决与回退", "project": "按功能分支完成一次完整开发与合并", "completion_criteria": "提交粒度清晰且合并记录可追踪", "estimated_hours": 8}
+}

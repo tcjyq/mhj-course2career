@@ -1,0 +1,22 @@
+{
+  "Python": ["python", "Python编程", "Python开发"],
+  "SQL": ["sql", "MySQL", "PostgreSQL", "SQL Server"],
+  "Excel": ["excel", "Microsoft Excel", "电子表格"],
+  "Power BI": ["power bi", "powerbi"],
+  "Tableau": ["tableau"],
+  "pandas": ["pandas"],
+  "数据分析": ["数据分析", "data analysis", "数据洞察"],
+  "统计分析": ["统计分析", "统计学", "statistics"],
+  "数据可视化": ["数据可视化", "可视化", "data visualization"],
+  "数据库设计": ["数据库设计", "数据库原理", "关系数据库"],
+  "数据建模": ["数据建模", "data modeling", "ER模型"],
+  "需求分析": ["需求分析", "业务需求", "requirements analysis"],
+  "业务流程分析": ["业务流程分析", "流程分析", "BPM"],
+  "信息系统": ["信息系统", "MIS", "管理信息系统"],
+  "ERP": ["ERP", "企业资源计划"],
+  "项目管理": ["项目管理", "project management"],
+  "沟通协作": ["沟通协作", "团队协作", "沟通能力", "communication"],
+  "Git": ["git", "GitHub", "版本控制"],
+  "机器学习": ["机器学习", "machine learning", "ML"],
+  "Java": ["java", "Java开发"]
+}
