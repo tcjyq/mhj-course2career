@@ -1,4 +1,5 @@
 import sqlite3
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -219,12 +220,47 @@ def test_bootstrap_admin_accepts_prehashed_password_and_authenticates(
 def test_bootstrap_admin_supports_repository_from_rolling_deployment(
     repository: SQLiteUserRepository,
 ) -> None:
+    @dataclass(frozen=True)
+    class LegacyStoredUser:
+        id: str
+        username: str
+        username_normalized: str
+        password_hash: str
+        role: Role
+        plan: Plan
+        created_time: str
+
     class LegacyRepository:
         def add(self, user) -> None:
             repository.add(user)
 
         def find_by_normalized_username(self, username):
-            return repository.find_by_normalized_username(username)
+            user = repository.find_by_normalized_username(username)
+            if user is None:
+                return None
+            return LegacyStoredUser(
+                id=user.id,
+                username=user.username,
+                username_normalized=user.username_normalized,
+                password_hash=user.password_hash,
+                role=user.role,
+                plan=user.plan,
+                created_time=user.created_time,
+            )
+
+        def find_by_id(self, user_id):
+            user = repository.find_by_id(user_id)
+            if user is None:
+                return None
+            return LegacyStoredUser(
+                id=user.id,
+                username=user.username,
+                username_normalized=user.username_normalized,
+                password_hash=user.password_hash,
+                role=user.role,
+                plan=user.plan,
+                created_time=user.created_time,
+            )
 
     service = AuthService(LegacyRepository())  # type: ignore[arg-type]
 

@@ -93,7 +93,7 @@ class AuthService:
         user = self.repository.find_by_normalized_username(normalized_username)
         if (
             user is None
-            or user.status != "active"
+            or getattr(user, "status", "active") != "active"
             or not verify_password(password, user.password_hash)
         ):
             if attempt_scope:
@@ -113,8 +113,8 @@ class AuthService:
         user = self.repository.find_by_id(principal.user_id)
         if (
             user is None
-            or user.status != "active"
-            or user.session_version != principal.session_version
+            or getattr(user, "status", "active") != "active"
+            or getattr(user, "session_version", 1) != principal.session_version
         ):
             raise InvalidSessionError("登录状态已失效，请重新登录。")
         return _to_principal(user)
@@ -217,5 +217,5 @@ def _to_principal(user: StoredUser) -> Principal:
         username=user.username,
         role=user.role,
         plan=user.plan,
-        session_version=user.session_version,
+        session_version=getattr(user, "session_version", 1),
     )

@@ -40,12 +40,15 @@ apply_product_styles()
 
 
 @st.cache_resource
-def get_repository(database_path: str) -> SQLiteProductRepository:
+def get_repository(
+    database_path: str,
+    schema_revision: int,
+) -> SQLiteProductRepository:
     return SQLiteProductRepository(database_path)
 
 
 settings = load_settings()
-repository = get_repository(settings.database_path)
+repository = get_repository(settings.database_path, schema_revision=2)
 auth_service = AuthService(repository)
 admin_username = getattr(settings, "admin_username", None)
 admin_password = getattr(settings, "admin_password", None)
