@@ -1,0 +1,50 @@
+[
+  {
+    "target": "FastAPI",
+    "sources": ["Python", "Web后端"],
+    "strength": 0.65,
+    "reason": "Python与Web后端经验可迁移为FastAPI入门基础"
+  },
+  {
+    "target": "FastAPI",
+    "sources": ["Python"],
+    "strength": 0.35,
+    "reason": "Python基础可降低FastAPI学习距离"
+  },
+  {
+    "target": "REST API",
+    "sources": ["Web后端"],
+    "strength": 0.75,
+    "reason": "Web后端经验通常包含REST接口基础"
+  },
+  {
+    "target": "HTTP",
+    "sources": ["Web后端"],
+    "strength": 0.55,
+    "reason": "Web后端经验可迁移为HTTP基础"
+  },
+  {
+    "target": "向量数据库",
+    "sources": ["数据库设计"],
+    "strength": 0.35,
+    "reason": "关系数据库基础可降低向量数据库学习距离"
+  },
+  {
+    "target": "Embedding",
+    "sources": ["机器学习"],
+    "strength": 0.35,
+    "reason": "机器学习基础可迁移为Embedding概念基础"
+  },
+  {
+    "target": "需求分析",
+    "sources": ["信息系统"],
+    "strength": 0.85,
+    "reason": "信息系统分析训练可直接支撑需求分析"
+  },
+  {
+    "target": "沟通协作",
+    "sources": ["项目管理"],
+    "strength": 0.5,
+    "reason": "项目管理实践可部分证明沟通协作能力"
+  }
+]

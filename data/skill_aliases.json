@@ -15,8 +15,21 @@
   "信息系统": ["信息系统", "MIS", "管理信息系统"],
   "ERP": ["ERP", "企业资源计划"],
   "项目管理": ["项目管理", "project management"],
-  "沟通协作": ["沟通协作", "团队协作", "沟通能力", "communication"],
+  "沟通协作": ["沟通协作", "沟通协作能力", "团队协作", "团队协作能力", "沟通能力", "communication"],
   "Git": ["git", "GitHub", "版本控制"],
   "机器学习": ["机器学习", "machine learning", "ML"],
-  "Java": ["java", "Java开发"]
+  "Java": ["java", "Java开发"],
+  "Web后端": ["Web后端", "后端开发", "服务端开发"],
+  "FastAPI": ["fastapi", "Fast API"],
+  "REST API": ["REST API", "RESTful API", "REST接口"],
+  "HTTP": ["http", "HTTP协议"],
+  "大模型API": ["LLM API", "大模型API", "模型API"],
+  "Function Calling": ["Function Calling", "Function Call", "函数调用", "工具调用"],
+  "RAG": ["rag", "检索增强生成"],
+  "Embedding": ["embedding", "嵌入模型", "文本向量化"],
+  "向量数据库": ["向量数据库", "vector database", "vector db"],
+  "Docker": ["docker", "容器化", "容器部署"],
+  "测试": ["pytest", "单元测试", "自动化测试"],
+  "日志": ["日志", "logging"],
+  "结构化输出": ["结构化输出", "structured output"]
 }

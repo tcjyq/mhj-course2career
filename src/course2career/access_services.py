@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from pydantic import BaseModel, ConfigDict
 
 from course2career.llm_provider import LLMUsage
-from course2career.models import AnalysisReport
+from course2career.models import AdaptabilityReport, AnalysisReport
 from course2career.permissions import (
     Permission,
     Principal,
@@ -129,7 +129,9 @@ class AnalysisRecordService:
     def __init__(self, repository: SQLiteProductRepository) -> None:
         self.repository = repository
 
-    def save(self, principal: Principal, report: AnalysisReport) -> str:
+    def save(
+        self, principal: Principal, report: AnalysisReport | AdaptabilityReport
+    ) -> str:
         authorize(principal, Permission.SAVE_ANALYSIS)
         if principal.user_id is None:
             raise PermissionError("登录后才能保存分析记录。")

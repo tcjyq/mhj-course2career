@@ -7,7 +7,7 @@ from course2career.access_services import (
     AnalysisRecordService,
     QuotaExceededError,
 )
-from course2career.analysis_service import analyze_courses_for_job
+from course2career.adaptability import assess_job_adaptability
 from course2career.api_key_service import APIKeyService
 from course2career.config import Settings
 from course2career.course_parser import (
@@ -30,9 +30,10 @@ from course2career.permissions import (
 )
 from course2career.provider_factory import LLMProviderFactory
 from course2career.report_exporter import (
-    export_markdown,
+    export_adaptability_markdown,
     export_skill_matches_csv,
 )
+from course2career.ui.candidate_profile_form import render_candidate_profile_form
 
 
 def render_analysis_page(
@@ -111,8 +112,10 @@ def render_analysis_page(
                         hide_index=True,
                     )
 
+    candidate_profile, job_requirements = render_candidate_profile_form()
+
     with st.container(border=True):
-        st.markdown("## 2. 提取岗位技能")
+        st.markdown("## 3. 提取岗位技能")
         jd_text = st.text_area(
             "目标岗位JD",
             height=220,
@@ -201,7 +204,7 @@ def render_analysis_page(
     edited_skills: pd.DataFrame | None = None
     if job_analysis is not None:
         with st.container(border=True):
-            st.markdown("## 3. 确认技能")
+            st.markdown("## 4. 确认技能")
             st.success(f"已提取 {len(job_analysis.skills)} 项技能。")
             edited_skills = st.data_editor(
                 pd.DataFrame(
@@ -230,7 +233,7 @@ def render_analysis_page(
                 key="skill_editor",
             )
 
-            if st.button("生成匹配报告", type="primary"):
+            if st.button("生成岗位适配度报告", type="primary"):
                 if not courses:
                     st.error("请先上传至少一门有效课程。")
                 else:
@@ -255,9 +258,11 @@ def render_analysis_page(
                             skills=confirmed_skills,
                             source="manual",
                         )
-                        report_result = analyze_courses_for_job(
-                            courses,
-                            confirmed_job,
+                        report_result = assess_job_adaptability(
+                            courses=courses,
+                            job_analysis=confirmed_job,
+                            profile=candidate_profile,
+                            requirements=job_requirements,
                         )
                         st.session_state.analysis_report = report_result
                         if principal.role != Role.GUEST:
@@ -269,11 +274,89 @@ def render_analysis_page(
     report = st.session_state.get("analysis_report")
     if report is not None:
         with st.container(border=True):
-            st.markdown("## 4. 匹配结果")
-            score_column, strength_column, gap_column = st.columns(3)
-            score_column.metric("综合匹配分", f"{report.overall_score:.1f}/100")
-            strength_column.metric("优势技能", len(report.strengths))
-            gap_column.metric("当前缺口", len(report.gaps))
+            st.markdown("## 5. 岗位适配度结果")
+            score_column, gate_column, completeness_column, confidence_column = (
+                st.columns(4)
+            )
+            score_column.metric("岗位适配度", f"{report.overall_score:.1f}/100")
+            gate_column.metric("硬门槛", report.eligibility.status.value)
+            completeness_column.metric("数据完整度", f"{report.data_completeness:.0f}%")
+            confidence_column.metric("结果可信度", report.confidence)
+            st.caption(
+                "岗位适配度用于比较当前证据与岗位要求，"
+                "不代表录用概率、面试通过率或个人能力上限。"
+            )
+
+            st.markdown("### 五维评分")
+            st.dataframe(
+                pd.DataFrame(
+                    [
+                        {
+                            "维度": "技术技能匹配",
+                            "得分": report.dimension_scores.technical,
+                            "权重": "25%",
+                        },
+                        {
+                            "维度": "教育与学术背景",
+                            "得分": report.dimension_scores.education,
+                            "权重": "20%",
+                        },
+                        {
+                            "维度": "项目实践能力",
+                            "得分": report.dimension_scores.project,
+                            "权重": "20%",
+                        },
+                        {
+                            "维度": "实习实践经验",
+                            "得分": report.dimension_scores.internship,
+                            "权重": "25%",
+                        },
+                        {
+                            "维度": "学习潜力与就业条件",
+                            "得分": report.dimension_scores.potential,
+                            "权重": "10%",
+                        },
+                    ]
+                ),
+                width="stretch",
+                hide_index=True,
+            )
+
+            st.markdown("### 为什么是这个分数？")
+            contribution_rows = [
+                {
+                    "证据或缺口": "大学生岗位适配度解释基准",
+                    "分数影响": "+50.0",
+                    "原因": "中性解释基准",
+                }
+            ]
+            contribution_rows.extend(
+                {
+                    "证据或缺口": item.label,
+                    "分数影响": f"{item.points:+.1f}",
+                    "原因": item.reason,
+                }
+                for item in sorted(
+                    report.contributions,
+                    key=lambda value: abs(value.points),
+                    reverse=True,
+                )
+            )
+            st.dataframe(
+                pd.DataFrame(contribution_rows),
+                width="stretch",
+                hide_index=True,
+            )
+
+            with st.expander("查看岗位硬门槛"):
+                if report.eligibility.checks:
+                    for check in report.eligibility.checks:
+                        st.write(
+                            f"- **{check.label}：{check.status.value}**"
+                            f" — {check.reason}"
+                        )
+                else:
+                    st.write("- 当前JD未设置可结构化核验的硬门槛。")
 
             match_rows = []
             for match in report.matches:
@@ -290,6 +373,7 @@ def render_analysis_page(
                         "支撑课程": course_names,
                     }
                 )
+            st.markdown("### 技能证据明细")
             st.dataframe(
                 pd.DataFrame(match_rows),
                 width="stretch",
@@ -304,25 +388,23 @@ def render_analysis_page(
             right.markdown("### 薄弱技能")
             right.write("、".join(report.gaps) if report.gaps else "暂无明显技能缺口")
 
-            st.markdown("### 推荐学习路线")
-            if not report.learning_path:
+            st.markdown("### 推荐能力建设路线")
+            if not report.learning_modules:
                 st.success("当前没有需要优先补齐的技能。")
-            for step in report.learning_path:
+            for module in report.learning_modules:
                 with st.expander(
-                    f"{step.priority}. {step.skill_name}"
-                    f" · 预计 {step.estimated_hours:g} 小时",
-                    expanded=step.priority == 1,
+                    f"{module.priority}. {module.name}",
+                    expanded=module.priority == 1,
                 ):
-                    st.write(f"**目标：** {step.objective}")
-                    st.write(f"**行动：** {step.action}")
-                    st.write(f"**实践项目：** {step.project}")
-                    st.write(f"**完成标准：** {step.completion_criteria}")
+                    st.write(f"**对应缺口：** {'、'.join(module.related_gaps)}")
+                    st.write(f"**目标：** {module.objective}")
+                    st.write(f"**证明成果：** {module.evidence_goal}")
 
             st.markdown("### 导出")
             export_left, export_right = st.columns(2)
             export_left.download_button(
                 "下载Markdown报告",
-                data=export_markdown(report),
+                data=export_adaptability_markdown(report),
                 file_name="course2career_report.md",
                 mime="text/markdown",
                 width="stretch",

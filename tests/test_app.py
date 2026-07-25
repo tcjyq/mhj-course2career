@@ -201,10 +201,11 @@ def test_analysis_page_runs_local_flow(tmp_path: Path) -> None:
     assert not app.exception
     assert any("已提取" in message.value for message in app.success)
     next(
-        button for button in app.button if button.label == "生成匹配报告"
+        button for button in app.button if button.label == "生成岗位适配度报告"
     ).click().run()
     assert not app.exception
-    assert any(metric.label == "综合匹配分" for metric in app.metric)
+    assert any(metric.label == "岗位适配度" for metric in app.metric)
+    assert any("为什么是这个分数" in block.value for block in app.markdown)
 
 
 def test_developer_analysis_and_key_pages_are_available(tmp_path: Path) -> None:

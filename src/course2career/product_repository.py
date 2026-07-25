@@ -4,7 +4,7 @@ from pathlib import Path
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
-from course2career.models import AnalysisReport
+from course2career.models import AdaptabilityReport, AnalysisReport
 from course2career.user_repository import SQLiteUserRepository
 
 
@@ -163,7 +163,9 @@ class SQLiteProductRepository(SQLiteUserRepository):
             ).fetchone()[0]
         return int(count)
 
-    def add_analysis(self, user_id: str, report: AnalysisReport) -> str:
+    def add_analysis(
+        self, user_id: str, report: AnalysisReport | AdaptabilityReport
+    ) -> str:
         record_id = str(uuid4())
         with self._connect() as connection:
             connection.execute(

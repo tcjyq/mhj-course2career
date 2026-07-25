@@ -14,13 +14,17 @@ def load_course_skill_rules(path: Path | None = None) -> list[dict[str, Any]]:
 
 def map_courses_to_skills(
     courses: list[Course],
-    target_skills: list[JobSkill],
+    target_skills: list[JobSkill] | None,
     rules: list[dict[str, Any]] | None = None,
 ) -> list[CourseSkillEvidence]:
     """通过可审计的课程关键词规则生成技能支撑证据。"""
 
     course_rules = rules if rules is not None else load_course_skill_rules()
-    targets = {skill.normalized_name for skill in target_skills}
+    targets = (
+        {skill.normalized_name for skill in target_skills}
+        if target_skills is not None
+        else None
+    )
     best_matches: dict[tuple[str, str], CourseSkillEvidence] = {}
 
     for course in courses:
@@ -34,7 +38,7 @@ def map_courses_to_skills(
             if not matched_keywords:
                 continue
             for skill_name, strength_value in rule["skills"].items():
-                if skill_name not in targets:
+                if targets is not None and skill_name not in targets:
                     continue
                 strength = float(strength_value)
                 evidence = CourseSkillEvidence(

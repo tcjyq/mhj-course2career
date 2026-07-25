@@ -40,3 +40,7 @@ def test_short_english_alias_does_not_match_inside_another_word() -> None:
     aliases = {"机器学习": ["ML"]}
 
     assert find_skills_in_text("负责 HTML 页面开发", aliases) == []
+
+
+def test_normalize_skill_name_handles_capability_suffix_alias() -> None:
+    assert normalize_skill_name("沟通协作能力") == "沟通协作"
