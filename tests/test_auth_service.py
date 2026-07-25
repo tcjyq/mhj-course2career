@@ -157,6 +157,30 @@ def test_bootstrap_admin_accepts_prehashed_password_and_authenticates(
     assert stored_hash == encoded_hash
 
 
+def test_bootstrap_admin_supports_repository_from_rolling_deployment(
+    repository: SQLiteUserRepository,
+) -> None:
+    class LegacyRepository:
+        def add(self, user) -> None:
+            repository.add(user)
+
+        def find_by_normalized_username(self, username):
+            return repository.find_by_normalized_username(username)
+
+    service = AuthService(LegacyRepository())  # type: ignore[arg-type]
+
+    principal = service.ensure_bootstrap_admin(
+        "course2career_admin",
+        "unique-admin-pass-123",
+    )
+
+    assert principal.role == Role.ADMIN
+    assert (
+        service.authenticate("course2career_admin", "unique-admin-pass-123")
+        == principal
+    )
+
+
 def test_bootstrap_admin_rejects_ambiguous_or_invalid_password_configuration(
     repository: SQLiteUserRepository,
 ) -> None:

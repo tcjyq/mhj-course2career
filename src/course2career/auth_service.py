@@ -78,7 +78,8 @@ class AuthService:
             raise AdminBootstrapError(
                 "管理员用户名需要 3 到 32 个字符，只能包含字母、数字、下划线或连字符。"
             )
-        existing_admin = self.repository.find_admin()
+        find_admin = getattr(self.repository, "find_admin", None)
+        existing_admin = find_admin() if callable(find_admin) else None
         if existing_admin is not None:
             return _to_principal(existing_admin)
 
