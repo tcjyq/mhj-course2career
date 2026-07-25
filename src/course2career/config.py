@@ -12,6 +12,10 @@ class Settings:
     openai_model: str = "gpt-5.6-luna"
     deepseek_api_key: str | None = field(default=None, repr=False)
     deepseek_model: str = "deepseek-v4-flash"
+    openai_input_cost_per_million: float = 0.0
+    openai_output_cost_per_million: float = 0.0
+    deepseek_input_cost_per_million: float = 0.0
+    deepseek_output_cost_per_million: float = 0.0
     openai_timeout_seconds: float = 30.0
     database_path: str = "instance/course2career.db"
     key_encryption_key: str | None = field(default=None, repr=False)
@@ -32,6 +36,18 @@ def load_settings() -> Settings:
         openai_model=os.getenv("OPENAI_MODEL", "gpt-5.6-luna"),
         deepseek_api_key=os.getenv("DEEPSEEK_API_KEY") or None,
         deepseek_model=os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash"),
+        openai_input_cost_per_million=_nonnegative_float_env(
+            "OPENAI_INPUT_COST_PER_MILLION"
+        ),
+        openai_output_cost_per_million=_nonnegative_float_env(
+            "OPENAI_OUTPUT_COST_PER_MILLION"
+        ),
+        deepseek_input_cost_per_million=_nonnegative_float_env(
+            "DEEPSEEK_INPUT_COST_PER_MILLION"
+        ),
+        deepseek_output_cost_per_million=_nonnegative_float_env(
+            "DEEPSEEK_OUTPUT_COST_PER_MILLION"
+        ),
         openai_timeout_seconds=max(timeout, 1.0),
         database_path=os.getenv(
             "COURSE2CAREER_DATABASE_PATH", "instance/course2career.db"
@@ -41,3 +57,10 @@ def load_settings() -> Settings:
         admin_password=os.getenv("ADMIN_PASSWORD") or None,
         admin_password_hash=os.getenv("ADMIN_PASSWORD_HASH") or None,
     )
+
+
+def _nonnegative_float_env(name: str) -> float:
+    try:
+        return max(float(os.getenv(name, "0")), 0.0)
+    except ValueError:
+        return 0.0

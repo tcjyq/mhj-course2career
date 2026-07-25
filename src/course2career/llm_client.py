@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Any
 
 from course2career.config import Settings
-from course2career.llm_provider import ProviderName
+from course2career.llm_provider import LLMUsage, ProviderName, coerce_token_count
 from course2career.models import JobAnalysis
 
 PROMPT_PATH = Path(__file__).resolve().parents[2] / "prompts" / "extract_jd_skills.txt"
@@ -19,6 +19,7 @@ class OpenAIJDClient:
         if not settings.openai_api_key:
             raise LLMClientError("未配置 OPENAI_API_KEY，无法启用 AI 分析模式。")
         self.settings = settings
+        self._last_usage: LLMUsage | None = None
         if sdk_client is None:
             try:
                 from openai import OpenAI
@@ -40,14 +41,28 @@ class OpenAIJDClient:
     def model_name(self) -> str:
         return self.settings.openai_model
 
+    @property
+    def last_usage(self) -> LLMUsage | None:
+        return self._last_usage
+
     def extract_job_skills(self, jd_text: str) -> JobAnalysis:
+        self._last_usage = None
         try:
             response = self.client.responses.parse(
                 model=self.settings.openai_model,
                 instructions=PROMPT_PATH.read_text(encoding="utf-8"),
                 input=jd_text,
                 text_format=JobAnalysis,
+                max_output_tokens=1500,
             )
+            usage = getattr(response, "usage", None)
+            if usage is not None:
+                self._last_usage = LLMUsage(
+                    input_tokens=coerce_token_count(getattr(usage, "input_tokens", 0)),
+                    output_tokens=coerce_token_count(
+                        getattr(usage, "output_tokens", 0)
+                    ),
+                )
             result = response.output_parsed
             if result is None:
                 raise ValueError("empty structured output")

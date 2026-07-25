@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -8,6 +9,7 @@ from course2career.access_services import (
     QuotaExceededError,
     SystemStatusService,
 )
+from course2career.llm_provider import LLMUsage
 from course2career.models import AnalysisReport
 from course2career.permissions import (
     PermissionDeniedError,
@@ -67,6 +69,32 @@ def test_quota_status_reports_used_and_remaining_calls(
     assert status.used == 1
     assert status.limit == 2
     assert status.remaining == 1
+
+
+def test_complete_call_persists_real_token_usage_and_configured_cost(
+    repository: SQLiteProductRepository,
+) -> None:
+    service = AIUsageService(repository)
+    guest = Principal(role=Role.GUEST)
+    usage_id = service.start_call(
+        guest,
+        "system",
+        "test-model",
+        guest_session_id="guest-1",
+        provider="deepseek",
+    )
+
+    service.complete_call(
+        usage_id,
+        success=True,
+        usage=LLMUsage(input_tokens=200, output_tokens=100),
+        input_cost_per_million=1.0,
+        output_cost_per_million=2.0,
+    )
+
+    overview = repository.admin_overview(datetime.now(UTC))
+    assert overview.total_tokens == 300
+    assert overview.estimated_cost == pytest.approx(0.0004)
 
 
 def test_developer_own_key_is_unlimited_but_user_is_denied(

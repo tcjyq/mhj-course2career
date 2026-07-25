@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Any
 
 from course2career.llm_client import LLMClientError
-from course2career.llm_provider import ProviderName
+from course2career.llm_provider import LLMUsage, ProviderName, coerce_token_count
 from course2career.models import JobAnalysis
 
 PROMPT_PATH = Path(__file__).resolve().parents[2] / "prompts" / "extract_jd_skills.txt"
@@ -31,6 +31,7 @@ class DeepSeekProvider:
         if model not in DEEPSEEK_MODELS:
             raise ProviderError("不支持的 DeepSeek 模型。")
         self.model = model
+        self._last_usage: LLMUsage | None = None
         if sdk_client is None:
             try:
                 from openai import OpenAI
@@ -51,7 +52,12 @@ class DeepSeekProvider:
     def model_name(self) -> str:
         return self.model
 
+    @property
+    def last_usage(self) -> LLMUsage | None:
+        return self._last_usage
+
     def extract_job_skills(self, jd_text: str) -> JobAnalysis:
+        self._last_usage = None
         schema = json.dumps(
             JobAnalysis.model_json_schema(), ensure_ascii=False, separators=(",", ":")
         )
@@ -72,6 +78,14 @@ class DeepSeekProvider:
                 stream=False,
                 extra_body={"thinking": {"type": "disabled"}},
             )
+            usage = getattr(response, "usage", None)
+            if usage is not None:
+                self._last_usage = LLMUsage(
+                    input_tokens=coerce_token_count(getattr(usage, "prompt_tokens", 0)),
+                    output_tokens=coerce_token_count(
+                        getattr(usage, "completion_tokens", 0)
+                    ),
+                )
             content = response.choices[0].message.content
             if not content:
                 raise ValueError("empty response content")

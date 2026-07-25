@@ -21,7 +21,11 @@ def test_deepseek_provider_uses_json_mode_and_validates_domain_model() -> None:
         def create(self, **kwargs: object) -> SimpleNamespace:
             self.kwargs = kwargs
             message = SimpleNamespace(content=content)
-            return SimpleNamespace(choices=[SimpleNamespace(message=message)])
+            usage = SimpleNamespace(prompt_tokens=210, completion_tokens=90)
+            return SimpleNamespace(
+                choices=[SimpleNamespace(message=message)],
+                usage=usage,
+            )
 
     completions = FakeCompletions()
     sdk = SimpleNamespace(chat=SimpleNamespace(completions=completions))
@@ -40,6 +44,9 @@ def test_deepseek_provider_uses_json_mode_and_validates_domain_model() -> None:
     assert result.job_title == "数据分析师"
     assert completions.kwargs["response_format"] == {"type": "json_object"}
     assert completions.kwargs["model"] == "deepseek-v4-flash"
+    assert provider.last_usage is not None
+    assert provider.last_usage.input_tokens == 210
+    assert provider.last_usage.output_tokens == 90
 
 
 def test_deepseek_provider_rejects_unapproved_model() -> None:

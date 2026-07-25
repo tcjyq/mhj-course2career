@@ -49,6 +49,7 @@ def render_auth_page(principal: Principal, auth_service: AuthService) -> None:
                 st.session_state.principal = auth_service.authenticate(
                     login_username,
                     login_password,
+                    attempt_scope=st.session_state.guest_session_id,
                 )
                 st.rerun()
             except InvalidCredentialsError as exc:

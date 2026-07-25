@@ -1,6 +1,6 @@
 import re
 import sqlite3
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 from course2career.password_security import (
@@ -22,12 +22,23 @@ class InvalidCredentialsError(ValueError):
     """登录凭证无效；不区分用户名或密码错误。"""
 
 
+class TooManyLoginAttemptsError(InvalidCredentialsError):
+    """同一浏览器会话中的登录失败次数过多。"""
+
+
+class InvalidSessionError(ValueError):
+    """登录会话已失效，需要重新认证。"""
+
+
 class AdminBootstrapError(ValueError):
     """首个管理员的安全初始化配置无效。"""
 
 
 class AuthService:
     """注册和认证应用服务；公开注册只能创建普通用户。"""
+
+    MAX_FAILED_LOGINS = 5
+    LOGIN_WINDOW = timedelta(minutes=15)
 
     def __init__(self, repository: SQLiteUserRepository) -> None:
         self.repository = repository
@@ -58,10 +69,54 @@ class AuthService:
             raise RegistrationError("该用户名已存在。") from exc
         return _to_principal(user)
 
-    def authenticate(self, username: str, password: str) -> Principal:
-        user = self.repository.find_by_normalized_username(username.strip().casefold())
-        if user is None or not verify_password(password, user.password_hash):
+    def authenticate(
+        self,
+        username: str,
+        password: str,
+        *,
+        attempt_scope: str | None = None,
+        now: datetime | None = None,
+    ) -> Principal:
+        normalized_username = username.strip().casefold()
+        attempted_time = now or datetime.now(UTC)
+        if (
+            attempt_scope
+            and self.repository.count_recent_failed_logins(
+                attempt_scope,
+                normalized_username,
+                attempted_time - self.LOGIN_WINDOW,
+            )
+            >= self.MAX_FAILED_LOGINS
+        ):
+            raise TooManyLoginAttemptsError("登录尝试次数过多，请稍后再试。")
+
+        user = self.repository.find_by_normalized_username(normalized_username)
+        if (
+            user is None
+            or user.status != "active"
+            or not verify_password(password, user.password_hash)
+        ):
+            if attempt_scope:
+                self.repository.record_failed_login(
+                    attempt_scope,
+                    normalized_username,
+                    attempted_time,
+                )
             raise InvalidCredentialsError("用户名或密码错误。")
+        if attempt_scope:
+            self.repository.clear_failed_logins(attempt_scope, normalized_username)
+        return _to_principal(user)
+
+    def refresh_principal(self, principal: Principal) -> Principal:
+        if principal.user_id is None or principal.session_version is None:
+            raise InvalidSessionError("登录状态已失效，请重新登录。")
+        user = self.repository.find_by_id(principal.user_id)
+        if (
+            user is None
+            or user.status != "active"
+            or user.session_version != principal.session_version
+        ):
+            raise InvalidSessionError("登录状态已失效，请重新登录。")
         return _to_principal(user)
 
     def ensure_bootstrap_admin(
@@ -81,6 +136,25 @@ class AuthService:
         find_admin = getattr(self.repository, "find_admin", None)
         existing_admin = find_admin() if callable(find_admin) else None
         if existing_admin is not None:
+            if existing_admin.username_normalized == cleaned_username.casefold():
+                if (
+                    password is not None
+                    and password_hash is None
+                    and verify_password(password, existing_admin.password_hash)
+                ):
+                    return _to_principal(existing_admin)
+                encoded_password = _resolve_admin_password_hash(
+                    password,
+                    password_hash,
+                )
+                if encoded_password != existing_admin.password_hash:
+                    rotated_admin = self.repository.update_password_hash(
+                        existing_admin.id,
+                        encoded_password,
+                    )
+                    if rotated_admin is None:
+                        raise AdminBootstrapError("管理员密码轮换失败。")
+                    return _to_principal(rotated_admin)
             return _to_principal(existing_admin)
 
         normalized_username = cleaned_username.casefold()
@@ -143,4 +217,5 @@ def _to_principal(user: StoredUser) -> Principal:
         username=user.username,
         role=user.role,
         plan=user.plan,
+        session_version=user.session_version,
     )

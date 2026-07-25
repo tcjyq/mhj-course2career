@@ -145,8 +145,14 @@ def render_analysis_page(
 
         if st.button("提取岗位技能", type="primary"):
             usage_id = None
+            client = None
+            if selected_provider == ProviderName.DEEPSEEK:
+                input_cost_per_million = settings.deepseek_input_cost_per_million
+                output_cost_per_million = settings.deepseek_output_cost_per_million
+            else:
+                input_cost_per_million = settings.openai_input_cost_per_million
+                output_cost_per_million = settings.openai_output_cost_per_million
             try:
-                client = None
                 if analysis_mode == "本地规则":
                     authorize(principal, Permission.USE_DEMO)
                 else:
@@ -166,7 +172,13 @@ def render_analysis_page(
                     )
                 st.session_state.job_analysis = analyze_job_description(jd_text, client)
                 if usage_id is not None:
-                    usage_service.complete_call(usage_id, success=True)
+                    usage_service.complete_call(
+                        usage_id,
+                        success=True,
+                        usage=client.last_usage if client is not None else None,
+                        input_cost_per_million=input_cost_per_million,
+                        output_cost_per_million=output_cost_per_million,
+                    )
                 st.session_state.pop("analysis_report", None)
             except (
                 JDAnalysisError,
@@ -176,7 +188,13 @@ def render_analysis_page(
                 QuotaExceededError,
             ) as exc:
                 if usage_id is not None:
-                    usage_service.complete_call(usage_id, success=False)
+                    usage_service.complete_call(
+                        usage_id,
+                        success=False,
+                        usage=client.last_usage if client is not None else None,
+                        input_cost_per_million=input_cost_per_million,
+                        output_cost_per_million=output_cost_per_million,
+                    )
                 st.error(str(exc))
 
     job_analysis = st.session_state.get("job_analysis")

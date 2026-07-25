@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 
 from pydantic import BaseModel, ConfigDict
 
+from course2career.llm_provider import LLMUsage
 from course2career.models import AnalysisReport
 from course2career.permissions import (
     Permission,
@@ -77,9 +78,27 @@ class AIUsageService:
                 "今日 AI 体验次数已用完，请明日再试或使用本地规则模式。"
             ) from exc
 
-    def complete_call(self, usage_id: str, *, success: bool) -> None:
+    def complete_call(
+        self,
+        usage_id: str,
+        *,
+        success: bool,
+        usage: LLMUsage | None = None,
+        input_cost_per_million: float = 0.0,
+        output_cost_per_million: float = 0.0,
+    ) -> None:
+        input_tokens = usage.input_tokens if usage is not None else 0
+        output_tokens = usage.output_tokens if usage is not None else 0
+        estimated_cost = (
+            input_tokens * max(input_cost_per_million, 0.0)
+            + output_tokens * max(output_cost_per_million, 0.0)
+        ) / 1_000_000
         self.repository.complete_ai_call(
-            usage_id, status="success" if success else "failed"
+            usage_id,
+            status="success" if success else "failed",
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            cost=estimated_cost,
         )
 
     def get_quota_status(

@@ -39,6 +39,7 @@ class Principal(BaseModel):
     plan: Plan = Plan.FREE
     user_id: str | None = None
     username: str | None = None
+    session_version: int | None = None
 
 
 class PermissionDeniedError(PermissionError):

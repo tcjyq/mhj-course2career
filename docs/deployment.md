@@ -10,10 +10,16 @@
 
 - `OPENAI_API_KEY`
 - `DEEPSEEK_API_KEY`
+- `OPENAI_INPUT_COST_PER_MILLION` / `OPENAI_OUTPUT_COST_PER_MILLION`
+- `DEEPSEEK_INPUT_COST_PER_MILLION` / `DEEPSEEK_OUTPUT_COST_PER_MILLION`
 - `COURSE2CAREER_KEY_ENCRYPTION_KEY`
 - `COURSE2CAREER_DATABASE_PATH`
 - `ADMIN_USERNAME`
 - `ADMIN_PASSWORD` 或 `ADMIN_PASSWORD_HASH`（二选一）
+
+模型单价按每百万Token填写，多个供应商必须先换算成同一币种。若暂时无法确认
+当前价格，保持`0`：系统仍会记录真实输入/输出Token，但不会生成可能过时的
+费用估算。
 
 只使用本地规则模式时，模型凭证和加密主密钥可以留空。
 
@@ -35,6 +41,17 @@ ADMIN_PASSWORD_HASH = "生成的scrypt哈希"
 保存后应用会重新启动，并创建 `Admin` 套餐的管理员。随后从“登录”页面使用这组凭证登录，左侧会出现“管理员Dashboard”。
 
 本地首次初始化也可使用 `ADMIN_PASSWORD`，应用会立即将其转换成随机盐 scrypt 哈希，数据库不保存明文。密码至少 12 位。不要同时配置 `ADMIN_PASSWORD` 和 `ADMIN_PASSWORD_HASH`。
+
+### 轮换管理员密码
+
+保持 `ADMIN_USERNAME` 不变，重新生成新的 scrypt 哈希并替换
+`ADMIN_PASSWORD_HASH`。应用重启后会更新现有管理员的密码哈希并递增会话版本：
+
+- 旧密码立即失效；
+- 旧登录会话在下一次页面交互时退出；
+- 数据库和日志仍不保存明文密码。
+
+如果修改了 `ADMIN_USERNAME`，应用不会把已有管理员迁移到新用户名，也不会创建第二个管理员。
 
 初始化是幂等的：数据库中已经存在管理员时不会重复创建，也不会重置密码。如果配置的用户名已被普通账户占用，应用会拒绝自动提权并提示更换用户名。所有者管理员权限不能通过 Dashboard 授予其他用户。
 

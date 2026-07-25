@@ -31,3 +31,17 @@ def test_load_settings_reads_admin_credentials_from_environment(
     assert settings.admin_username == "owner_admin"
     assert settings.admin_password == "temporary-admin-password"
     assert settings.admin_password_hash == "scrypt$hash-from-secret"
+
+
+def test_load_settings_reads_nonnegative_model_costs(monkeypatch) -> None:
+    monkeypatch.setenv("DEEPSEEK_INPUT_COST_PER_MILLION", "2.5")
+    monkeypatch.setenv("DEEPSEEK_OUTPUT_COST_PER_MILLION", "10")
+    monkeypatch.setenv("OPENAI_INPUT_COST_PER_MILLION", "-1")
+    monkeypatch.setenv("OPENAI_OUTPUT_COST_PER_MILLION", "invalid")
+
+    settings = load_settings()
+
+    assert settings.deepseek_input_cost_per_million == 2.5
+    assert settings.deepseek_output_cost_per_million == 10
+    assert settings.openai_input_cost_per_million == 0
+    assert settings.openai_output_cost_per_million == 0

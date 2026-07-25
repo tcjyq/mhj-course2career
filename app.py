@@ -9,7 +9,11 @@ from course2career.access_services import (
 )
 from course2career.admin_dashboard import render_admin_dashboard
 from course2career.api_key_service import APIKeyService
-from course2career.auth_service import AdminBootstrapError, AuthService
+from course2career.auth_service import (
+    AdminBootstrapError,
+    AuthService,
+    InvalidSessionError,
+)
 from course2career.config import load_settings
 from course2career.key_encryption import (
     APIKeyCipher,
@@ -82,6 +86,15 @@ if "guest_session_id" not in st.session_state:
     st.session_state.guest_session_id = str(uuid4())
 
 principal: Principal = st.session_state.principal
+if principal.role != Role.GUEST:
+    try:
+        principal = auth_service.refresh_principal(principal)
+        st.session_state.principal = principal
+    except InvalidSessionError:
+        for state_key in ("principal", "job_analysis", "analysis_report"):
+            st.session_state.pop(state_key, None)
+        st.warning("登录状态已失效，请重新登录。")
+        st.rerun()
 role_labels = {
     Role.GUEST: "游客",
     Role.USER: "普通用户",

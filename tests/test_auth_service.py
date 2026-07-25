@@ -1,4 +1,5 @@
 import sqlite3
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -7,7 +8,9 @@ from course2career.auth_service import (
     AdminBootstrapError,
     AuthService,
     InvalidCredentialsError,
+    InvalidSessionError,
     RegistrationError,
+    TooManyLoginAttemptsError,
 )
 from course2career.password_security import hash_password
 from course2career.permissions import Plan, Role
@@ -85,7 +88,7 @@ def test_bootstrap_admin_creates_admin_without_storing_plaintext_password(
     assert "unique-admin-pass-123" not in stored_hash
 
 
-def test_bootstrap_admin_is_idempotent_and_does_not_reset_password(
+def test_bootstrap_admin_is_idempotent_when_password_is_unchanged(
     repository: SQLiteUserRepository,
 ) -> None:
     service = AuthService(repository)
@@ -94,13 +97,69 @@ def test_bootstrap_admin_is_idempotent_and_does_not_reset_password(
     )
 
     second = service.ensure_bootstrap_admin(
-        "course2career_admin", "different-admin-pass-456"
+        "course2career_admin", "unique-admin-pass-123"
     )
 
     assert second == first
     assert service.authenticate("course2career_admin", "unique-admin-pass-123") == first
+
+
+def test_bootstrap_admin_rotates_changed_password_and_invalidates_old_session(
+    repository: SQLiteUserRepository,
+) -> None:
+    service = AuthService(repository)
+    old_principal = service.ensure_bootstrap_admin(
+        "course2career_admin", "unique-admin-pass-123"
+    )
+
+    rotated_principal = service.ensure_bootstrap_admin(
+        "course2career_admin", "rotated-admin-pass-456"
+    )
+
+    assert rotated_principal.user_id == old_principal.user_id
+    assert rotated_principal.session_version == old_principal.session_version + 1
     with pytest.raises(InvalidCredentialsError):
-        service.authenticate("course2career_admin", "different-admin-pass-456")
+        service.authenticate("course2career_admin", "unique-admin-pass-123")
+    assert (
+        service.authenticate("course2career_admin", "rotated-admin-pass-456")
+        == rotated_principal
+    )
+    with pytest.raises(InvalidSessionError):
+        service.refresh_principal(old_principal)
+    assert service.refresh_principal(rotated_principal) == rotated_principal
+
+
+def test_authenticate_rate_limits_repeated_failures_per_browser_session(
+    repository: SQLiteUserRepository,
+) -> None:
+    service = AuthService(repository)
+    service.register("student_01", "strong-pass-123")
+    start = datetime(2026, 7, 25, 12, tzinfo=UTC)
+
+    for attempt in range(5):
+        with pytest.raises(InvalidCredentialsError):
+            service.authenticate(
+                "student_01",
+                "wrong-password",
+                attempt_scope="browser-session",
+                now=start + timedelta(seconds=attempt),
+            )
+
+    with pytest.raises(TooManyLoginAttemptsError, match="稍后再试"):
+        service.authenticate(
+            "student_01",
+            "strong-pass-123",
+            attempt_scope="browser-session",
+            now=start + timedelta(minutes=1),
+        )
+
+    authenticated = service.authenticate(
+        "student_01",
+        "strong-pass-123",
+        attempt_scope="browser-session",
+        now=start + timedelta(minutes=16),
+    )
+    assert authenticated.username == "student_01"
 
 
 def test_bootstrap_admin_does_not_create_second_admin_when_username_changes(

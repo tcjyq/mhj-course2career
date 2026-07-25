@@ -28,7 +28,10 @@ def test_openai_client_requests_structured_job_analysis() -> None:
 
         def parse(self, **kwargs: object) -> SimpleNamespace:
             self.kwargs = kwargs
-            return SimpleNamespace(output_parsed=parsed)
+            return SimpleNamespace(
+                output_parsed=parsed,
+                usage=SimpleNamespace(input_tokens=321, output_tokens=123),
+            )
 
     responses = FakeResponses()
     sdk = SimpleNamespace(responses=responses)
@@ -43,6 +46,10 @@ def test_openai_client_requests_structured_job_analysis() -> None:
     assert result == parsed
     assert responses.kwargs["model"] == "test-model"
     assert responses.kwargs["text_format"] is JobAnalysis
+    assert responses.kwargs["max_output_tokens"] == 1500
+    assert client.last_usage is not None
+    assert client.last_usage.input_tokens == 321
+    assert client.last_usage.output_tokens == 123
 
 
 def test_openai_client_wraps_provider_errors() -> None:
