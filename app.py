@@ -43,17 +43,18 @@ def get_repository(database_path: str) -> SQLiteProductRepository:
 settings = load_settings()
 repository = get_repository(settings.database_path)
 auth_service = AuthService(repository)
-if settings.admin_username or settings.admin_password or settings.admin_password_hash:
-    if not settings.admin_username or bool(settings.admin_password) == bool(
-        settings.admin_password_hash
-    ):
+admin_username = getattr(settings, "admin_username", None)
+admin_password = getattr(settings, "admin_password", None)
+admin_password_hash = getattr(settings, "admin_password_hash", None)
+if admin_username or admin_password or admin_password_hash:
+    if not admin_username or bool(admin_password) == bool(admin_password_hash):
         st.error("管理员初始化配置无效，请检查环境变量。")
         st.stop()
     try:
         auth_service.ensure_bootstrap_admin(
-            settings.admin_username,
-            settings.admin_password,
-            password_hash=settings.admin_password_hash,
+            admin_username,
+            admin_password,
+            password_hash=admin_password_hash,
         )
     except AdminBootstrapError as exc:
         st.error(f"管理员初始化失败：{exc}")

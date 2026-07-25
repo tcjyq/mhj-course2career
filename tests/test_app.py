@@ -84,6 +84,34 @@ def test_app_initial_page_is_product_home() -> None:
     assert len(app.file_uploader) == 0
 
 
+def test_app_starts_during_legacy_settings_deployment_window() -> None:
+    app_path = Path("app.py").resolve().as_posix()
+    app = AppTest.from_string(
+        f"""
+import course2career.config
+
+class LegacySettings:
+    openai_api_key = None
+    openai_model = "test-openai-model"
+    deepseek_api_key = None
+    deepseek_model = "deepseek-v4-flash"
+    openai_timeout_seconds = 30.0
+    database_path = "instance/legacy-settings-test.db"
+    key_encryption_key = None
+
+original_load_settings = course2career.config.load_settings
+try:
+    course2career.config.load_settings = lambda: LegacySettings()
+    exec(compile(open(r"{app_path}", encoding="utf-8").read(), r"{app_path}", "exec"))
+finally:
+    course2career.config.load_settings = original_load_settings
+"""
+    ).run()
+
+    assert not app.exception
+    assert app.title[0].value == "把学过的课程，翻译成求职能力"
+
+
 def test_app_bootstraps_owner_admin_from_environment(
     tmp_path: Path,
     monkeypatch,

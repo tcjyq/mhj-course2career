@@ -1,4 +1,5 @@
 # Production/runtime dependencies. Keep this file pinned for reproducible deploys.
+# The editable local package must be rebuilt when deployment code changes.
 -e .
 cryptography==49.0.0
 openai==2.46.0
