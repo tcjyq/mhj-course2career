@@ -75,6 +75,8 @@ Copy-Item .env.example .env
 | `DEEPSEEK_MODEL` | DeepSeek 模型名称 | 否 |
 | `COURSE2CAREER_DATABASE_PATH` | SQLite 数据库路径 | 否 |
 | `COURSE2CAREER_KEY_ENCRYPTION_KEY` | 加密开发者 API Key | 开发者模式 |
+| `COURSE2CAREER_BOOTSTRAP_ADMIN_USERNAME` | 首次启动时创建管理员 | 否 |
+| `COURSE2CAREER_BOOTSTRAP_ADMIN_PASSWORD` | 管理员初始密码，仅存 Secrets | 否 |
 
 生成本地加密主密钥：
 
@@ -114,6 +116,7 @@ course2career/
 
 ## 设计文档
 
+- [普通用户使用说明](docs/user-guide.md)
 - [系统架构](docs/architecture.md)
 - [MVP 需求](docs/requirements.md)
 - [评分设计](docs/scoring.md)
