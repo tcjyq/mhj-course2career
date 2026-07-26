@@ -49,13 +49,6 @@ logs/
 .codex/
 output/playwright/
 
-# Local Cloudflare / Wrangler state
-.npm-cache/
-.wrangler-cache/
-.wrangler-config/
-.wrangler-output/
-cloudflare-proxy/.wrangler/
-
 # Editors and operating systems
 .idea/
 .vscode/

@@ -9,12 +9,7 @@
 
 Course2Career 面向准备实习和校招的大学生，将课程、教育背景、项目、实习及成长条件与目标岗位 JD 转换为可解释的岗位适配度、硬门槛检查、能力差距和学习路线。项目采用“AI 提取语义、Python 规则负责评估、用户确认关键输入”的设计，不预测录用概率。
 
-[Cloudflare 边缘入口](https://course2career.mahongjia393.workers.dev/) ·
-[Streamlit 原始入口](https://mhj-course2career.streamlit.app/)
-
-当前 Python Streamlit 服务仍由 Streamlit Community Cloud 托管，Cloudflare
-Worker 负责提供边缘代理入口和后续自定义域名接入能力。DeepSeek API Key、
-管理员凭证和数据库均不会复制到 Worker。
+[在线体验 Course2Career](https://mhj-course2career.streamlit.app/)
 
 ![Course2Career 首页](screenshots/home.png)
 
@@ -109,7 +104,6 @@ ruff format --check .
 course2career/
 ├── .github/workflows/       # GitHub Actions
 ├── .streamlit/              # Streamlit 主题配置
-├── cloudflare-proxy/        # Cloudflare Worker 边缘入口
 ├── data/                    # 技能别名、课程映射、学习资源
 ├── docs/                    # 架构、需求、评分、部署与开发文档
 ├── examples/                # 脱敏示例 JD
@@ -136,7 +130,6 @@ course2career/
 - [管理员 Dashboard](docs/admin-dashboard.md)
 - [界面设计](docs/ui-design.md)
 - [部署说明](docs/deployment.md)
-- [Cloudflare 部署说明](docs/cloudflare-deployment.md)
 - [开发规范](docs/development-guide.md)
 - [开发日志](docs/development-log.md)
 
