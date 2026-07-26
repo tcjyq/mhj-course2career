@@ -72,3 +72,6 @@ streamlit run app.py
 4. 备份数据库与 API Key 加密主密钥，但两者分开保存。
 5. 不把用户课程、完整 JD、密码或 API Key 写入日志。
 6. 公开页面提供隐私说明和第三方模型数据传输提示。
+
+Cloudflare 边缘入口的架构、更新命令与自定义域名步骤见
+[Cloudflare 部署说明](cloudflare-deployment.md)。

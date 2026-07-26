@@ -307,3 +307,27 @@
 
 - 当前首页截图来自旧版定位文案，需要在新版部署稳定后重新生成。
 - 权重和院校市场信号属于可解释产品基线，尚未通过真实招聘结果校准。
+
+## 2026-07-26 Cloudflare 边缘入口
+
+### 完成内容
+
+- 新增 `cloudflare-proxy`，使用 Cloudflare Worker 代理现有 Streamlit
+  Community Cloud 应用。
+- 保留 Streamlit 作为 Python 服务运行环境，避免把不兼容的 Streamlit
+  服务错误部署到 Pages 或普通 Worker Runtime。
+- Worker 支持转发 Streamlit 使用的 WebSocket 响应，并改写同源重定向。
+- Cloudflare Worker 已部署为 `course2career`，并开启基础可观测日志。
+- DeepSeek API Key、管理员凭证和数据库仍仅存在于 Streamlit 部署环境，
+  未复制到 Cloudflare Worker。
+
+### 线上入口
+
+- Cloudflare：<https://course2career.mahongjia393.workers.dev/>
+- Streamlit：<https://mhj-course2career.streamlit.app/>
+
+### 当前边界
+
+- Cloudflare 账户当前没有已接入的自定义域名。
+- `workers.dev` 在部分网络环境可能受到 DNS 或网络访问限制；后续接入自定义
+  域名后再作为主要公开入口。
