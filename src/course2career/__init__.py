@@ -1,1 +1,1 @@
-"""Course2Career 课程能力与岗位技能映射包。"""
+"""Course2Career 大学生岗位适配度评估应用。"""

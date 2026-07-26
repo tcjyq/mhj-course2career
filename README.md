@@ -1,13 +1,13 @@
 # Course2Career
 
-> 课程能力与求职技能映射助手
+> 面向大学生的可解释岗位适配度评估助手
 
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.60-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io/)
 [![License](https://img.shields.io/badge/License-MIT-243F37)](LICENSE)
 [![Live Demo](https://img.shields.io/badge/Live_Demo-Open_App-C65D3B?logo=streamlit&logoColor=white)](https://mhj-course2career.streamlit.app/)
 
-Course2Career 面向大学生，将课程学习记录与目标岗位 JD 转换为可解释的技能匹配结果、能力差距和学习路线。项目采用“AI 提取语义、Python 规则负责评分”的设计，重点展示 AI 应用工程、结构化输出、权限控制和可解释分析能力。
+Course2Career 面向准备实习和校招的大学生，将课程、教育背景、项目、实习及成长条件与目标岗位 JD 转换为可解释的岗位适配度、硬门槛检查、能力差距和学习路线。项目采用“AI 提取语义、Python 规则负责评估、用户确认关键输入”的设计，不预测录用概率。
 
 [在线体验 Course2Career](https://mhj-course2career.streamlit.app/)
 
@@ -18,8 +18,12 @@ Course2Career 面向大学生，将课程学习记录与目标岗位 JD 转换�
 - 下载并上传课程 Excel 模板，提供字段、范围和重复值校验。
 - 通过本地规则、OpenAI 或 DeepSeek 提取岗位技能。
 - 规范化技能并允许用户在分析前人工确认。
-- 根据课程证据计算单项技能支撑分和岗位综合匹配分。
-- 输出优势、技能缺口、学习路线及 Markdown/CSV 报告。
+- 采集教育、项目、实习、成长潜力和到岗条件，并区分“未填写”与“目前没有”。
+- 通过课程、项目、实习和相邻技能迁移计算单项技能支撑分。
+- 使用 Career Adaptability Model v2.1 计算技术、教育、项目、实习和潜力五维岗位适配度。
+- 将学历、专业、毕业年份、到岗时间和城市等硬门槛独立展示，不混入适配度总分。
+- 输出从 50 分基线展开的逐项加减分账本，能够解释“为什么是这个分数”。
+- 输出优势、能力缺口、5–8 个能力模块学习路线及 Markdown/CSV 报告。
 - 支持游客、普通用户、开发者和管理员权限。
 - 支持 AI 日额度、历史分析记录和轻量管理员 Dashboard。
 - 开发者 API Key 使用 AES-256-GCM 加密后保存。
@@ -27,13 +31,14 @@ Course2Career 面向大学生，将课程学习记录与目标岗位 JD 转换�
 ## 工作流程
 
 ```text
-课程 Excel ─┐
-            ├─→ 输入校验 → JD 技能提取 → 人工确认 → 课程技能映射
-岗位 JD ────┘                                      ↓
-                             报告导出 ← 学习路线 ← 匹配评分
+课程 Excel ───────────┐
+教育/项目/实习/潜力 ──┼─→ 证据建模 ───────────────┐
+岗位 JD ─→ 技能提取 ─→ 人工确认 ─→ 技能映射与迁移 ├─→ 五维适配度
+岗位硬性要求 ──────────────────────────────────────┘       ↓
+                                  报告导出 ← 能力路线 ← 可解释账本
 ```
 
-AI 只参与岗位技能提取。课程映射、评分和学习路线由确定性 Python 逻辑完成，便于测试、解释和复现。
+AI 只参与岗位技能提取。证据映射、迁移、硬门槛、五维评分和学习路线由确定性 Python 逻辑完成，便于测试、解释和复现。
 
 ## 技术栈
 
@@ -118,6 +123,7 @@ course2career/
 - [系统架构](docs/architecture.md)
 - [MVP 需求](docs/requirements.md)
 - [评分设计](docs/scoring.md)
+- [Career Adaptability Model v2.1 决策记录](docs/decisions/001-career-adaptability-model-v2-1.md)
 - [AI 评测方案](docs/evaluation.md)
 - [权限设计](docs/access-control.md)
 - [会员体系](docs/membership.md)
@@ -140,8 +146,11 @@ course2career/
 
 ## 项目边界
 
-- 匹配结果用于学习规划，不代表招聘录用概率或个人能力认证。
-- 课程名称无法完整替代课程大纲、项目作品和实习经历。
+- 岗位适配度用于比较当前证据与岗位要求，不代表招聘录用概率或个人能力认证。
+- 院校和学历作为现实招聘筛选信号参与解释，但不代表个人能力上限。
+- 院校分类不对海外教育质量作统一推断；无法可靠判断时使用中性分并降低可信度。
+- 未填写的信息使用中性值，不按零分处理，但会降低数据完整度和结果可信度。
+- 课程、项目和实习均依赖用户提供的信息，无法替代招聘方核验和实际面试。
 - 当前版本使用 SQLite，适合本地和单实例演示。
 - 会员页面为权限模型演示，不接入真实支付。
 

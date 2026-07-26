@@ -113,7 +113,7 @@ plan_labels = {
 
 with st.sidebar:
     st.markdown("## Course2Career")
-    st.caption("课程能力与求职技能映射")
+    st.caption("大学生岗位适配度评估")
     st.markdown("---")
     identity = principal.username or "未登录"
     st.write(identity)

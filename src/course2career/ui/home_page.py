@@ -7,8 +7,8 @@ def render_home_page() -> None:
     st.markdown(
         """
         <p class="c2c-lead">
-        导入课程成绩，粘贴目标岗位JD。系统会提取岗位技能、寻找课程证据，
-        并给出可解释的匹配结果与学习路线。
+        导入课程成绩，补充教育、项目和实习，粘贴目标岗位JD。
+        系统会检查硬门槛，并给出可解释的五维岗位适配度与能力路线。
         </p>
         """,
         unsafe_allow_html=True,
@@ -18,26 +18,28 @@ def render_home_page() -> None:
     with introduction:
         st.markdown("## 它解决什么问题")
         st.write(
-            "大学课程名称、成绩和招聘要求通常使用两套语言。"
-            "Course2Career把课程学习记录转换为岗位技能证据，帮助你判断"
-            "哪些能力已经具备、哪些仍需补齐。"
+            "大学经历和招聘要求通常使用两套语言。"
+            "Course2Career把课程、项目和实习转换为岗位能力证据，帮助你判断"
+            "哪些条件已经满足、哪些能力仍需补齐。"
         )
-        st.write("AI只负责理解JD语义；课程映射、评分和报告由可复核的Python规则完成。")
+        st.write(
+            "AI只负责理解JD语义；硬门槛、五维评分和解释账本由可复核的Python规则完成。"
+        )
     with output:
         with st.container(border=True):
             st.markdown("### 一次分析会得到")
-            st.write("岗位技能清单与原文证据")
-            st.write("课程对技能的支撑关系")
-            st.write("综合匹配度与能力缺口")
-            st.write("按优先级排列的学习路线")
+            st.write("岗位技能清单与硬门槛检查")
+            st.write("课程、项目和实习证据")
+            st.write("五维岗位适配度与加减分解释")
+            st.write("按能力模块排列的学习路线")
 
     st.markdown('<div class="c2c-rule"></div>', unsafe_allow_html=True)
     st.markdown("## 使用流程")
     steps = [
         ("01", "导入课程", "下载模板并上传课程、学分、成绩与自评。"),
-        ("02", "粘贴JD", "使用本地规则或AI提取目标岗位技能。"),
-        ("03", "人工确认", "编辑技能名称、重要程度和分析范围。"),
-        ("04", "生成报告", "查看匹配结果、差距和学习路线。"),
+        ("02", "补充经历", "填写教育、项目、实习、成长潜力与到岗条件。"),
+        ("03", "分析JD", "提取并人工确认技能与岗位硬性要求。"),
+        ("04", "生成报告", "查看适配度、解释账本、差距和能力路线。"),
     ]
     columns = st.columns(4)
     for column, (number, title, description) in zip(columns, steps, strict=True):

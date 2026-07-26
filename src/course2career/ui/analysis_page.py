@@ -46,7 +46,7 @@ def render_analysis_page(
     guest_session_id: str,
 ) -> None:
     st.title("个人分析")
-    st.caption("课程导入、岗位技能确认、匹配结果和学习路线集中在一个流程中。")
+    st.caption("课程、个人经历、岗位要求、五维适配度和能力路线集中在一个流程中。")
 
     with st.container(border=True):
         st.markdown("## 1. 导入课程信息")

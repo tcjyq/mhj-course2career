@@ -1,0 +1,23 @@
+# Course2Career 协作规则
+
+- 默认使用中文沟通，源文件统一使用 UTF-8。
+- 不在代码、文档、测试、日志或提交信息中写入真实密码、API Key、Token、个人联系方式和其他敏感凭证。
+- 修改用户可见功能时，必须在同一任务中检查并同步：
+  - `README.md`；
+  - `docs/requirements.md`；
+  - `docs/architecture.md`；
+  - 与功能相关的专题文档；
+  - `docs/user-guide.md`；
+  - `docs/ui-design.md`；
+  - `docs/evaluation.md`；
+  - `docs/development-log.md`；
+  - 页面文案、示例和截图。
+- 修改评分权重、阈值、证据规则、技能迁移或硬门槛时，必须同步更新 `docs/scoring.md`，并增加或调整回归测试。
+- 修改重大架构或难以逆转的产品决策时，在 `docs/decisions/` 新增 ADR，不删除历史 ADR。
+- “代码通过测试”不等于功能完成。功能完成必须同时满足代码、测试、文档、示例和必要截图一致。
+- 提交前运行：
+  - `pytest`
+  - `ruff check .`
+  - `ruff format --check .`
+  - `git diff --check`
+- 提交前搜索旧术语、旧版本号、旧测试数量和失效链接，避免说明书与实际行为不一致。

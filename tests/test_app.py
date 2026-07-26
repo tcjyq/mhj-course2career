@@ -81,6 +81,7 @@ def test_app_initial_page_is_product_home() -> None:
     assert not app.exception
     assert app.title[0].value == "把学过的课程，翻译成求职能力"
     assert any("使用流程" in block.value for block in app.markdown)
+    assert any("五维岗位适配度" in block.value for block in app.markdown)
     assert len(app.file_uploader) == 0
 
 
