@@ -75,6 +75,103 @@ def _course_excel() -> bytes:
     return excel_file.getvalue()
 
 
+def _history_analysis_app(
+    tmp_path: Path,
+    *,
+    legacy: bool = False,
+    duplicate_summary: bool = False,
+) -> AppTest:
+    database_path = (tmp_path / "history-analysis.db").as_posix()
+    report_source = (
+        """
+report = AnalysisReport(
+    job_title="数据分析实习生",
+    overall_score=72,
+    strengths=["SQL"],
+    gaps=["Docker"],
+    limitations=["旧版报告"],
+)
+"""
+        if legacy
+        else """
+report = AdaptabilityReport(
+    job_title="AI应用开发实习生",
+    overall_score=68,
+    eligibility=EligibilityResult(status=EligibilityStatus.PASS),
+    dimension_scores=DimensionScores(
+        technical=65,
+        education=75,
+        project=70,
+        internship=60,
+        potential=80,
+    ),
+    data_completeness=85,
+    confidence="中等",
+    strengths=["Python基础"],
+    gaps=["RAG项目"],
+    limitations=["不代表录用概率"],
+)
+"""
+    )
+    return AppTest.from_string(
+        f"""
+from course2career.access_services import AIUsageService, AnalysisRecordService
+from course2career.config import Settings
+from course2career.models import (
+    AdaptabilityReport,
+    AnalysisReport,
+    DimensionScores,
+    EligibilityResult,
+    EligibilityStatus,
+)
+from course2career.permissions import Plan, Principal, Role
+from course2career.product_repository import SQLiteProductRepository
+from course2career.provider_factory import LLMProviderFactory
+from course2career.ui.analysis_page import render_analysis_page
+from course2career.user_repository import StoredUser
+import sqlite3
+
+repository = SQLiteProductRepository(r"{database_path}")
+if repository.find_by_id("history-user") is None:
+    repository.add(StoredUser(
+        id="history-user",
+        username="history-user",
+        username_normalized="history-user",
+        password_hash="not-used",
+        role=Role.USER,
+        plan=Plan.FREE,
+        created_time="2026-08-03T00:00:00+00:00",
+    ))
+{report_source}
+if not repository.list_analyses("history-user"):
+    repository.add_analysis("history-user", report)
+if {duplicate_summary!r} and len(repository.list_analyses("history-user")) < 2:
+    repository.add_analysis("history-user", report)
+    with sqlite3.connect(r"{database_path}") as connection:
+        connection.execute(
+            "UPDATE analysis_records SET created_time = ? WHERE user_id = ?",
+            ("2026-08-03T08:00:00+00:00", "history-user"),
+        )
+principal = Principal(
+    role=Role.USER,
+    plan=Plan.FREE,
+    user_id="history-user",
+    username="history-user",
+)
+settings = Settings()
+render_analysis_page(
+    principal,
+    settings,
+    LLMProviderFactory(settings),
+    AIUsageService(repository),
+    AnalysisRecordService(repository),
+    None,
+    "guest-test",
+)
+"""
+    ).run()
+
+
 def test_app_initial_page_is_product_home() -> None:
     app = AppTest.from_file("app.py").run()
 
@@ -207,6 +304,45 @@ def test_analysis_page_runs_local_flow(tmp_path: Path) -> None:
     assert not app.exception
     assert any(metric.label == "岗位适配度" for metric in app.metric)
     assert any("为什么是这个分数" in block.value for block in app.markdown)
+
+
+def test_analysis_page_reopens_current_saved_report(tmp_path: Path) -> None:
+    app = _history_analysis_app(tmp_path)
+
+    next(
+        button for button in app.button if button.label == "重新打开这份报告"
+    ).click().run()
+
+    assert not app.exception
+    assert any(metric.label == "岗位适配度" for metric in app.metric)
+    assert any(metric.value == "68.0/100" for metric in app.metric)
+
+
+def test_analysis_page_reopens_legacy_saved_report_without_crashing(
+    tmp_path: Path,
+) -> None:
+    app = _history_analysis_app(tmp_path, legacy=True)
+
+    next(
+        button for button in app.button if button.label == "重新打开这份报告"
+    ).click().run()
+
+    assert not app.exception
+    assert any("旧版技能匹配报告" in block.value for block in app.markdown)
+
+
+def test_analysis_page_keeps_history_records_with_identical_summaries(
+    tmp_path: Path,
+) -> None:
+    app = _history_analysis_app(tmp_path, duplicate_summary=True)
+
+    history_selector = next(
+        selectbox
+        for selectbox in app.selectbox
+        if selectbox.label == "选择一份历史报告"
+    )
+
+    assert len(history_selector.options) == 2
 
 
 def test_developer_analysis_and_key_pages_are_available(tmp_path: Path) -> None:

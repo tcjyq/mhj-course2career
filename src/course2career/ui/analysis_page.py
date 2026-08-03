@@ -19,7 +19,7 @@ from course2career.jd_analyzer import JDAnalysisError, analyze_job_description
 from course2career.llm_client import LLMClientError
 from course2career.llm_provider import ProviderName
 from course2career.llm_providers import ProviderError
-from course2career.models import JobAnalysis, JobSkill
+from course2career.models import AnalysisReport, JobAnalysis, JobSkill
 from course2career.permissions import (
     Permission,
     PermissionDeniedError,
@@ -31,6 +31,7 @@ from course2career.permissions import (
 from course2career.provider_factory import LLMProviderFactory
 from course2career.report_exporter import (
     export_adaptability_markdown,
+    export_markdown,
     export_skill_matches_csv,
 )
 from course2career.ui.candidate_profile_form import render_candidate_profile_form
@@ -183,6 +184,7 @@ def render_analysis_page(
                         output_cost_per_million=output_cost_per_million,
                     )
                 st.session_state.pop("analysis_report", None)
+                st.session_state.pop("legacy_analysis_report", None)
             except (
                 JDAnalysisError,
                 LLMClientError,
@@ -265,6 +267,7 @@ def render_analysis_page(
                             requirements=job_requirements,
                         )
                         st.session_state.analysis_report = report_result
+                        st.session_state.pop("legacy_analysis_report", None)
                         if principal.role != Role.GUEST:
                             record_service.save(principal, report_result)
                             st.success("分析记录已保存到当前账户。")
@@ -421,6 +424,72 @@ def render_analysis_page(
                 for limitation in report.limitations:
                     st.write(f"- {limitation}")
 
+    legacy_report = st.session_state.get("legacy_analysis_report")
+    if isinstance(legacy_report, AnalysisReport):
+        with st.container(border=True):
+            st.markdown("## 5. 旧版技能匹配报告")
+            st.metric("综合匹配分", f"{legacy_report.overall_score:.1f}/100")
+            st.caption(
+                "这是 Career Adaptability Model v2.1 上线前保存的旧版报告。"
+                "系统按原始口径展示，不会将旧分数伪装成五维岗位适配度。"
+            )
+
+            st.markdown("### 技能证据明细")
+            st.dataframe(
+                pd.DataFrame(
+                    [
+                        {
+                            "技能": match.skill_name,
+                            "重要程度": match.importance.value,
+                            "支撑分": match.support_score,
+                            "匹配状态": match.status.value,
+                            "支撑课程": "、".join(
+                                evidence.course_name for evidence in match.evidences
+                            )
+                            or "无",
+                        }
+                        for match in legacy_report.matches
+                    ]
+                ),
+                width="stretch",
+                hide_index=True,
+            )
+
+            left, right = st.columns(2)
+            left.markdown("### 当前优势")
+            left.write(
+                "、".join(legacy_report.strengths)
+                if legacy_report.strengths
+                else "暂无较强支撑技能"
+            )
+            right.markdown("### 技能缺口")
+            right.write(
+                "、".join(legacy_report.gaps)
+                if legacy_report.gaps
+                else "暂无明显技能缺口"
+            )
+
+            st.markdown("### 导出")
+            export_left, export_right = st.columns(2)
+            export_left.download_button(
+                "下载旧版Markdown报告",
+                data=export_markdown(legacy_report),
+                file_name="course2career_legacy_report.md",
+                mime="text/markdown",
+                width="stretch",
+            )
+            export_right.download_button(
+                "下载CSV技能明细",
+                data=export_skill_matches_csv(legacy_report),
+                file_name="course2career_legacy_skill_matches.csv",
+                mime="text/csv",
+                width="stretch",
+            )
+
+            with st.expander("查看结果限制"):
+                for limitation in legacy_report.limitations:
+                    st.write(f"- {limitation}")
+
     if principal.role != Role.GUEST:
         histories = record_service.list_own(principal)
         st.markdown("## 最近分析")
@@ -443,25 +512,33 @@ def render_analysis_page(
                 width="stretch",
                 hide_index=True,
             )
-            history_options = {
-                f"{history.created_time} · {history.job_title or '未命名岗位'} · "
-                f"{history.match_score:.1f} 分": history.id
-                for history in histories[:5]
-            }
-            selected_history_label = st.selectbox(
+            visible_histories = histories[:5]
+            history_by_id = {history.id: history for history in visible_histories}
+            selected_history_id = st.selectbox(
                 "选择一份历史报告",
-                options=list(history_options),
+                options=list(history_by_id),
+                format_func=lambda record_id: (
+                    f"{history_by_id[record_id].created_time} · "
+                    f"{history_by_id[record_id].job_title or '未命名岗位'} · "
+                    f"{history_by_id[record_id].match_score:.1f} 分 · "
+                    f"#{record_id[:8]}"
+                ),
                 key="history_report_selector",
             )
             if st.button("重新打开这份报告", key="restore_history_report"):
                 stored_analysis = record_service.get_own(
                     principal,
-                    history_options[selected_history_label],
+                    selected_history_id,
                 )
                 if stored_analysis is None:
                     st.error("未找到这份历史报告，请刷新历史列表后重试。")
                 else:
-                    st.session_state.analysis_report = stored_analysis.report
+                    if isinstance(stored_analysis.report, AnalysisReport):
+                        st.session_state.legacy_analysis_report = stored_analysis.report
+                        st.session_state.pop("analysis_report", None)
+                    else:
+                        st.session_state.analysis_report = stored_analysis.report
+                        st.session_state.pop("legacy_analysis_report", None)
                     st.success("已恢复历史报告。课程和 JD 输入不会自动回填。")
                     st.rerun()
         else:

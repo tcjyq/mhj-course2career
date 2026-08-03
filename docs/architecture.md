@@ -87,7 +87,7 @@ flowchart LR
 
 ## 4. 历史报告恢复
 
-`AnalysisRecordService` 以当前用户 ID 为边界读取已保存的报告快照。`ui/analysis_page.py` 负责将选择的快照恢复到 `st.session_state.analysis_report`；课程上传和 JD 输入仍然只属于当前浏览器会话，不回填到长期存储。
+`AnalysisRecordService` 以当前用户 ID 为边界读取已保存的报告快照。历史下拉框以报告 ID 作为内部选项，格式化后的时间、岗位和分数只负责展示，避免同名摘要覆盖记录。`ui/analysis_page.py` 将 v2.1 快照恢复到 `st.session_state.analysis_report`，将旧版 `AnalysisReport` 恢复到独立的 `legacy_analysis_report`，两种报告分别渲染。课程上传和 JD 输入仍然只属于当前浏览器会话，不回填到长期存储。
 
 ## 5. 后续演进
 

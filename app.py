@@ -94,7 +94,12 @@ if principal.role != Role.GUEST:
         principal = auth_service.refresh_principal(principal)
         st.session_state.principal = principal
     except InvalidSessionError:
-        for state_key in ("principal", "job_analysis", "analysis_report"):
+        for state_key in (
+            "principal",
+            "job_analysis",
+            "analysis_report",
+            "legacy_analysis_report",
+        ):
             st.session_state.pop(state_key, None)
         st.warning("登录状态已失效，请重新登录。")
         st.rerun()
@@ -121,7 +126,12 @@ with st.sidebar:
     if principal.role == Role.GUEST:
         st.caption("可直接体验个人分析，登录后保存记录。")
     elif st.button("退出登录", width="stretch"):
-        for state_key in ("principal", "job_analysis", "analysis_report"):
+        for state_key in (
+            "principal",
+            "job_analysis",
+            "analysis_report",
+            "legacy_analysis_report",
+        ):
             st.session_state.pop(state_key, None)
         st.rerun()
 
