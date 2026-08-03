@@ -85,6 +85,10 @@ flowchart LR
 - 开发者API Key以AES-256-GCM密文持久化，主密钥只来自环境变量。
 - 页面使用`st.navigation`按角色动态展示入口，页面隐藏不替代服务端权限判断。
 
-## 4. 后续演进
+## 4. 历史报告恢复
+
+`AnalysisRecordService` 以当前用户 ID 为边界读取已保存的报告快照。`ui/analysis_page.py` 负责将选择的快照恢复到 `st.session_state.analysis_report`；课程上传和 JD 输入仍然只属于当前浏览器会话，不回填到长期存储。
+
+## 5. 后续演进
 
 公开部署前需要继续加强网关级游客限流和管理员角色授予流程。用户量增长后将SQLite仓储替换为PostgreSQL，并考虑增加独立API服务。评分模型若要用于更广泛的人群，需要建立人工标注案例和公平性审查，不能直接使用录用结果训练成“录用概率”。

@@ -1,3 +1,4 @@
+import json
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -18,6 +19,14 @@ class AnalysisSummary:
     job_title: str | None
     match_score: float
     created_time: str
+
+
+@dataclass(frozen=True)
+class StoredAnalysis:
+    """属于指定用户的一份完整分析报告快照。"""
+
+    id: str
+    report: AnalysisReport | AdaptabilityReport
 
 
 @dataclass(frozen=True)
@@ -206,6 +215,24 @@ class SQLiteProductRepository(SQLiteUserRepository):
             for row in rows
         ]
 
+    def get_analysis(self, user_id: str, record_id: str) -> StoredAnalysis | None:
+        """按用户范围读取完整报告，避免跨账号访问历史快照。"""
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                SELECT id, report_snapshot
+                FROM analysis_records
+                WHERE id = ? AND user_id = ?
+                """,
+                (record_id, user_id),
+            ).fetchone()
+        if row is None:
+            return None
+        return StoredAnalysis(
+            id=row["id"],
+            report=_parse_report_snapshot(row["report_snapshot"]),
+        )
+
     def system_counts(self) -> tuple[int, int, int]:
         with self._connect() as connection:
             user_count = connection.execute("SELECT COUNT(*) FROM users").fetchone()[0]
@@ -390,3 +417,11 @@ class SQLiteProductRepository(SQLiteUserRepository):
                 );
                 """
             )
+
+
+def _parse_report_snapshot(snapshot: str) -> AnalysisReport | AdaptabilityReport:
+    """兼容早期技能报告与当前 v2.1 岗位适配度报告。"""
+    payload = json.loads(snapshot)
+    if payload.get("scoring_version") == "2.1":
+        return AdaptabilityReport.model_validate(payload)
+    return AnalysisReport.model_validate(payload)

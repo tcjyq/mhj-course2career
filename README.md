@@ -158,6 +158,12 @@ course2career/
 
 贡献流程见 [CONTRIBUTING.md](CONTRIBUTING.md)。安全问题请按照 [SECURITY.md](SECURITY.md) 私密报告。
 
+## 历史报告恢复
+
+登录用户完成分析后，报告会以账号归属的快照保存。刷新、重新登录或再次进入“个人分析”后，可在“最近分析”中选择并重新打开历史报告。课程 Excel、完整 JD 与表单编辑内容不会被自动回填，以减少长期保存的个人和招聘数据。
+
+当前线上演示仍使用 SQLite。Streamlit Community Cloud 的临时磁盘不保证长期保存 SQLite 文件；如需长期保留线上账号、报告和开发者 API Key，下一步应迁移至外部 PostgreSQL。
+
 ## License
 
 本项目采用 [MIT License](LICENSE)。

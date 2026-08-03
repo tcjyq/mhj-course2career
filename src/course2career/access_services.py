@@ -16,6 +16,7 @@ from course2career.product_repository import (
     AnalysisSummary,
     QuotaConflictError,
     SQLiteProductRepository,
+    StoredAnalysis,
 )
 
 
@@ -142,6 +143,13 @@ class AnalysisRecordService:
         if principal.user_id is None:
             return []
         return self.repository.list_analyses(principal.user_id)
+
+    def get_own(self, principal: Principal, record_id: str) -> StoredAnalysis | None:
+        """仅恢复当前登录用户自己的历史报告。"""
+        authorize(principal, Permission.VIEW_OWN_ANALYSES)
+        if principal.user_id is None:
+            return None
+        return self.repository.get_analysis(principal.user_id, record_id)
 
 
 class SystemStatusService:

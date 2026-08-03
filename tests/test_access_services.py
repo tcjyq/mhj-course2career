@@ -132,10 +132,14 @@ def test_analysis_history_is_saved_only_for_authenticated_owner(
         limitations=["仅用于学习规划。"],
     )
 
-    service.save(owner, report)
+    record_id = service.save(owner, report)
 
     assert len(service.list_own(owner)) == 1
     assert service.list_own(other) == []
+    restored = service.get_own(owner, record_id)
+    assert restored is not None
+    assert restored.report == report
+    assert service.get_own(other, record_id) is None
     with pytest.raises(PermissionDeniedError):
         service.save(Principal(), report)
 

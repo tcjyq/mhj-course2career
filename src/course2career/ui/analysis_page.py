@@ -425,6 +425,10 @@ def render_analysis_page(
         histories = record_service.list_own(principal)
         st.markdown("## 最近分析")
         if histories:
+            st.caption(
+                "页面刷新后可在此重新打开已保存的报告；"
+                "课程文件和 JD 原文不会被重复保存。"
+            )
             st.dataframe(
                 pd.DataFrame(
                     [
@@ -439,5 +443,26 @@ def render_analysis_page(
                 width="stretch",
                 hide_index=True,
             )
+            history_options = {
+                f"{history.created_time} · {history.job_title or '未命名岗位'} · "
+                f"{history.match_score:.1f} 分": history.id
+                for history in histories[:5]
+            }
+            selected_history_label = st.selectbox(
+                "选择一份历史报告",
+                options=list(history_options),
+                key="history_report_selector",
+            )
+            if st.button("重新打开这份报告", key="restore_history_report"):
+                stored_analysis = record_service.get_own(
+                    principal,
+                    history_options[selected_history_label],
+                )
+                if stored_analysis is None:
+                    st.error("未找到这份历史报告，请刷新历史列表后重试。")
+                else:
+                    st.session_state.analysis_report = stored_analysis.report
+                    st.success("已恢复历史报告。课程和 JD 输入不会自动回填。")
+                    st.rerun()
         else:
             st.info("完成一次分析后，记录会显示在这里。")
