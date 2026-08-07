@@ -377,6 +377,51 @@ render_developer_page(
     assert key_app.title[0].value == "开发者API Key"
 
 
+def test_developer_api_key_input_is_cleared_after_save(tmp_path: Path) -> None:
+    database_path = (tmp_path / "developer-key-clear.db").as_posix()
+    app = AppTest.from_string(
+        f"""
+from course2career.api_key_service import APIKeyService
+from course2career.key_encryption import APIKeyCipher
+from course2career.permissions import Plan, Principal, Role
+from course2career.product_repository import SQLiteProductRepository
+from course2career.ui.developer_page import render_developer_page
+from course2career.user_repository import StoredUser
+
+repository = SQLiteProductRepository(r"{database_path}")
+if repository.find_by_id("developer-test") is None:
+    repository.add(
+        StoredUser(
+            id="developer-test",
+            username="developer",
+            username_normalized="developer",
+            password_hash="not-used",
+            role=Role.DEVELOPER,
+            plan=Plan.DEVELOPER,
+            created_time="2026-08-07T00:00:00+00:00",
+        )
+    )
+developer = Principal(
+    role=Role.DEVELOPER,
+    plan=Plan.DEVELOPER,
+    user_id="developer-test",
+    username="developer",
+)
+render_developer_page(
+    developer,
+    APIKeyService(repository, APIKeyCipher(bytes(range(32)))),
+    None,
+)
+"""
+    ).run()
+
+    app.text_input[0].set_value("sk-test-secret-value")
+    app.button[-1].click().run(timeout=5)
+
+    assert not app.exception
+    assert app.text_input[0].value == ""
+
+
 def test_quota_and_membership_pages_render(tmp_path: Path) -> None:
     database_path = (tmp_path / "quota.db").as_posix()
     quota_app = AppTest.from_string(

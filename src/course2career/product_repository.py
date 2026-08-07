@@ -132,15 +132,17 @@ class SQLiteProductRepository(SQLiteUserRepository):
         input_tokens: int = 0,
         output_tokens: int = 0,
         cost: float = 0,
+        model: str | None = None,
     ) -> None:
         with self._connect() as connection:
             connection.execute(
                 """
                 UPDATE api_usage
-                SET status = ?, input_tokens = ?, output_tokens = ?, cost = ?
+                SET status = ?, input_tokens = ?, output_tokens = ?, cost = ?,
+                    model = COALESCE(?, model)
                 WHERE id = ?
                 """,
-                (status, input_tokens, output_tokens, cost, usage_id),
+                (status, input_tokens, output_tokens, cost, model, usage_id),
             )
 
     def count_ai_calls_today(

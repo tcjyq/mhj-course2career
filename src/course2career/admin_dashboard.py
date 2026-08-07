@@ -2,10 +2,15 @@ import pandas as pd
 import streamlit as st
 
 from course2career.access_services import AdminDashboardService
+from course2career.config import Settings
 from course2career.membership_service import (
     MembershipChangeError,
     MembershipService,
     UserNotFoundError,
+)
+from course2career.model_catalog import (
+    DeepSeekModelCatalog,
+    ModelDiscoveryError,
 )
 from course2career.permissions import (
     PermissionDeniedError,
@@ -25,6 +30,8 @@ def render_admin_dashboard(
     principal: Principal,
     dashboard_service: AdminDashboardService,
     membership_service: MembershipService,
+    settings: Settings | None = None,
+    model_catalog: DeepSeekModelCatalog | None = None,
 ) -> None:
     """渲染轻量管理员概况和会员管理页面。"""
 
@@ -47,6 +54,9 @@ def render_admin_dashboard(
         f"{overview.estimated_cost:,.4f}",
         help="所有供应商单价需使用同一币种；仅用于预算观察，不作为账单依据。",
     )
+
+    if settings is not None and model_catalog is not None:
+        _render_deepseek_model_status(settings, model_catalog)
 
     st.markdown("## 用户管理")
     if not users:
@@ -109,3 +119,48 @@ def render_admin_dashboard(
         width="stretch",
         hide_index=True,
     )
+
+
+def _render_deepseek_model_status(
+    settings: Settings,
+    model_catalog: DeepSeekModelCatalog,
+) -> None:
+    st.markdown("## DeepSeek 模型状态")
+    mode = getattr(settings, "deepseek_model_mode", "pinned")
+    mode_label = "Auto-Safe 自动选择" if mode == "auto_safe" else "固定模型"
+    st.write(f"**选择策略：** {mode_label}")
+    st.write(f"**固定回退模型：** {settings.deepseek_model}")
+    if mode == "auto_safe":
+        preference = " → ".join(
+            getattr(settings, "deepseek_model_preference", (settings.deepseek_model,))
+        )
+        st.write(f"**已验证优先顺序：** {preference}")
+
+    if not settings.deepseek_api_key:
+        st.info("未配置平台 DeepSeek API Key，无法读取模型目录。")
+        return
+
+    cached = model_catalog.peek(settings.deepseek_api_key)
+    if cached is not None:
+        freshness = "缓存已过期" if cached.stale else "缓存有效"
+        st.caption(
+            f"{freshness} · 最近刷新：{cached.fetched_at.isoformat()} · "
+            f"目录模型：{'、'.join(cached.available_models)}"
+        )
+    else:
+        st.caption("当前进程尚未读取 DeepSeek 模型目录。")
+
+    if st.button("刷新 DeepSeek 模型目录", key="refresh_deepseek_models"):
+        try:
+            snapshot = model_catalog.get_models(
+                settings.deepseek_api_key,
+                force_refresh=True,
+            )
+        except ModelDiscoveryError as exc:
+            st.error(str(exc))
+        else:
+            message = "模型目录已刷新：" + "、".join(snapshot.available_models)
+            if snapshot.stale:
+                st.warning("官方目录暂时不可用，当前继续使用最近一次有效缓存。")
+            else:
+                st.success(message)

@@ -6,6 +6,10 @@ from course2career.key_encryption import KeyDecryptionError
 from course2career.llm_client import OpenAIJDClient
 from course2career.llm_provider import LLMProvider, ProviderName
 from course2career.llm_providers import DeepSeekProvider, ProviderError
+from course2career.model_catalog import (
+    DeepSeekModelCatalog,
+    ModelDiscoveryError,
+)
 from course2career.permissions import Principal
 
 
@@ -16,9 +20,15 @@ class LLMProviderFactory:
         self,
         settings: Settings,
         api_key_service: APIKeyService | None = None,
+        model_catalog: DeepSeekModelCatalog | None = None,
     ) -> None:
         self.settings = settings
         self.api_key_service = api_key_service
+        self.model_catalog = model_catalog or DeepSeekModelCatalog(
+            timeout_seconds=settings.openai_timeout_seconds,
+            cache_seconds=getattr(settings, "deepseek_model_cache_seconds", 1800),
+            stale_seconds=getattr(settings, "deepseek_model_stale_seconds", 86400),
+        )
 
     def create(
         self,
@@ -37,9 +47,26 @@ class LLMProviderFactory:
             )
             return OpenAIJDClient(provider_settings)
         if provider == ProviderName.DEEPSEEK:
+            try:
+                selection = self.model_catalog.resolve(
+                    api_key,
+                    mode=getattr(self.settings, "deepseek_model_mode", "pinned"),
+                    configured_model=model,
+                    preference=getattr(
+                        self.settings,
+                        "deepseek_model_preference",
+                        ("deepseek-v4-flash", "deepseek-v4-pro"),
+                    ),
+                )
+            except ModelDiscoveryError as exc:
+                raise ProviderError(str(exc)) from exc
             return DeepSeekProvider(
                 api_key=api_key,
-                model=model,
+                model=selection.primary_model,
+                fallback_models=selection.fallback_models,
+                max_output_tokens=getattr(
+                    self.settings, "deepseek_max_output_tokens", 1500
+                ),
                 timeout_seconds=self.settings.openai_timeout_seconds,
             )
         raise ProviderError("不支持的模型供应商。")
@@ -61,6 +88,8 @@ class LLMProviderFactory:
                 ) from exc
         if key_mode != "system":
             raise ProviderError("不支持的API Key模式。")
+        if not getattr(self.settings, "system_ai_enabled", True):
+            raise ProviderError("系统AI当前已暂停，请使用本地规则模式。")
 
         api_key = (
             self.settings.openai_api_key

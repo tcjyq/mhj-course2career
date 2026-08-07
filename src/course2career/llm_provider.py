@@ -18,6 +18,8 @@ class LLMUsage(BaseModel):
 
     input_tokens: int = Field(ge=0)
     output_tokens: int = Field(ge=0)
+    model: str | None = None
+    system_fingerprint: str | None = None
 
 
 def coerce_token_count(value: object) -> int:

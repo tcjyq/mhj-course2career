@@ -145,7 +145,19 @@ def render_analysis_page(
             if provider_label == "DeepSeek":
                 selected_provider = ProviderName.DEEPSEEK
                 selected_model = settings.deepseek_model
-            st.caption(f"当前模型：{selected_model}")
+                if getattr(settings, "deepseek_model_mode", "pinned") == "auto_safe":
+                    preference = " → ".join(
+                        getattr(
+                            settings,
+                            "deepseek_model_preference",
+                            (selected_model,),
+                        )
+                    )
+                    st.caption(f"DeepSeek Auto-Safe 优先顺序：{preference}")
+                else:
+                    st.caption(f"当前固定模型：{selected_model}")
+            else:
+                st.caption(f"当前模型：{selected_model}")
 
         if st.button("提取岗位技能", type="primary"):
             usage_id = None
@@ -170,7 +182,7 @@ def render_analysis_page(
                     usage_id = usage_service.start_call(
                         principal,
                         key_mode,
-                        selected_model,
+                        client.model_name,
                         guest_session_id=guest_session_id,
                         provider=selected_provider.value,
                     )

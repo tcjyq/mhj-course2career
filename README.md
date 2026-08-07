@@ -17,6 +17,7 @@ Course2Career 面向准备实习和校招的大学生，将课程、教育背景
 
 - 下载并上传课程 Excel 模板，提供字段、范围和重复值校验。
 - 通过本地规则、OpenAI 或 DeepSeek 提取岗位技能。
+- DeepSeek 支持 Auto-Safe 模型发现：只在官方当前可用且已验证的模型中自动选择，并在模型下线时执行一次受控回退。
 - 规范化技能并允许用户在分析前人工确认。
 - 采集教育、项目、实习、成长潜力和到岗条件，并区分“未填写”与“目前没有”。
 - 通过课程、项目、实习和相邻技能迁移计算单项技能支撑分。
@@ -27,6 +28,8 @@ Course2Career 面向准备实习和校招的大学生，将课程、教育背景
 - 支持游客、普通用户、开发者和管理员权限。
 - 支持 AI 日额度、历史分析记录和轻量管理员 Dashboard。
 - 开发者 API Key 使用 AES-256-GCM 加密后保存。
+- 开发者 API Key 提交后立即清空输入框与对应会话状态，页面只保留末四位元数据。
+- 页面切换采用隔离渲染，避免首页或上一页内容残留到当前页面。
 
 ## 工作流程
 
@@ -78,6 +81,12 @@ Copy-Item .env.example .env
 | `OPENAI_MODEL` | OpenAI 模型名称 | 否 |
 | `DEEPSEEK_API_KEY` | 平台 DeepSeek 调用 | 仅 DeepSeek 系统模式 |
 | `DEEPSEEK_MODEL` | DeepSeek 模型名称 | 否 |
+| `DEEPSEEK_MODEL_MODE` | `auto_safe` 自动安全选择或 `pinned` 固定模型 | 否 |
+| `DEEPSEEK_MODEL_PREFERENCE` | 已验证模型的优先顺序 | 否 |
+| `DEEPSEEK_MODEL_CACHE_SECONDS` | 官方模型目录缓存时间 | 否 |
+| `DEEPSEEK_MODEL_STALE_SECONDS` | 目录故障时允许使用旧缓存的时间 | 否 |
+| `DEEPSEEK_MAX_OUTPUT_TOKENS` | DeepSeek 单次最大输出 Token | 否 |
+| `SYSTEM_AI_ENABLED` | 平台 AI 紧急总开关 | 否 |
 | `COURSE2CAREER_DATABASE_PATH` | SQLite 数据库路径 | 否 |
 | `COURSE2CAREER_KEY_ENCRYPTION_KEY` | 加密开发者 API Key | 开发者模式 |
 
@@ -124,6 +133,7 @@ course2career/
 - [MVP 需求](docs/requirements.md)
 - [评分设计](docs/scoring.md)
 - [Career Adaptability Model v2.1 决策记录](docs/decisions/001-career-adaptability-model-v2-1.md)
+- [DeepSeek 模型发现与安全升级决策](docs/decisions/002-deepseek-model-discovery-and-safe-upgrade.md)
 - [AI 评测方案](docs/evaluation.md)
 - [权限设计](docs/access-control.md)
 - [会员体系](docs/membership.md)
@@ -140,6 +150,7 @@ course2career/
 - 开发者 API Key 加密存储，页面和列表只显示末四位。
 - AI 模式会把岗位 JD 发送给所选模型供应商，请勿输入个人隐私或招聘方机密。
 - 课程信息不会作为模型 Prompt 发送。
+- 官方新增模型只会触发待验证提醒，不会绕过兼容性测试直接接管线上调用。
 
 公网部署前请先阅读 [部署说明](docs/deployment.md) 和 [安全策略](SECURITY.md)。
 管理员初始化配置仅记录在部署说明中，README 不提供任何管理员凭证。

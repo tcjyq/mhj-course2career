@@ -87,7 +87,11 @@ def test_complete_call_persists_real_token_usage_and_configured_cost(
     service.complete_call(
         usage_id,
         success=True,
-        usage=LLMUsage(input_tokens=200, output_tokens=100),
+        usage=LLMUsage(
+            input_tokens=200,
+            output_tokens=100,
+            model="deepseek-v4-pro",
+        ),
         input_cost_per_million=1.0,
         output_cost_per_million=2.0,
     )
@@ -95,6 +99,11 @@ def test_complete_call_persists_real_token_usage_and_configured_cost(
     overview = repository.admin_overview(datetime.now(UTC))
     assert overview.total_tokens == 300
     assert overview.estimated_cost == pytest.approx(0.0004)
+    with repository._connect() as connection:
+        stored_model = connection.execute(
+            "SELECT model FROM api_usage WHERE id = ?", (usage_id,)
+        ).fetchone()[0]
+    assert stored_model == "deepseek-v4-pro"
 
 
 def test_developer_own_key_is_unlimited_but_user_is_denied(

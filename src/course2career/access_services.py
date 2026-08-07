@@ -100,6 +100,7 @@ class AIUsageService:
             input_tokens=input_tokens,
             output_tokens=output_tokens,
             cost=estimated_cost,
+            model=usage.model if usage is not None else None,
         )
 
     def get_quota_status(

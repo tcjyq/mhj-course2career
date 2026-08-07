@@ -33,9 +33,25 @@ def render_developer_page(
         )
         return
 
+    def submit_api_key() -> None:
+        provider = st.session_state.get(
+            "developer_api_key_provider", ProviderName.OPENAI
+        )
+        api_key = st.session_state.get("developer_api_key_input", "")
+        try:
+            api_key_service.save_key(principal, provider, api_key)
+            st.session_state.developer_key_feedback = "API Key已加密保存。"
+        except (PermissionDeniedError, ValueError) as exc:
+            st.session_state.developer_key_error = str(exc)
+        finally:
+            st.session_state.developer_api_key_input = ""
+
     feedback = st.session_state.pop("developer_key_feedback", None)
     if feedback:
         st.success(feedback)
+    error = st.session_state.pop("developer_key_error", None)
+    if error:
+        st.error(error)
 
     saved_keys = api_key_service.list_keys(principal)
     st.markdown("## 已保存的Key")
@@ -68,25 +84,24 @@ def render_developer_page(
 
     st.markdown("## 保存或更新")
     with st.form("developer_api_key_form"):
-        provider = st.selectbox(
+        st.selectbox(
             "供应商",
             list(ProviderName),
             format_func=lambda item: PROVIDER_LABELS[item],
+            key="developer_api_key_provider",
         )
-        api_key = st.text_input(
+        st.text_input(
             "API Key",
             type="password",
             autocomplete="off",
             help="保存后使用环境主密钥加密，数据库不存储明文。",
+            key="developer_api_key_input",
         )
-        submitted = st.form_submit_button("加密保存", type="primary")
-    if submitted:
-        try:
-            api_key_service.save_key(principal, provider, api_key)
-            st.session_state.developer_key_feedback = "API Key已加密保存。"
-            st.rerun()
-        except (PermissionDeniedError, ValueError) as exc:
-            st.error(str(exc))
+        st.form_submit_button(
+            "加密保存",
+            type="primary",
+            on_click=submit_api_key,
+        )
 
     with st.expander("安全说明"):
         st.write("Key使用AES-256-GCM加密，并绑定当前用户与供应商。")

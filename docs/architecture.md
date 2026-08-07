@@ -14,6 +14,8 @@ flowchart LR
     JD --> LLM["LLMProvider接口"]
     LLM --> OPENAI["OpenAI适配器"]
     LLM --> DEEPSEEK["DeepSeek适配器"]
+    DEEPSEEK --> CATALOG["官方模型目录缓存"]
+    CATALOG --> POLICY["Auto-Safe白名单策略"]
     UI --> AUTH["认证与权限层"]
     AUTH --> DB["SQLite仓储"]
     AUTH --> KEYS["加密Key服务"]
@@ -42,6 +44,7 @@ flowchart LR
 | `llm_client.py` | OpenAI Responses API 结构化调用与异常转换 |
 | `llm_provider.py` | 与供应商无关的模型调用接口 |
 | `llm_providers.py` | DeepSeek等供应商适配器 |
+| `model_catalog.py` | DeepSeek官方模型发现、缓存、白名单选择与安全回退策略 |
 | `provider_factory.py` | 根据供应商和系统/用户密钥模式创建客户端 |
 | `key_encryption.py` | AES-256-GCM密钥加解密 |
 | `api_key_service.py` | 开发者密钥权限、加密和元数据管理 |
@@ -79,11 +82,16 @@ flowchart LR
 - `data/skill_transfer_rules.json`只提供有限迁移证据，不能替代直接项目或实习证据。
 - 最终结果由50分基线和逐项加减分组成，解释账本必须与总分对账。
 - 外部异常在客户端边界转换为不含敏感细节的业务错误。
+- DeepSeek 模型目录属于不可信外部输入，模型 ID 和所有者均需校验；自动选择仅接受已验证白名单交集。
+- 模型目录按 Key 的 SHA-256 指纹隔离内存缓存，缓存中不保存 Key；404 模型缺失只允许一次备用模型调用。
+- `api_usage.model` 在调用完成时回写供应商实际返回模型，避免目录选择、回退与成本记录不一致。
 - 权限层位于模型调用和历史保存外层，不进入领域分析服务。
 - 角色负责安全边界，套餐负责产品能力，敏感操作需要两层权限同时允许。
 - 管理员Dashboard只读取聚合指标和脱敏用户字段，不读取密码哈希或API Key密文。
 - 开发者API Key以AES-256-GCM密文持久化，主密钥只来自环境变量。
+- 开发者密钥表单通过提交回调完成加密保存，并在回调结束前清空明文输入状态；重跑后的页面只读取脱敏元数据。
 - 页面使用`st.navigation`按角色动态展示入口，页面隐藏不替代服务端权限判断。
+- 页面内容运行在可清空占位容器中；检测到路由变化时先清空旧容器并执行一次受控重跑，规避 Streamlit 页面切换时的内容残留。
 
 ## 4. 历史报告恢复
 
@@ -91,4 +99,4 @@ flowchart LR
 
 ## 5. 后续演进
 
-公开部署前需要继续加强网关级游客限流和管理员角色授予流程。用户量增长后将SQLite仓储替换为PostgreSQL，并考虑增加独立API服务。评分模型若要用于更广泛的人群，需要建立人工标注案例和公平性审查，不能直接使用录用结果训练成“录用概率”。
+GitHub 定时任务每日读取官方目录，发现未知模型时创建一次待验证 Issue，不自动改白名单。公开部署前需要继续加强网关级游客限流和管理员角色授予流程。用户量增长后将SQLite仓储替换为PostgreSQL，并考虑增加独立API服务。评分模型若要用于更广泛的人群，需要建立人工标注案例和公平性审查，不能直接使用录用结果训练成“录用概率”。

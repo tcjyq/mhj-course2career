@@ -20,6 +20,7 @@ from course2career.key_encryption import (
     KeyEncryptionConfigurationError,
 )
 from course2career.membership_service import MembershipService
+from course2career.model_catalog import DeepSeekModelCatalog
 from course2career.permissions import Plan, Principal, Role
 from course2career.product_repository import SQLiteProductRepository
 from course2career.provider_factory import LLMProviderFactory
@@ -45,6 +46,19 @@ def get_repository(
     schema_revision: int,
 ) -> SQLiteProductRepository:
     return SQLiteProductRepository(database_path)
+
+
+@st.cache_resource
+def get_deepseek_model_catalog(
+    timeout_seconds: float,
+    cache_seconds: int,
+    stale_seconds: int,
+) -> DeepSeekModelCatalog:
+    return DeepSeekModelCatalog(
+        timeout_seconds=timeout_seconds,
+        cache_seconds=cache_seconds,
+        stale_seconds=stale_seconds,
+    )
 
 
 settings = load_settings()
@@ -81,7 +95,16 @@ if settings.key_encryption_key:
         )
     except KeyEncryptionConfigurationError as exc:
         key_configuration_error = str(exc)
-provider_factory = LLMProviderFactory(settings, api_key_service)
+model_catalog = get_deepseek_model_catalog(
+    settings.openai_timeout_seconds,
+    getattr(settings, "deepseek_model_cache_seconds", 1800),
+    getattr(settings, "deepseek_model_stale_seconds", 86400),
+)
+provider_factory = LLMProviderFactory(
+    settings,
+    api_key_service,
+    model_catalog=model_catalog,
+)
 
 if "principal" not in st.session_state:
     st.session_state.principal = Principal()
@@ -194,10 +217,22 @@ if principal.role == Role.ADMIN and principal.plan == Plan.ADMIN:
             principal,
             dashboard_service,
             membership_service,
+            settings=settings,
+            model_catalog=model_catalog,
         ),
         title="管理员Dashboard",
         url_path="admin",
     )
     navigation["管理"] = [admin_page]
 
-st.navigation(navigation, position="sidebar").run()
+selected_page = st.navigation(navigation, position="sidebar")
+current_page_path = selected_page.url_path
+previous_page_path = st.session_state.get("_active_page_path")
+page_slot = st.empty()
+if previous_page_path is not None and previous_page_path != current_page_path:
+    page_slot.empty()
+    st.session_state._active_page_path = current_page_path
+    st.rerun()
+st.session_state._active_page_path = current_page_path
+with page_slot.container():
+    selected_page.run()

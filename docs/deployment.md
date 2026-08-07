@@ -10,6 +10,9 @@
 
 - `OPENAI_API_KEY`
 - `DEEPSEEK_API_KEY`
+- `DEEPSEEK_MODEL` / `DEEPSEEK_MODEL_MODE` / `DEEPSEEK_MODEL_PREFERENCE`
+- `DEEPSEEK_MODEL_CACHE_SECONDS` / `DEEPSEEK_MODEL_STALE_SECONDS`
+- `DEEPSEEK_MAX_OUTPUT_TOKENS` / `SYSTEM_AI_ENABLED`
 - `OPENAI_INPUT_COST_PER_MILLION` / `OPENAI_OUTPUT_COST_PER_MILLION`
 - `DEEPSEEK_INPUT_COST_PER_MILLION` / `DEEPSEEK_OUTPUT_COST_PER_MILLION`
 - `COURSE2CAREER_KEY_ENCRYPTION_KEY`
@@ -22,6 +25,10 @@
 费用估算。
 
 只使用本地规则模式时，模型凭证和加密主密钥可以留空。
+
+`DEEPSEEK_MODEL_MODE=auto_safe`是默认方案：应用读取官方模型目录，但只在代码白名单和配置优先级内选择。若需要完全固定行为，可设置`pinned`。紧急情况下将`SYSTEM_AI_ENABLED=false`，系统AI会停止，规则模式仍可使用。
+
+如需启用 GitHub 的每日模型目录监测，在仓库 **Settings → Secrets and variables → Actions** 中单独创建`DEEPSEEK_API_KEY`。工作流只读取模型目录，发现未知模型时创建 Issue；Secret 不会写入日志或仓库。未配置该 Secret 时工作流安全跳过。
 
 ## 创建首个管理员
 
@@ -72,3 +79,4 @@ streamlit run app.py
 4. 备份数据库与 API Key 加密主密钥，但两者分开保存。
 5. 不把用户课程、完整 JD、密码或 API Key 写入日志。
 6. 公开页面提供隐私说明和第三方模型数据传输提示。
+7. 检查管理员页能够刷新模型目录，且未知模型不会进入 Auto-Safe 选择结果。
