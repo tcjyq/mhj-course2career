@@ -100,11 +100,8 @@ model_catalog = get_deepseek_model_catalog(
     getattr(settings, "deepseek_model_cache_seconds", 1800),
     getattr(settings, "deepseek_model_stale_seconds", 86400),
 )
-provider_factory = LLMProviderFactory(
-    settings,
-    api_key_service,
-    model_catalog=model_catalog,
-)
+provider_factory = LLMProviderFactory(settings, api_key_service)
+provider_factory.model_catalog = model_catalog
 
 if "principal" not in st.session_state:
     st.session_state.principal = Principal()

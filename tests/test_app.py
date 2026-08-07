@@ -210,6 +210,30 @@ finally:
     assert app.title[0].value == "把学过的课程，翻译成求职能力"
 
 
+def test_app_starts_during_provider_factory_hot_reload_window() -> None:
+    app_path = Path("app.py").resolve().as_posix()
+    app = AppTest.from_string(
+        f"""
+import course2career.provider_factory
+
+class LegacyProviderFactory:
+    def __init__(self, settings, api_key_service=None):
+        self.settings = settings
+        self.api_key_service = api_key_service
+
+original_factory = course2career.provider_factory.LLMProviderFactory
+try:
+    course2career.provider_factory.LLMProviderFactory = LegacyProviderFactory
+    exec(compile(open(r"{app_path}", encoding="utf-8").read(), r"{app_path}", "exec"))
+finally:
+    course2career.provider_factory.LLMProviderFactory = original_factory
+"""
+    ).run()
+
+    assert not app.exception
+    assert app.title[0].value == "把学过的课程，翻译成求职能力"
+
+
 def test_app_bootstraps_owner_admin_from_environment(
     tmp_path: Path,
     monkeypatch,
