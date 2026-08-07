@@ -33,18 +33,26 @@ def render_developer_page(
         )
         return
 
+    st.session_state.pop("developer_api_key_input", None)
+    form_version = int(st.session_state.get("developer_api_key_form_version", 0))
+    provider_key = f"developer_api_key_provider_{form_version}"
+    api_key_input_key = f"developer_api_key_input_{form_version}"
+    last_provider = st.session_state.get(
+        "developer_api_key_last_provider", ProviderName.OPENAI
+    )
+
     def submit_api_key() -> None:
-        provider = st.session_state.get(
-            "developer_api_key_provider", ProviderName.OPENAI
-        )
-        api_key = st.session_state.get("developer_api_key_input", "")
+        provider = st.session_state.get(provider_key, ProviderName.OPENAI)
+        api_key = st.session_state.get(api_key_input_key, "")
         try:
             api_key_service.save_key(principal, provider, api_key)
             st.session_state.developer_key_feedback = "API Key已加密保存。"
         except (PermissionDeniedError, ValueError) as exc:
             st.session_state.developer_key_error = str(exc)
         finally:
-            st.session_state.developer_api_key_input = ""
+            st.session_state.developer_api_key_last_provider = provider
+            st.session_state.pop(api_key_input_key, None)
+            st.session_state.developer_api_key_form_version = form_version + 1
 
     feedback = st.session_state.pop("developer_key_feedback", None)
     if feedback:
@@ -83,19 +91,21 @@ def render_developer_page(
         st.info("尚未保存API Key。")
 
     st.markdown("## 保存或更新")
-    with st.form("developer_api_key_form"):
+    providers = list(ProviderName)
+    with st.form(f"developer_api_key_form_{form_version}"):
         st.selectbox(
             "供应商",
-            list(ProviderName),
+            providers,
+            index=providers.index(last_provider),
             format_func=lambda item: PROVIDER_LABELS[item],
-            key="developer_api_key_provider",
+            key=provider_key,
         )
         st.text_input(
             "API Key",
             type="password",
             autocomplete="off",
             help="保存后使用环境主密钥加密，数据库不存储明文。",
-            key="developer_api_key_input",
+            key=api_key_input_key,
         )
         st.form_submit_button(
             "加密保存",

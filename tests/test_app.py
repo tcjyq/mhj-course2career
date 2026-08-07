@@ -439,11 +439,13 @@ render_developer_page(
 """
     ).run()
 
+    original_widget_key = app.text_input[0].key
     app.text_input[0].set_value("sk-test-secret-value")
     app.button[-1].click().run(timeout=5)
 
     assert not app.exception
     assert app.text_input[0].value == ""
+    assert app.text_input[0].key != original_widget_key
 
 
 def test_quota_and_membership_pages_render(tmp_path: Path) -> None:
