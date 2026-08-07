@@ -62,7 +62,7 @@ def get_deepseek_model_catalog(
 
 
 settings = load_settings()
-repository = get_repository(settings.database_path, schema_revision=2)
+repository = get_repository(settings.database_path, schema_revision=3)
 auth_service = AuthService(repository)
 admin_username = getattr(settings, "admin_username", None)
 admin_password = getattr(settings, "admin_password", None)

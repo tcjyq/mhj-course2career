@@ -106,6 +106,51 @@ def test_complete_call_persists_real_token_usage_and_configured_cost(
     assert stored_model == "deepseek-v4-pro"
 
 
+def test_complete_call_survives_cached_legacy_repository_during_hot_reload(
+    tmp_path: Path,
+) -> None:
+    class LegacyCompleteRepository(SQLiteProductRepository):
+        def complete_ai_call(
+            self,
+            usage_id: str,
+            *,
+            status: str,
+            input_tokens: int = 0,
+            output_tokens: int = 0,
+            cost: float = 0,
+        ) -> None:
+            super().complete_ai_call(
+                usage_id,
+                status=status,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                cost=cost,
+            )
+
+    repository = LegacyCompleteRepository(tmp_path / "legacy.db")
+    service = AIUsageService(repository)
+    usage_id = service.start_call(
+        Principal(role=Role.GUEST),
+        "system",
+        "deepseek-v4-flash",
+        guest_session_id="guest-legacy",
+        provider="deepseek",
+    )
+
+    service.complete_call(
+        usage_id,
+        success=True,
+        usage=LLMUsage(
+            input_tokens=120,
+            output_tokens=30,
+            model="deepseek-v4-pro",
+        ),
+    )
+
+    overview = repository.admin_overview(datetime.now(UTC))
+    assert overview.total_tokens == 150
+
+
 def test_developer_own_key_is_unlimited_but_user_is_denied(
     repository: SQLiteProductRepository,
 ) -> None:

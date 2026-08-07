@@ -94,14 +94,24 @@ class AIUsageService:
             input_tokens * max(input_cost_per_million, 0.0)
             + output_tokens * max(output_cost_per_million, 0.0)
         ) / 1_000_000
-        self.repository.complete_ai_call(
-            usage_id,
-            status="success" if success else "failed",
-            input_tokens=input_tokens,
-            output_tokens=output_tokens,
-            cost=estimated_cost,
-            model=usage.model if usage is not None else None,
-        )
+        completion = {
+            "status": "success" if success else "failed",
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "cost": estimated_cost,
+        }
+        try:
+            self.repository.complete_ai_call(
+                usage_id,
+                **completion,
+                model=usage.model if usage is not None else None,
+            )
+        except TypeError as exc:
+            # Streamlit Cloud 热更新时，cache_resource 可能短暂保留旧仓储实例。
+            # 旧接口不接受 model，但仍能安全回写状态、Token 与费用。
+            if "unexpected keyword argument 'model'" not in str(exc):
+                raise
+            self.repository.complete_ai_call(usage_id, **completion)
 
     def get_quota_status(
         self,
