@@ -1,0 +1,17 @@
+{
+  "$schema": "https://unpkg.com/wrangler@4/config-schema.json",
+  "name": "course2career-showcase",
+  "main": "./src/worker.js",
+  "compatibility_date": "2026-09-20",
+  "routes": [
+    {
+      "pattern": "course2career.tcjyq.cc",
+      "custom_domain": true
+    }
+  ],
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  }
+}

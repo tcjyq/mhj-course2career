@@ -5,11 +5,14 @@
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.60-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io/)
 [![License](https://img.shields.io/badge/License-MIT-243F37)](LICENSE)
-[![Live Demo](https://img.shields.io/badge/Live_Demo-Open_App-C65D3B?logo=streamlit&logoColor=white)](https://mhj-course2career.streamlit.app/)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Open_App-C65D3B?logo=streamlit&logoColor=white)](https://mhj-course2career.streamlit.app)
 
 Course2Career 面向准备实习和校招的大学生，将课程、教育背景、项目、实习及成长条件与目标岗位 JD 转换为可解释的岗位适配度、硬门槛检查、能力差距和学习路线。项目采用“AI 提取语义、Python 规则负责评估、用户确认关键输入”的设计，不预测录用概率。
 
-[在线体验 Course2Career](https://mhj-course2career.streamlit.app/)
+**Showcase：** [https://course2career.tcjyq.cc](https://course2career.tcjyq.cc)<br />
+**Live Demo：** [https://mhj-course2career.streamlit.app](https://mhj-course2career.streamlit.app)
+
+招聘展示先访问稳定 Showcase；Streamlit Live Demo 支持游客以“本地规则”完成完整核心流程，无需注册或平台 AI Key。平台未配置模型凭证时，应用不会显示“系统AI”选项。
 
 ![Course2Career 首页](screenshots/home.png)
 
@@ -53,6 +56,16 @@ AI 只参与岗位技能提取。证据映射、迁移、硬门槛、五维评�
 - SQLite
 - cryptography
 - pytest / Ruff
+
+## 招聘展示部署
+
+招聘展示采用三层结构：
+
+1. [Course2Career Showcase](https://course2career.tcjyq.cc)：Cloudflare 静态资产 Worker，首屏不依赖 Python、Streamlit、数据库或 API Key；
+2. [Streamlit Live Demo](https://mhj-course2career.streamlit.app)：可运行的游客本地规则体验。Community Cloud 长时间无访问后可能休眠，首次访问按平台提示唤醒即可；
+3. [GitHub 源码](https://github.com/tcjyq/mhj-course2career)：实现、测试和文档证据。
+
+Showcase 源码位于 [`showcase/`](showcase/)，只复用仓库的真实截图 `screenshots/home.png`。发布命令与域名绑定说明见 [`docs/deployment.md`](docs/deployment.md)。
 
 ## 快速开始
 

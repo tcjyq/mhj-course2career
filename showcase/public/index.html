@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Course2Career：将课程、项目和实习经历与岗位 JD 转化为可解释的能力映射、硬门槛判断、能力差距和学习路线。"
+    />
+    <meta name="theme-color" content="#101513" />
+    <meta property="og:title" content="Course2Career | 可解释 JD–能力映射与学习决策工具" />
+    <meta
+      property="og:description"
+      content="面向大学生的可解释岗位适配度评估：AI 提取、人工确认与确定性规则。"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://course2career.tcjyq.cc" />
+    <link rel="canonical" href="https://course2career.tcjyq.cc" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/site.css" />
+    <title>Course2Career | 可解释 JD–能力映射与学习决策工具</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">跳到主要内容</a>
+
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="Course2Career 首页">
+        <span>Course2Career</span><sup>/ 01</sup>
+      </a>
+      <nav aria-label="页面导航">
+        <a href="#problem">问题</a>
+        <a href="#workflow">方法</a>
+        <a href="#evidence">证据</a>
+        <a href="#role">我的角色</a>
+      </nav>
+      <a
+        class="header-link"
+        href="https://mhj-course2career.streamlit.app"
+        target="_blank"
+        rel="noreferrer"
+      >
+        在线体验
+        <span aria-hidden="true">↗</span>
+      </a>
+    </header>
+
+    <main id="main-content">
+      <section class="hero" id="top" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="section-index">01 / PROJECT SHOWCASE</p>
+          <h1 id="hero-title">Course2Career</h1>
+          <p class="hero-title">可解释 JD–能力映射与学习决策工具</p>
+          <p class="hero-summary">
+            将课程、项目和实习经历与岗位 JD 转化为可解释的能力映射、硬门槛判断、能力差距和学习路线。
+          </p>
+          <div class="hero-actions" aria-label="项目链接">
+            <a
+              class="button button-primary"
+              href="https://mhj-course2career.streamlit.app"
+              target="_blank"
+              rel="noreferrer"
+            >
+              在线体验 <span aria-hidden="true">↗</span>
+            </a>
+            <a
+              class="button button-secondary"
+              href="https://github.com/tcjyq/mhj-course2career"
+              target="_blank"
+              rel="noreferrer"
+            >
+              GitHub <span aria-hidden="true">↗</span>
+            </a>
+          </div>
+          <p class="hero-note">游客可用本地规则完成完整核心体验，无需注册。</p>
+        </div>
+
+        <div class="mapping-visual" aria-label="从岗位 JD 到能力映射、五维评估和学习路线的流程图">
+          <div class="visual-rules" aria-hidden="true"></div>
+          <div class="input-stack" aria-hidden="true">
+            <div class="paper-node">JD</div>
+            <div class="source-node">课程</div>
+            <div class="source-node">项目</div>
+            <div class="source-node">实习</div>
+          </div>
+          <div class="mapping-node" aria-hidden="true">
+            <span class="node-overline">HUMAN GATE</span>
+            <strong>能力映射</strong>
+            <i></i><i></i><i></i><i></i>
+          </div>
+          <div class="output-stack" aria-hidden="true">
+            <div class="output-node"><span>硬门槛</span><b>独立判断</b></div>
+            <div class="output-node"><span>五维评估</span><b>可解释分数</b></div>
+            <div class="output-node"><span>能力差距</span><b>证据缺口</b></div>
+            <div class="output-node"><span>学习路线</span><b>下一步行动</b></div>
+          </div>
+          <div class="line line-a" aria-hidden="true"></div>
+          <div class="line line-b" aria-hidden="true"></div>
+          <div class="line line-c" aria-hidden="true"></div>
+          <div class="line line-d" aria-hidden="true"></div>
+          <div class="line line-e" aria-hidden="true"></div>
+          <p class="visual-caption">MAP<br />EVIDENCE<br />TO DECISION</p>
+        </div>
+      </section>
+
+      <section class="problem section-light" id="problem" aria-labelledby="problem-title">
+        <div class="section-label"><span>02</span><span>Problem</span></div>
+        <div class="problem-title-wrap">
+          <h2 id="problem-title">课程经历，为什么难以直接回答岗位要求？</h2>
+        </div>
+        <div class="problem-body">
+          <p>
+            大学课程、项目与实习常以不同的语言记录；岗位 JD 则同时包含技能、职责和硬性条件。求职者难以判断已有经历能证明什么，也难以区分“能力差距”与“当前不满足的硬门槛”。
+          </p>
+          <p>
+            Course2Career 将这些输入组织成可复核的证据链：先结构化理解岗位，再由用户确认关键技能，最后由 Python 规则完成映射、评分和学习建议。
+          </p>
+        </div>
+      </section>
+
+      <section class="workflow section-dark" id="workflow" aria-labelledby="workflow-title">
+        <div class="workflow-intro">
+          <div class="section-label"><span>03</span><span>How it works</span></div>
+          <h2 id="workflow-title">从 JD 到下一步行动</h2>
+          <p>AI 参与理解，用户确认关键输入，规则负责把结论算清楚。</p>
+        </div>
+        <ol class="flow-list">
+          <li><span>01</span><strong>JD 输入</strong><small>粘贴岗位职责与要求</small></li>
+          <li><span>02</span><strong>LLM 结构化提取</strong><small>识别岗位技能与要求</small></li>
+          <li><span>03</span><strong>人工确认</strong><small>修订关键技能证据</small></li>
+          <li><span>04</span><strong>Python 确定性规则</strong><small>映射课程、项目与实习</small></li>
+          <li><span>05</span><strong>五维评估</strong><small>分开呈现适配与门槛</small></li>
+          <li><span>06</span><strong>能力差距</strong><small>识别可补齐的证据缺口</small></li>
+          <li><span>07</span><strong>学习路线</strong><small>按能力模块给出下一步</small></li>
+        </ol>
+      </section>
+
+      <section class="evidence section-light" id="evidence" aria-labelledby="evidence-title">
+        <div class="evidence-heading">
+          <div class="section-label"><span>04</span><span>Evidence</span></div>
+          <h2 id="evidence-title">把判断过程留在页面上</h2>
+          <p>不是把匹配度包装成录用概率，而是展示当前证据、限制和下一步。</p>
+        </div>
+        <div class="evidence-list">
+          <article>
+            <span>01</span>
+            <h3>五维评估</h3>
+            <p>技术、教育、项目、实习与潜力分别呈现，避免只给出一个黑箱分数。</p>
+          </article>
+          <article>
+            <span>02</span>
+            <h3>硬门槛独立判断</h3>
+            <p>学历、专业、毕业年份、到岗时间与城市等条件不混入综合适配度。</p>
+          </article>
+          <article>
+            <span>03</span>
+            <h3>Human-in-the-loop</h3>
+            <p>岗位技能在进入评分前允许人工确认，保留对提取结果的判断权。</p>
+          </article>
+          <article>
+            <span>04</span>
+            <h3>120 项 pytest</h3>
+            <p>公开 Demo 基础审计记录 120 项通过，覆盖核心业务与界面流程；本次 Showcase 静态检查另行执行。</p>
+          </article>
+          <article>
+            <span>05</span>
+            <h3>Streamlit Web Demo</h3>
+            <p>可直接以游客身份完成本地规则核心分析；Live Demo 作为可运行补充。</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="product-view section-dark" aria-labelledby="product-title">
+        <div class="product-copy">
+          <div class="section-label"><span>05</span><span>Real interface</span></div>
+          <h2 id="product-title">真实界面，不是概念图</h2>
+          <p>
+            Showcase 只展示仓库中已有的真实首页截图。完整流程请从在线体验进入 Streamlit Demo。
+          </p>
+          <a
+            class="text-link"
+            href="https://mhj-course2career.streamlit.app"
+            target="_blank"
+            rel="noreferrer"
+          >
+            进入 Streamlit Live Demo <span aria-hidden="true">→</span>
+          </a>
+        </div>
+        <figure class="screenshot-frame">
+          <img
+            src="/course2career-home.png"
+            width="1440"
+            height="1000"
+            alt="Course2Career Streamlit 首页，展示项目定位、分析输出和使用流程"
+          />
+          <figcaption>仓库真实截图 · `screenshots/home.png`</figcaption>
+        </figure>
+      </section>
+
+      <section class="role section-light" id="role" aria-labelledby="role-title">
+        <div class="role-heading">
+          <div class="section-label"><span>06</span><span>My role</span></div>
+          <h2 id="role-title">我的角色</h2>
+          <p>以产品判断与可验证的实现协作为中心，不将 AI 协作开发表述为个人独立完成全部代码。</p>
+        </div>
+        <ul class="role-list">
+          <li><span>01</span><strong>需求分析</strong><p>梳理课程经历、岗位要求与求职决策之间的输入和输出边界。</p></li>
+          <li><span>02</span><strong>规则设计</strong><p>将硬门槛、能力证据、五维评估与学习路线拆分为可解释的规则。</p></li>
+          <li><span>03</span><strong>结果验证</strong><p>通过测试、页面流程与结果限制检查，验证输出不被误读为录用预测。</p></li>
+          <li><span>04</span><strong>AI 协作开发</strong><p>在 AI 协作下完成代码实现与迭代，并保留人工确认和结果核验。</p></li>
+        </ul>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div>
+        <a class="brand" href="#top">Course2Career<sup>/ 01</sup></a>
+        <p>把学习经历转化为可解释的岗位能力证据。</p>
+      </div>
+      <div class="footer-links" aria-label="项目链接">
+        <a href="https://mhj-course2career.streamlit.app" target="_blank" rel="noreferrer">Live Demo <span aria-hidden="true">↗</span></a>
+        <a href="https://github.com/tcjyq/mhj-course2career" target="_blank" rel="noreferrer">GitHub <span aria-hidden="true">↗</span></a>
+        <a href="https://god97.tcjyq.cc" target="_blank" rel="noreferrer">Portfolio <span aria-hidden="true">↗</span></a>
+      </div>
+    </footer>
+  </body>
+</html>

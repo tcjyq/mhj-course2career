@@ -22,6 +22,33 @@
 ### 下一步
 ```
 
+## 2026-09-20 招聘 Showcase 与无 Key 游客路径
+
+### 本阶段目标
+
+为招聘者提供稳定的项目说明入口，同时不改变 Streamlit 的规则模型或评分逻辑。
+
+### 完成内容
+
+- 新增 `showcase/` Cloudflare 静态资产 Worker，目标域名为 `course2career.tcjyq.cc`。
+- 新增 Hero、问题、七步工作流、证据、真实首页截图、个人职责和外部链接；截图逐字节复用 `screenshots/home.png`。
+- README 公开展示明确列出 Showcase 与 Live Demo 的完整 URL。
+- 未配置平台模型凭证时隐藏“系统AI”，游客默认使用本地规则完成核心分析；未增加公开付费 API Key。
+
+### 技术决策
+
+- Showcase 仅返回静态资产与安全响应头，不依赖 Python、Streamlit、数据库或 Secrets，也不将自定义域名重定向到 Streamlit。
+- Community Cloud 休眠是平台行为；不使用定时 ping、保活脚本或其他规避方式。
+- 本次未修改技能映射、硬门槛或 Career Adaptability Model v2.1 评分逻辑。
+
+### 验证结果
+
+- 自动化、Ruff、格式、静态 Worker 检查和匿名浏览器验收以本次发布记录为准。
+
+### 下一步
+
+- Showcase 验收通过后，再统一替换五份简历中的 Course2Career 链接。
+
 ## 2026-07-22 项目初始化
 
 ### 本阶段目标

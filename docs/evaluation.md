@@ -73,3 +73,11 @@
 GitHub 模型监测发现的新模型不视为通过评测。只有完成上述固定样例与供应商契约测试，并更新白名单和优先级后，Auto-Safe 才能选择该模型。
 
 模型调用回归还必须覆盖 Streamlit 热更新窗口：供应商结果只生成一次；缓存旧仓储不接受实际模型字段时，状态、Token 和费用仍应成功回写，且不得自动重试付费请求。
+
+## 9. 公开招聘展示验收
+
+- `course2career.tcjyq.cc` 必须返回静态 Showcase，匿名访问不出现登录、数据库、Secrets 或 API Key 错误；
+- Showcase 的“在线体验”必须精确指向 `https://mhj-course2career.streamlit.app`，“GitHub”必须精确指向 `https://github.com/tcjyq/mhj-course2career`；
+- Streamlit Demo 在没有平台 AI Key 时只提供本地规则，并能由游客走完上传课程、输入 JD、确认技能和生成报告的核心流程；
+- 截图必须逐字节对应仓库已有 `screenshots/home.png`，不能以生成图代替；
+- 用桌面与窄屏浏览器检查首屏、导航、外链、焦点样式和截图可读性。Community Cloud 的休眠属于平台行为，只验证首次访问可按平台机制正常唤醒，不实施保活或定时 ping。

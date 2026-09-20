@@ -43,7 +43,7 @@ from course2career.provider_factory import LLMProviderFactory
 from course2career.ui.analysis_page import render_analysis_page
 
 repository = SQLiteProductRepository(r"{database_path}")
-settings = Settings()
+settings = Settings(openai_api_key=None, deepseek_api_key=None)
 {principal_source}
 render_analysis_page(
     principal,
@@ -288,6 +288,20 @@ def test_analysis_page_upload_valid_excel_shows_course_preview(
     assert not app.exception
     assert any(message.value == "成功导入 1 门课程。" for message in app.success)
     assert app.dataframe[0].value.iloc[0]["课程名称"] == "数据库原理"
+
+
+def test_guest_analysis_hides_system_ai_without_platform_key(tmp_path: Path) -> None:
+    app = _analysis_app(tmp_path)
+
+    extraction_mode = next(
+        radio for radio in app.radio if radio.label == "技能提取模式"
+    )
+
+    assert not app.exception
+    assert extraction_mode.options == ["本地规则"]
+    assert any(
+        "公开 Demo 默认使用“本地规则”" in caption.value for caption in app.caption
+    )
 
 
 def test_analysis_page_upload_invalid_excel_shows_readable_error(

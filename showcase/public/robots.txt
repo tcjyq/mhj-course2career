@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://course2career.tcjyq.cc/sitemap.xml

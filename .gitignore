@@ -47,6 +47,7 @@ logs/
 # Local agent and automation state
 .agents/
 .codex/
+.wrangler/
 output/playwright/
 
 # Editors and operating systems

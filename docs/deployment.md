@@ -73,6 +73,18 @@ python -m pip install -r requirements.txt
 streamlit run app.py
 ```
 
+## 招聘 Showcase（Cloudflare）
+
+`showcase/` 是静态 Cloudflare Worker，不部署 Python 应用、不设置数据库或 API Key。首次发布前，确认 Cloudflare 账户拥有 `tcjyq.cc` 区域并允许 Worker Custom Domain；随后执行：
+
+```powershell
+npx wrangler deploy --config showcase/wrangler.jsonc
+```
+
+该配置以 `course2career.tcjyq.cc` 作为 Custom Domain route，并从 `showcase/public/` 提供静态文件。部署后以无痕窗口访问 `https://course2career.tcjyq.cc`：应直接显示 Showcase，而不是 302 跳转到 Streamlit。Cloudflare 静态资产与 Custom Domain route 的配置语义见 [Workers Static Assets](https://developers.cloudflare.com/workers/static-assets/) 与 [Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/)。
+
+Streamlit Community Cloud 中应将应用 Sharing 设为 **Public**。不要把平台 API Key 写入 Cloudflare、仓库或公开 Secrets；未配置平台 AI Key 时，应用只显示默认的本地规则模式。Community Cloud 的休眠由平台管理，不添加 ping、定时任务或其他保活机制。
+
 ## 发布前检查
 
 1. 测试、Ruff 和格式检查全部通过。

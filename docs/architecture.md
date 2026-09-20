@@ -102,3 +102,9 @@ flowchart LR
 ## 5. 后续演进
 
 GitHub 定时任务每日读取官方目录，发现未知模型时创建一次待验证 Issue，不自动改白名单。公开部署前需要继续加强网关级游客限流和管理员角色授予流程。用户量增长后将SQLite仓储替换为PostgreSQL，并考虑增加独立API服务。评分模型若要用于更广泛的人群，需要建立人工标注案例和公平性审查，不能直接使用录用结果训练成“录用概率”。
+
+## 6. 招聘 Showcase 静态边界
+
+`showcase/` 是与 Streamlit 应用隔离的 Cloudflare Worker 静态资产部署单元。`wrangler.jsonc` 使用 `assets.directory` 提供 `public/`，`src/worker.js` 只通过 `env.ASSETS.fetch(request)` 返回静态文件并补充安全响应头；它不导入 Python、数据库、Streamlit、模型 SDK 或环境 Secrets。自定义域名 `course2career.tcjyq.cc` 通过 Cloudflare Custom Domain route 绑定到该 Worker。
+
+Showcase 仅承担稳定说明、真实截图和外部链接职责。实际交互仍在 `mhj-course2career.streamlit.app` 完成；该链接可能受 Community Cloud 休眠影响，不能由 Showcase 的流量探测或保活逻辑规避。Streamlit 在无平台模型凭证时动态隐藏系统AI，保持游客本地规则完整路径。

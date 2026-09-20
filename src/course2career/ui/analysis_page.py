@@ -123,25 +123,42 @@ def render_analysis_page(
             max_chars=12_000,
             placeholder="粘贴岗位名称、岗位职责和任职要求。",
         )
+        system_provider_labels: list[str] = []
+        if getattr(settings, "system_ai_enabled", True):
+            if settings.openai_api_key:
+                system_provider_labels.append("OpenAI")
+            if settings.deepseek_api_key:
+                system_provider_labels.append("DeepSeek")
+
+        analysis_modes = ["本地规则"]
+        if system_provider_labels:
+            analysis_modes.append("系统AI")
+        if (
+            principal.plan in {Plan.DEVELOPER, Plan.ADMIN}
+            and api_key_service is not None
+        ):
+            analysis_modes.append("开发者API Key")
+
         analysis_mode = st.radio(
             "技能提取模式",
-            [
-                "本地规则",
-                "系统AI",
-                *(
-                    ["开发者API Key"]
-                    if principal.plan in {Plan.DEVELOPER, Plan.ADMIN}
-                    and api_key_service is not None
-                    else []
-                ),
-            ],
+            analysis_modes,
             horizontal=True,
-            help="本地规则不消耗AI额度；系统AI使用每日额度。",
+            help="本地规则不消耗AI额度；平台已配置模型时才显示系统AI。",
         )
+        if not system_provider_labels:
+            st.caption(
+                "公开 Demo 默认使用“本地规则”，无需注册或平台 AI Key，"
+                "可完成完整核心分析流程。"
+            )
         selected_provider = ProviderName.OPENAI
         selected_model = settings.openai_model
         if analysis_mode != "本地规则":
-            provider_label = st.selectbox("模型供应商", ["OpenAI", "DeepSeek"])
+            provider_options = (
+                system_provider_labels
+                if analysis_mode == "系统AI"
+                else ["OpenAI", "DeepSeek"]
+            )
+            provider_label = st.selectbox("模型供应商", provider_options)
             if provider_label == "DeepSeek":
                 selected_provider = ProviderName.DEEPSEEK
                 selected_model = settings.deepseek_model
