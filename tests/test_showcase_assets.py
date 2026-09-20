@@ -24,7 +24,8 @@ def test_showcase_worker_is_static_and_binds_the_custom_domain() -> None:
     assert '"directory": "./public"' in config
     assert '"run_worker_first": true' in config
     assert "env.ASSETS.fetch(request)" in worker
-    assert "script-src 'none'" in worker
+    assert "script-src 'self' https://static.cloudflareinsights.com" in worker
+    assert "connect-src 'self' https://cloudflareinsights.com" in worker
 
 
 def test_showcase_has_crawler_entry_points() -> None:
