@@ -2,7 +2,7 @@ import re
 
 from course2career.llm_provider import LLMProvider
 from course2career.models import JobAnalysis, JobSkill, SkillImportance
-from course2career.skill_normalizer import find_skills_in_text
+from course2career.skill_normalizer import find_skills_in_text, normalize_skill_name
 
 MIN_JD_LENGTH = 20
 MAX_JD_LENGTH = 12_000
@@ -33,6 +33,25 @@ SKILL_CATEGORIES = {
 
 class JDAnalysisError(ValueError):
     """岗位描述无法形成可用分析结果。"""
+
+
+def evidence_status(skill: JobSkill, jd_text: str) -> str:
+    """只折叠连续空白；不删除标点、不做编辑距离或语义模糊匹配。"""
+    quote = skill.evidence_text.strip()
+    if not quote:
+        return "待确认：空引用"
+    if quote in jd_text:
+        anchor = "原文命中"
+    elif re.sub(r"\s+", " ", quote) in re.sub(r"\s+", " ", jd_text):
+        anchor = "空白规范化命中"
+    else:
+        return "待确认：引用无法在当前JD定位"
+    canonical = normalize_skill_name(skill.normalized_name)
+    # 未收录的技能也可逐字核对，但不能接受字母词的子串命中。
+    names = find_skills_in_text(quote, {canonical: []})
+    if canonical in find_skills_in_text(quote) or canonical in names:
+        return f"{anchor}；技能名称／别名明确提及"
+    return f"{anchor}；技能为推断，待确认关联"
 
 
 def analyze_job_description(

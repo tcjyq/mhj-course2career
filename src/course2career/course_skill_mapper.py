@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any
 
 from course2career.models import Course, CourseSkillEvidence, JobSkill
+from course2career.skill_normalizer import find_skills_in_text
 
 RULES_PATH = Path(__file__).resolve().parents[2] / "data" / "course_skill_map.json"
 
@@ -28,12 +29,11 @@ def map_courses_to_skills(
     best_matches: dict[tuple[str, str], CourseSkillEvidence] = {}
 
     for course in courses:
-        lowered_name = course.name.casefold()
         for rule in course_rules:
             matched_keywords = [
                 str(keyword)
                 for keyword in rule["course_keywords"]
-                if str(keyword).casefold() in lowered_name
+                if find_skills_in_text(course.name, {str(keyword): []})
             ]
             if not matched_keywords:
                 continue
