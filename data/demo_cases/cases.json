@@ -1,0 +1,116 @@
+[
+  {
+    "id": "digital-support",
+    "title": "数字化实施／信息化支持",
+    "task": "核对业务数据，梳理异常处理流程，判断哪些材料需要补充。",
+    "jd": "【合成演示】数字化实施支持\n核心要求：需求分析、ERP、Excel。协助业务流程分析与信息系统上线支持。要求2027届，连续实习至少3个月。",
+    "courses": [
+      {
+        "name": "通用编程",
+        "credit": 3,
+        "grade": 88,
+        "category": "合成专业课程",
+        "self_assessment": 4
+      }
+    ],
+    "profile": {},
+    "requirements": {
+      "required_graduation_years": [
+        2027
+      ],
+      "minimum_months": 3
+    },
+    "expected": "课程名称不能证明具体工具；资料未知；毕业年份与到岗时长待确认；需求分析和ERP等缺口生成字段字典与异常清单任务。",
+    "boundary": "合成演示，不代表真实岗位或候选人；不预测录用概率；自述不等于独立验证。"
+  },
+  {
+    "id": "ai-solutions",
+    "title": "AI应用／解决方案",
+    "task": "将业务输入转为结构化结果，设计人工确认和失败处理流程。",
+    "jd": "【合成演示】AI应用解决方案助理\n核心要求：大模型API、结构化输出、需求分析。使用Python完成轻量原型，了解FastAPI；需要说明失败案例及人工确认流程。",
+    "courses": [
+      {
+        "name": "Python程序设计",
+        "credit": 3,
+        "grade": 88,
+        "category": "合成专业课程",
+        "self_assessment": 4
+      },
+      {
+        "name": "管理信息系统",
+        "credit": 3,
+        "grade": 88,
+        "category": "合成专业课程",
+        "self_assessment": 4
+      }
+    ],
+    "profile": {
+      "education": {
+        "degree": "本科",
+        "institution_tier": "普通公办本科",
+        "major": "信息管理与信息系统",
+        "core_course_average": 85
+      },
+      "projects": [],
+      "internships": [],
+      "graduation_year": 2027
+    },
+    "requirements": {},
+    "expected": "Python与信息系统提供基础，FastAPI只有迁移；大模型API与结构化输出材料未体现，应补固定响应、失败案例和人工确认任务；门槛未设置，明确没有经历与未知不同。",
+    "boundary": "合成演示，不代表真实岗位或候选人；不预测录用概率；自述不等于独立验证。"
+  },
+  {
+    "id": "data-analysis",
+    "title": "数据分析",
+    "task": "判断技能支撑与毕业年份限制能否同时满足。",
+    "jd": "【合成演示】数据分析实习生\n核心要求：SQL、Python、Excel，能完成数据分析与数据可视化。仅接受2026届候选人。",
+    "courses": [
+      {
+        "name": "SQL数据库原理",
+        "credit": 3,
+        "grade": 88,
+        "category": "合成专业课程",
+        "self_assessment": 4
+      },
+      {
+        "name": "Python程序设计",
+        "credit": 3,
+        "grade": 88,
+        "category": "合成专业课程",
+        "self_assessment": 4
+      },
+      {
+        "name": "Excel数据分析",
+        "credit": 3,
+        "grade": 88,
+        "category": "合成专业课程",
+        "self_assessment": 4
+      },
+      {
+        "name": "数据可视化",
+        "credit": 3,
+        "grade": 88,
+        "category": "合成专业课程",
+        "self_assessment": 4
+      }
+    ],
+    "profile": {
+      "education": {
+        "degree": "本科",
+        "institution_tier": "普通公办本科",
+        "major": "信息管理与信息系统",
+        "core_course_average": 85
+      },
+      "projects": [],
+      "internships": [],
+      "graduation_year": 2027
+    },
+    "requirements": {
+      "required_graduation_years": [
+        2026
+      ]
+    },
+    "expected": "课程支持大部分技能，但2027毕业不满足2026届硬门槛；保留技能分，不将门槛失败变成技能零分。",
+    "boundary": "合成演示，不代表真实岗位或候选人；不预测录用概率；自述不等于独立验证。"
+  }
+]

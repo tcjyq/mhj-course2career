@@ -15,7 +15,22 @@ from course2career.course_parser import (
     create_course_template,
     read_course_excel,
 )
-from course2career.jd_analyzer import JDAnalysisError, analyze_job_description
+from course2career.demo_cases import (
+    demo_course_frame,
+    demo_inputs,
+    export_demo_bundle,
+    load_demo_cases,
+)
+from course2career.evidence_display import (
+    EVIDENCE_NOTICE,
+    eligibility_label,
+    skill_sources,
+)
+from course2career.jd_analyzer import (
+    JDAnalysisError,
+    analyze_job_description,
+    evidence_status,
+)
 from course2career.llm_client import LLMClientError
 from course2career.llm_provider import ProviderName
 from course2career.llm_providers import ProviderError
@@ -48,6 +63,8 @@ def render_analysis_page(
 ) -> None:
     st.title("个人分析")
     st.caption("课程、个人经历、岗位要求、五维适配度和能力路线集中在一个流程中。")
+
+    render_demo_cases()
 
     with st.container(border=True):
         st.markdown("## 1. 导入课程信息")
@@ -204,6 +221,7 @@ def render_analysis_page(
                         provider=selected_provider.value,
                     )
                 st.session_state.job_analysis = analyze_job_description(jd_text, client)
+                st.session_state.pop("skill_editor", None)
                 if usage_id is not None:
                     usage_service.complete_call(
                         usage_id,
@@ -237,6 +255,12 @@ def render_analysis_page(
         with st.container(border=True):
             st.markdown("## 4. 确认技能")
             st.success(f"已提取 {len(job_analysis.skills)} 项技能。")
+            st.caption(
+                "核对状态针对提取时引用；修改后点击生成会按当前JD重新核对。"
+                "引用无法定位或技能属于推断时请修正或取消纳入。"
+                "保留勾选并生成表示人工确认纳入，仍不代表独立验证。"
+                "空引用违反输入契约，必须补充后才能生成。"
+            )
             edited_skills = st.data_editor(
                 pd.DataFrame(
                     [
@@ -247,6 +271,7 @@ def render_analysis_page(
                             "类别": skill.category,
                             "重要程度": skill.importance.value,
                             "JD证据": skill.evidence_text,
+                            "依据核对": evidence_status(skill, jd_text),
                         }
                         for skill in job_analysis.skills
                     ]
@@ -261,6 +286,7 @@ def render_analysis_page(
                         required=True,
                     ),
                 },
+                disabled=["依据核对"],
                 key="skill_editor",
             )
 
@@ -295,6 +321,24 @@ def render_analysis_page(
                             profile=candidate_profile,
                             requirements=job_requirements,
                         )
+                        reference_notes = [
+                            f"{skill.normalized_name}："
+                            f"{evidence_status(skill, jd_text)}"
+                            for skill in confirmed_skills
+                        ]
+                        report_result = report_result.model_copy(
+                            update={
+                                "limitations": [
+                                    *report_result.limitations,
+                                    "JD依据核对（生成时；保留项由用户确认纳入）：",
+                                    *reference_notes,
+                                ],
+                            }
+                        )
+                        if any("待确认" in note for note in reference_notes):
+                            st.warning(
+                                "部分引用或技能关联仍待确认；本次按人工保留清单评分。请在结果限制中核对。"
+                            )
                         st.session_state.analysis_report = report_result
                         st.session_state.pop("legacy_analysis_report", None)
                         if principal.role != Role.GUEST:
@@ -305,153 +349,7 @@ def render_analysis_page(
 
     report = st.session_state.get("analysis_report")
     if report is not None:
-        with st.container(border=True):
-            st.markdown("## 5. 岗位适配度结果")
-            score_column, gate_column, completeness_column, confidence_column = (
-                st.columns(4)
-            )
-            score_column.metric("岗位适配度", f"{report.overall_score:.1f}/100")
-            gate_column.metric("硬门槛", report.eligibility.status.value)
-            completeness_column.metric("数据完整度", f"{report.data_completeness:.0f}%")
-            confidence_column.metric("结果可信度", report.confidence)
-            st.caption(
-                "岗位适配度用于比较当前证据与岗位要求，"
-                "不代表录用概率、面试通过率或个人能力上限。"
-            )
-
-            st.markdown("### 五维评分")
-            st.dataframe(
-                pd.DataFrame(
-                    [
-                        {
-                            "维度": "技术技能匹配",
-                            "得分": report.dimension_scores.technical,
-                            "权重": "25%",
-                        },
-                        {
-                            "维度": "教育与学术背景",
-                            "得分": report.dimension_scores.education,
-                            "权重": "20%",
-                        },
-                        {
-                            "维度": "项目实践能力",
-                            "得分": report.dimension_scores.project,
-                            "权重": "20%",
-                        },
-                        {
-                            "维度": "实习实践经验",
-                            "得分": report.dimension_scores.internship,
-                            "权重": "25%",
-                        },
-                        {
-                            "维度": "学习潜力与就业条件",
-                            "得分": report.dimension_scores.potential,
-                            "权重": "10%",
-                        },
-                    ]
-                ),
-                width="stretch",
-                hide_index=True,
-            )
-
-            st.markdown("### 为什么是这个分数？")
-            contribution_rows = [
-                {
-                    "证据或缺口": "大学生岗位适配度解释基准",
-                    "分数影响": "+50.0",
-                    "原因": "中性解释基准",
-                }
-            ]
-            contribution_rows.extend(
-                {
-                    "证据或缺口": item.label,
-                    "分数影响": f"{item.points:+.1f}",
-                    "原因": item.reason,
-                }
-                for item in sorted(
-                    report.contributions,
-                    key=lambda value: abs(value.points),
-                    reverse=True,
-                )
-            )
-            st.dataframe(
-                pd.DataFrame(contribution_rows),
-                width="stretch",
-                hide_index=True,
-            )
-
-            with st.expander("查看岗位硬门槛"):
-                if report.eligibility.checks:
-                    for check in report.eligibility.checks:
-                        st.write(
-                            f"- **{check.label}：{check.status.value}**"
-                            f" — {check.reason}"
-                        )
-                else:
-                    st.write("- 当前JD未设置可结构化核验的硬门槛。")
-
-            match_rows = []
-            for match in report.matches:
-                course_names = (
-                    "、".join(evidence.course_name for evidence in match.evidences)
-                    or "无"
-                )
-                match_rows.append(
-                    {
-                        "技能": match.skill_name,
-                        "重要程度": match.importance.value,
-                        "支撑分": match.support_score,
-                        "匹配状态": match.status.value,
-                        "支撑课程": course_names,
-                    }
-                )
-            st.markdown("### 技能证据明细")
-            st.dataframe(
-                pd.DataFrame(match_rows),
-                width="stretch",
-                hide_index=True,
-            )
-
-            left, right = st.columns(2)
-            left.markdown("### 当前优势")
-            left.write(
-                "、".join(report.strengths) if report.strengths else "暂无较强支撑技能"
-            )
-            right.markdown("### 薄弱技能")
-            right.write("、".join(report.gaps) if report.gaps else "暂无明显技能缺口")
-
-            st.markdown("### 推荐能力建设路线")
-            if not report.learning_modules:
-                st.success("当前没有需要优先补齐的技能。")
-            for module in report.learning_modules:
-                with st.expander(
-                    f"{module.priority}. {module.name}",
-                    expanded=module.priority == 1,
-                ):
-                    st.write(f"**对应缺口：** {'、'.join(module.related_gaps)}")
-                    st.write(f"**目标：** {module.objective}")
-                    st.write(f"**证明成果：** {module.evidence_goal}")
-
-            st.markdown("### 导出")
-            export_left, export_right = st.columns(2)
-            export_left.download_button(
-                "下载Markdown报告",
-                data=export_adaptability_markdown(report),
-                file_name="course2career_report.md",
-                mime="text/markdown",
-                width="stretch",
-            )
-            export_right.download_button(
-                "下载CSV技能明细",
-                data=export_skill_matches_csv(report),
-                file_name="course2career_skill_matches.csv",
-                mime="text/csv",
-                width="stretch",
-            )
-
-            with st.expander("查看结果限制"):
-                for limitation in report.limitations:
-                    st.write(f"- {limitation}")
+        render_adaptability_report(report)
 
     legacy_report = st.session_state.get("legacy_analysis_report")
     if isinstance(legacy_report, AnalysisReport):
@@ -509,6 +407,7 @@ def render_analysis_page(
             )
             export_right.download_button(
                 "下载CSV技能明细",
+                key="legacy_csv_report",
                 data=export_skill_matches_csv(legacy_report),
                 file_name="course2career_legacy_skill_matches.csv",
                 mime="text/csv",
@@ -572,3 +471,211 @@ def render_analysis_page(
                     st.rerun()
         else:
             st.info("完成一次分析后，记录会显示在这里。")
+
+
+def render_adaptability_report(report, key_prefix="") -> None:
+    with st.container(border=True):
+        st.markdown("## 5. 岗位适配度结果")
+        score_column, gate_column, completeness_column, confidence_column = st.columns(
+            4
+        )
+        score_column.metric("岗位适配度", f"{report.overall_score:.1f}/100")
+        gate_column.metric("硬门槛", eligibility_label(report.eligibility))
+        completeness_column.metric("资料完整度", f"{report.data_completeness:.0f}%")
+        confidence_column.metric("资料完整度等级", report.confidence)
+        st.caption(
+            f"硬门槛：{eligibility_label(report.eligibility)}。"
+            "资料完整度仅反映填写情况，不表示材料经过核验。"
+        )
+        st.caption(
+            "岗位适配度用于比较当前证据与岗位要求，"
+            "不代表录用概率、面试通过率或个人能力上限。"
+        )
+
+        st.markdown("### 五维评分")
+        st.dataframe(
+            pd.DataFrame(
+                [
+                    {
+                        "维度": "技术技能匹配",
+                        "得分": report.dimension_scores.technical,
+                        "权重": "25%",
+                    },
+                    {
+                        "维度": "教育与学术背景",
+                        "得分": report.dimension_scores.education,
+                        "权重": "20%",
+                    },
+                    {
+                        "维度": "项目实践能力",
+                        "得分": report.dimension_scores.project,
+                        "权重": "20%",
+                    },
+                    {
+                        "维度": "实习实践经验",
+                        "得分": report.dimension_scores.internship,
+                        "权重": "25%",
+                    },
+                    {
+                        "维度": "学习潜力与就业条件",
+                        "得分": report.dimension_scores.potential,
+                        "权重": "10%",
+                    },
+                ]
+            ),
+            width="stretch",
+            hide_index=True,
+        )
+
+        st.markdown("### 为什么是这个分数？")
+        contribution_rows = [
+            {
+                "证据或缺口": "大学生岗位适配度解释基准",
+                "分数影响": "+50.0",
+                "原因": "中性解释基准",
+            }
+        ]
+        contribution_rows.extend(
+            {
+                "证据或缺口": item.label,
+                "分数影响": f"{item.points:+.1f}",
+                "原因": item.reason,
+            }
+            for item in sorted(
+                report.contributions,
+                key=lambda value: abs(value.points),
+                reverse=True,
+            )
+        )
+        st.dataframe(
+            pd.DataFrame(contribution_rows),
+            width="stretch",
+            hide_index=True,
+        )
+
+        with st.expander("查看岗位硬门槛"):
+            if report.eligibility.checks:
+                for check in report.eligibility.checks:
+                    st.write(
+                        f"- **{check.label}：{check.status.value}** — {check.reason}"
+                    )
+            else:
+                st.write("- 当前JD未设置可结构化核验的硬门槛。")
+
+        match_rows = []
+        for match in report.matches:
+            course_names = (
+                "、".join(evidence.course_name for evidence in match.evidences) or "无"
+            )
+            match_rows.append(
+                {
+                    "技能": match.skill_name,
+                    "重要程度": match.importance.value,
+                    "支撑分": match.support_score,
+                    "匹配状态": match.status.value,
+                    "支撑课程": course_names,
+                    "材料与来源": "；".join(skill_sources(match)),
+                }
+            )
+        st.markdown("### 技能证据明细")
+        st.caption(EVIDENCE_NOTICE)
+        st.dataframe(
+            pd.DataFrame(match_rows),
+            width="stretch",
+            hide_index=True,
+        )
+        with st.expander("逐项阅读完整材料来源"):
+            for match in report.matches:
+                st.write(f"**{match.skill_name}**")
+                for source in skill_sources(match):
+                    st.write(f"- {source}")
+
+        left, right = st.columns(2)
+        left.markdown("### 当前优势")
+        left.write(
+            "、".join(report.strengths) if report.strengths else "暂无较强支撑技能"
+        )
+        right.markdown("### 薄弱技能")
+        right.write("、".join(report.gaps) if report.gaps else "暂无明显技能缺口")
+
+        st.markdown("### 推荐能力建设路线")
+        if not report.learning_modules:
+            st.success("当前没有需要优先补齐的技能。")
+        for module in report.learning_modules:
+            with st.expander(
+                f"{module.priority}. {module.name}",
+                expanded=module.priority == 1,
+            ):
+                st.write(f"**对应缺口：** {'、'.join(module.related_gaps)}")
+                st.write(f"**目标：** {module.objective}")
+                st.write(f"**任务：** {module.task or '历史报告未记录具体任务'}")
+                st.write(f"**交付物：** {module.evidence_goal}")
+                st.write(
+                    "**验收标准：** "
+                    f"{module.completion_criteria or '历史报告未记录验收标准'}"
+                )
+
+        st.markdown("### 导出")
+        export_left, export_right = st.columns(2)
+        export_left.download_button(
+            "下载Markdown报告",
+            key=f"{key_prefix}markdown_report",
+            data=export_adaptability_markdown(report),
+            file_name="course2career_report.md",
+            mime="text/markdown",
+            width="stretch",
+        )
+        export_right.download_button(
+            "下载CSV技能明细",
+            key=f"{key_prefix}csv_report",
+            data=export_skill_matches_csv(report),
+            file_name="course2career_skill_matches.csv",
+            mime="text/csv",
+            width="stretch",
+        )
+
+        with st.expander("查看结果限制"):
+            for limitation in report.limitations:
+                st.write(f"- {limitation}")
+
+
+def render_demo_cases() -> None:
+    with st.expander("三个求职方向合成演示（无需登录或AI）"):
+        st.warning("合成演示，不代表真实岗位或候选人")
+        st.caption("这里独立运行预设规则，不回填或覆盖下方未保存的课程、JD和个人资料。")
+        cases = {case["id"]: case for case in load_demo_cases()}
+        case_id = st.selectbox(
+            "选择合成案例", list(cases), format_func=lambda value: cases[value]["title"]
+        )
+        case = cases[case_id]
+        st.write(f"**用户任务：** {case['task']}")
+        st.code(case["jd"], language=None)
+        st.dataframe(demo_course_frame(case), hide_index=True, width="stretch")
+        st.json(
+            {"候选人资料": case["profile"], "岗位门槛": case["requirements"]},
+            expanded=False,
+        )
+        st.write(f"**预期关键解释：** {case['expected']}")
+        st.caption(case["boundary"])
+        st.download_button(
+            "下载合成案例输入包",
+            export_demo_bundle(case),
+            file_name=f"{case_id}.zip",
+            mime="application/zip",
+        )
+        if st.button("运行合成规则演示"):
+            courses, profile, requirements = demo_inputs(case)
+            job = analyze_job_description(case["jd"])
+            report = assess_job_adaptability(courses, job, profile, requirements)
+            report = report.model_copy(
+                update={
+                    "limitations": [case["boundary"], *report.limitations],
+                }
+            )
+            st.session_state.demo_result = (case_id, report)
+        if st.button("重新开始合成演示"):
+            st.session_state.pop("demo_result", None)
+        saved = st.session_state.get("demo_result")
+        if saved is not None and saved[0] == case_id:
+            # 与真实输入报告共用渲染器；演示仅保存独立会话结果。
+            render_adaptability_report(saved[1], key_prefix="demo_")

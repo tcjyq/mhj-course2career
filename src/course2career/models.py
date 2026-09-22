@@ -90,6 +90,7 @@ class SkillMatch(BaseModel):
     support_score: float = Field(ge=0, le=100)
     status: SkillMatchStatus
     evidences: list[CourseSkillEvidence] = Field(default_factory=list)
+    sources: list[str] | None = None
 
 
 class LearningStep(BaseModel):
@@ -264,6 +265,8 @@ class LearningModule(BaseModel):
     related_gaps: list[str] = Field(min_length=1)
     objective: str = Field(min_length=1)
     evidence_goal: str = Field(min_length=1)
+    task: str | None = None
+    completion_criteria: str | None = None
 
 
 class AdaptabilityReport(BaseModel):

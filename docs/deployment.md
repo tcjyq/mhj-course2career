@@ -66,6 +66,22 @@ ADMIN_PASSWORD_HASH = "生成的scrypt哈希"
 
 Streamlit Community Cloud 的本地 SQLite 文件不保证永久保存。保留管理员 Secrets，可以在运行环境重建后重新创建管理员。不要把真实密码或哈希提交到 `.env.example`、README、GitHub Issue、日志或聊天记录。
 
+### 作品集 Demo 的数据边界
+
+Streamlit Community Cloud 本地 SQLite 仅适合作品集 Demo / 临时状态，不保证持久性。未设置 `COURSE2CAREER_DATABASE_PATH` 时，当前代码使用 `instance/course2career.db`。2026-09-22 用户确认生产 Secrets 未设置该变量，当前阶段按作品集 Demo 管理；这不是对实际生产数据量或备份状态的核验。
+
+初始化采用幂等建表及管理员初始化逻辑；保留管理员 Secrets 不等于备份全部账户、报告或额度记录。C01—C07 没有 SQLite 表结构迁移，只有报告 JSON 新增可选 `sources`、`task`、`completion_criteria` 字段：新版本可读取旧快照，基线版本的严格模型会拒绝含新字段的快照。代码回退与数据恢复必须分别处理，不能直接覆盖或删除生产数据库。
+
+在 C08 Developer BYOK 正式上线前，应将 account、report、encrypted API key、quota、usage、provider profile 迁移到可靠持久存储，并验证备份恢复与权限隔离。本条仅记录技术债，C01—C07 不实施该迁移或 Provider Profile 功能。
+
+### 生产运行时与发布门槛
+
+2026-09-22 用户确认当前 Community Cloud Python 为 3.14，Sharing 为 Public and searchable。仓库、README 链接和入口文件与 `tcjyq/mhj-course2career` / `main` / `app.py` 高度一致，但平台内部绑定无法从当前授权渠道直接读取；不能把仓库结构或公开 HTTP 200 当作绑定证明。
+
+发布流程为 release branch → PR CI → 经授权合入 main → Streamlit smoke test → Showcase。CI 保留 Python 3.11／3.12，并覆盖生产使用的 3.14；本地 Windows 测试不替代远端 Linux CI 或生产验收。`requires-python >=3.11` 与 Ruff 的 `py311` 目标保留最低支持版本，不限制使用 3.14。依赖安装使用原有固定版本，不通过取消 pin 规避兼容问题。
+
+Community Cloud 可随绑定分支更新而自动更新应用，因此合入 main 属于潜在生产变更，不能在 PR CI 通过前直接推送 main。当前发布候选及各环境实际验证结果见 [发布复核记录](optimization-review.md)。
+
 ## 启动
 
 ```powershell
