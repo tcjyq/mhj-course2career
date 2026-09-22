@@ -198,3 +198,69 @@ Chrome／Playwright CLI 0.1.21；真实Streamlit应用监听本机8520端口，�
 正式发布前应确认数据库持久化方式，保留可恢复的发布前一致性备份及平台配置版本；发生回退时先保留上线后的数据库，避免丢失新增报告／账户／额度记录。若使用发布前备份恢复，须明确中间写入的数据保留和恢复办法并取得相应授权；不能直接覆盖数据库。需要保留全部新写入时，应先单独评审兼容处理，不能声称只revert代码即可无损降级。本轮未触碰生产数据库或改变存储协议。
 
 获得上线授权后的顺序：核对候选SHA→push main（不force）→检查远端SHA与CI→确认Streamlit实际自动部署绑定／更新状态→核对Cloudflare目标配置并同步已修改的Showcase→合成数据生产Smoke Test。由于main可能触发自动部署，推送前也应确认触发关系并完成备份准备，不能假定CI会阻挡所有平台的自动更新。生产成功后再记录Production SHA和部署日期，再讨论C08。
+
+## 2026-09-22 Final Pre-Publish Audit / RC2
+
+本节取代前文的当前候选及后续发布顺序；前文保留为历史记录。原RC为`2dccf9cf0ef5587827d4411c9b24695ab416ddc3`，本节所属新提交为RC2，不amend原提交。生产运行时信息由用户在本轮确认：Python 3.14、Sharing为Public and searchable，Secrets无`COURSE2CAREER_DATABASE_PATH`；本轮没有修改任何生产设置。
+
+### Git与发布坐标
+
+起始分支main、HEAD仍匹配原RC，暂存区和已跟踪工作区干净；两个未跟踪用户文件SHA-256与初始记录一致。GitHub插件及`git ls-remote`发现实际远端已从原Base `04f1b32834a668813df30418cce414617c8952b7`前进到`2df8f317f39da20fc39162702728da82e2e26072`，新增提交`Added Dev Container Folder`仅增加`.devcontainer/devcontainer.json`（33行）。只读fetch已刷新本地origin/main，未将该提交合并或rebase到RC，也未改写任何历史。
+
+因此后续PR必须面向届时最新main，保留远端Dev Container文件，验证实际PR差异及合并结果；不能继续声称远端仍是原Base。此独立配置新增不改变本地兼容性结论，不因它中止本轮自主技术审计。
+
+README、仓库结构、app.py入口及公开URL与`tcjyq/mhj-course2career` / `main` / `app.py`高度一致。公开HTTP请求可返回200，但没有返回可证明内部绑定的仓库／分支／入口元数据：**部署坐标高度一致但平台内部绑定无法从当前授权渠道直接读取**。不将这一观测限制冒充已确认事实，也不再要求用户逐项人工检查。
+
+后续顺序以本轮授权为准：release branch → PR CI（3.11／3.12／3.14）→单独授权合入main → Streamlit立即smoke test → Showcase。当前仅创建本地RC2，不创建远端分支或PR，不push、merge、部署或修改Secret。
+
+### Python 3.14兼容性
+
+使用本机已有CPython **3.14.2**创建独立环境`D:/codex_study/_tmp/c2c-py314/`，没有修改系统默认Python或原`.venv`。从原`requirements-dev.txt`完成全新安装，全部直接依赖pin保持不变，`pip check`无冲突。下载缓存及验证产物位于D盘；初次pip构建的少量自动临时文件使用系统TEMP，后续验证显式使用D盘TEMP／TMP。
+
+| 固定依赖 | 安装元数据Requires-Python | 3.14实际安装 |
+| --- | --- | --- |
+| Streamlit 1.60.0 | >=3.10 | 通过 |
+| pandas 3.0.3 | >=3.11 | 通过，cp314 wheel |
+| Pydantic 2.13.4 | >=3.9 | 通过，pydantic-core有cp314 wheel |
+| openpyxl 3.1.5 | >=3.8 | 通过 |
+| cryptography 49.0.0 | >=3.9，排除3.9.0／3.9.1 | 通过，cp311-abi3 wheel |
+| OpenAI SDK 2.46.0 | >=3.9 | 通过 |
+| python-dotenv 1.2.2 | >=3.10 | 通过 |
+
+表格依据实际安装包元数据与pip解析，不把最低版本声明单独当作运行正确证明；完整测试和真实启动见下。官方包发布信息可在[PyPI固定版本](https://pypi.org/project/cryptography/49.0.0/)复核。项目`requires-python >=3.11`、无相冲突classifiers，Ruff `target-version=py311`表示最低语法兼容目标，无需修改。源码编译检查通过；未发现cgi、cgitb、asyncore、asynchat、distutils、imp等已移除模块引用。没有发现需要更改业务源码的3.14兼容性缺陷。
+
+### 本轮验证结果
+
+```powershell
+.venv/Scripts/python.exe -m pytest -o addopts='' -q -o cache_dir=D:/codex_study/_tmp/c2c-rc2-cache --basetemp=D:/codex_study/_tmp/c2c-rc2-py312 --tb=short
+D:/codex_study/_tmp/c2c-py314/Scripts/python.exe -m pip install --cache-dir D:/codex_study/_cache/pip -r requirements-dev.txt
+D:/codex_study/_tmp/c2c-py314/Scripts/python.exe -m pip check
+D:/codex_study/_tmp/c2c-py314/Scripts/python.exe -m pytest -o addopts='' -q -o cache_dir=D:/codex_study/_tmp/c2c-rc2-cache --basetemp=D:/codex_study/_tmp/c2c-rc2-py314 --tb=short
+# 两个环境分别执行
+python -m ruff check .
+python -m ruff format --check .
+git diff --check
+node --check showcase/src/worker.js
+```
+
+- Python 3.12.14：**150 passed，27.46秒，0 failed／0 skipped**。
+- Python 3.14.2：**150 passed，22.82秒，0 failed／0 skipped**。
+- 两环境Ruff通过，format均为65 files already formatted；diff及Showcase Worker语法检查通过。
+- C01—C07、legacy／v2.1历史恢复、旧快照字段兼容、权限、加密及热重载等由完整测试覆盖；没有删除测试、skip或放宽关键断言。
+- Python 3.11本轮未在本机执行，保留CI矩阵。CI仅增加3.14，仍对PR和push main执行同一安装、Ruff、format、pytest流程。本地Windows实测不能替代GitHub Linux三版本CI；本次没有远端CI结果。
+- 使用3.14真实启动`streamlit run app.py`，关闭dotenv载入与系统AI，使用D盘合成数据库。首页→个人分析→三个演示→重置／导出正常；分数分别41.2／39.8／50.3。模板下载上传→合成JD→规则提取→确认→45.5分报告正常。
+- 桌面1440×1000、窄屏390×844截图复核通过，三个演示页面无整体横向溢出、无应用异常。长门槛metric仍可能省略，紧邻完整文案保留。初轮脚本在窗口重绘后等待下拉选项超时，分步重选及后续键盘交互完成验证，没有修改产品来回避失败。
+- 三份实际浏览器下载ZIP／Excel／JSON／JD合法，Markdown／CSV与相同输入的后端导出逐字节一致，CSV保留五列。临时截图、脚本和下载均在`D:/codex_study/_tmp/c2c-rc2-browser/`等D盘临时目录，不加入候选。
+- 本轮首页导航的浏览器流程0 console errors／0 warnings；先前已记录的直接深链`_stcore`两次404保留为已知限制，本轮不声称所有访问方式零错误。未调用真实AI或执行生产写操作。
+
+### 数据、安全与最终边界
+
+用户明确当前为作品集Demo，未发现代码或配置声明不可丢失生产数据。默认路径确为`instance/course2career.db`，文件被Git忽略。重复初始化前后6张SQLite表的schema一致，管理员幂等性由现有测试覆盖；C01—C07无SQL schema migration。
+
+本轮在3.14再次验证基线模型读取新合成快照，仍拒绝sources／task／completion_criteria；这是JSON降级兼容边界，新代码读取旧数据正常。Demo本地状态的非持久性不作为本轮阻断；依然禁止擅自覆盖／删除生产数据。C08正式上线前持久化account、report、encrypted API key、quota、usage、provider profile的技术债已写入[部署文档](deployment.md)，未实施C08。
+
+对原候选及新增CI／部署文档共40个候选文件重新检查常见令牌、私钥、JWT、密码哈希、敏感字面量与禁止产物路径，未发现疑似真实凭证；相对文档链接检查通过。原有12张截图保持不变，均为已审阅合成示例。环境文件、数据库、上传、日志和临时浏览器产物未进入候选；两个用户资料保持不变。提交前再次核对本轮暂存白名单及差异，安全检查不输出凭证正文。
+
+本轮修改仅为CI matrix、部署说明及验证／开发记录，不改变评分、CSV、数据模型或用户界面，不新增项目依赖。原RC被RC2取代，创建新本地提交`fix: align release candidate with production runtime`。最终SHA以该提交及交付报告为准。
+
+**本地发布前审计通过，无已知本地技术阻断；就绪程度是可进入release branch与PR CI，不是已上线。** 尚需授权后运行三版本远端CI、检查最新main合并结果及生产实际版本。Cloudflare稳定回退参考仍为Version `4237f2e9-3a30-4216-8a91-dec73a45bb10`、Deployment `2e1800ab-6b55-4cba-b9ad-ef4b8d9f2b3d`（前轮只读查询及用户确认）；本轮未部署，正式发布前应刷新。未验证真实模型质量或用户效果，不进入C08／C09。

@@ -24,6 +24,8 @@
 
 ## 2026-09-21 求职导向证据与演示优化
 
+2026-09-22 RC2运行时审计：用户确认生产Python为3.14，在隔离CPython 3.14.2环境安装全部原有pin并通过150项测试（22.82秒）；既有3.12.14环境150项通过（27.46秒）。CI增加3.14且保留3.11／3.12，部署文档明确Demo SQLite及C08正式上线前持久化技术债。业务源码、依赖pin和界面不变，真实3.14浏览器三例／上传／导出／390px复测完成。远端main新增Dev Container提交，已只读核对并刷新缓存，未合并或推送。完整边界见[RC2记录](optimization-review.md#2026-09-22-final-pre-publish-audit--rc2)。
+
 后续发布候选复核：全量150项通过（24.63秒），Ruff、格式、差异和本地浏览器复测通过；仅纠正文档4处行为描述，保留C01—C07核心实现。降级读取新快照的限制及数据保护要求见[Release Candidate Verification](optimization-review.md#release-candidate-verification)。按用户授权形成独立本地提交，推送与部署仍等待授权；不进入C08／C09。
 
 ### 完成内容
