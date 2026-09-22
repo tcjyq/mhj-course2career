@@ -19,7 +19,7 @@ def render_candidate_profile_form() -> tuple[CandidateProfile, JobRequirements]:
         st.markdown("## 2. 完善岗位适配度资料")
         st.caption(
             "教育、项目、实习和成长信息用于解释岗位适配度；"
-            "未填写不会按零分处理，但会降低结果可信度。"
+            "未填写不会按零分处理，但会降低资料完整度。"
         )
 
         education = _render_education()

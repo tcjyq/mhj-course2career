@@ -26,7 +26,7 @@ from course2career.models import (
     SkillMatchStatus,
 )
 from course2career.scoring import build_skill_matches
-from course2career.skill_normalizer import normalize_skill_name
+from course2career.skill_normalizer import find_skills_in_text, normalize_skill_name
 
 DIMENSION_WEIGHTS = {
     "technical": 0.25,
@@ -121,7 +121,8 @@ def assess_job_adaptability(
         limitations=[
             "岗位适配度用于比较当前证据与岗位要求，不代表录用概率。",
             "院校与学历仅作为现实市场信号，不代表个人能力上限。",
-            "未填写的信息不会按零分处理，但会降低数据完整度和结果可信度。",
+            "未填写的信息不会按零分处理，但会降低资料完整度；完整度不是预测可信度。",
+            "学历既参与教育维度，也可能触发硬门槛；门槛状态不作为总分乘数。",
         ],
     )
 
@@ -141,7 +142,16 @@ def _build_technical_matches(
     for match in base_matches:
         normalized_skill = normalize_skill_name(match.skill_name)
         scored_sources = [
-            (evidence.evidence_score, f"课程：{evidence.course_name}")
+            (
+                evidence.evidence_score,
+                f"课程：{evidence.course_name}（"
+                + (
+                    "直接材料：名称明确提及"
+                    if normalized_skill in find_skills_in_text(evidence.course_name)
+                    else "间接依据：课程规则推断"
+                )
+                + f"；{evidence.explanation}）",
+            )
             for evidence in match.evidences
         ]
         scored_sources.extend(project_scores.get(normalized_skill, []))
@@ -176,12 +186,13 @@ def _build_technical_matches(
             for _, label in sorted(
                 scored_sources, reverse=True, key=lambda item: item[0]
             )
-        ][:3]
+        ]
         matches.append(
             match.model_copy(
                 update={
                     "support_score": support_score,
                     "status": _match_status(support_score),
+                    "sources": sources_by_skill[normalized_skill],
                 }
             )
         )
@@ -214,7 +225,12 @@ def _transfer_scores(
         scores.append(
             (
                 round(transfer_score, 1),
-                f"{source_type}：{' + '.join(sources)} → {target_skill}",
+                f"{source_type}：{' + '.join(sources)} → {target_skill}"
+                f"（间接／迁移依据；{rule['reason']}；来源："
+                + "；".join(
+                    label for source in sources for _, label in source_scores[source]
+                )
+                + "）",
             )
         )
     return scores
@@ -243,9 +259,10 @@ def _experience_skill_scores(
             else _internship_quality(experience)
         )
         label = (
-            f"项目：{experience.name}"
+            f"项目：{experience.name}（用户自述：明确填写技能，未独立核验）"
             if isinstance(experience, ProjectExperience)
             else f"实习：{experience.company}·{experience.name}"
+            "（用户自述：明确填写技能，未独立核验）"
         )
         for skill in experience.skills:
             normalized = normalize_skill_name(skill)
@@ -285,7 +302,7 @@ def _score_technical(
     for match in matches:
         factor_weight = IMPORTANCE_WEIGHTS[match.importance] / total_importance
         score += match.support_score * factor_weight
-        sources = sources_by_skill.get(match.skill_name, [])
+        sources = sources_by_skill.get(normalize_skill_name(match.skill_name), [])
         missing = not sources and match.support_score <= 15
         label = (
             f"缺少{match.skill_name}直接证据"
@@ -301,7 +318,9 @@ def _score_technical(
                 reason=(
                     "当前没有直接课程、项目或实习证据，按大学生可学习基础保留15分"
                     if missing
-                    else f"当前可验证支撑分为{match.support_score:.1f}"
+                    else (
+                        f"当前材料规则支撑分为{match.support_score:.1f}，不代表独立核验"
+                    )
                 ),
                 evidence=sources,
                 confidence=0.9 if sources else 0.65,
@@ -715,39 +734,71 @@ def _confidence_label(completeness: float) -> str:
 
 
 def _build_learning_modules(matches: list[SkillMatch]) -> list[LearningModule]:
-    groups: dict[str, list[str]] = {}
-    for match in matches:
-        if match.support_score >= 50:
-            continue
-        module_name = _module_name(match.skill_name)
-        groups.setdefault(module_name, []).append(match.skill_name)
-
+    # 核心优先，同重要程度先补低支撑分，再按名称稳定排序。
+    gaps = sorted(
+        (match for match in matches if match.support_score < 50),
+        key=lambda match: (
+            -IMPORTANCE_WEIGHTS[match.importance],
+            match.support_score,
+            match.skill_name,
+        ),
+    )
     modules: list[LearningModule] = []
-    for priority, (name, gaps) in enumerate(list(groups.items())[:8], start=1):
+    for match in gaps[:8]:
+        name = normalize_skill_name(match.skill_name)
+        task, deliverable, criteria = _learning_task(name)
         modules.append(
             LearningModule(
-                priority=priority,
-                name=name,
-                related_gaps=gaps,
-                objective=f"把{'、'.join(gaps)}从概念或缺口提升为可验证能力",
-                evidence_goal=f"完成一个能够证明{'、'.join(gaps)}的项目模块并补充测试",
+                priority=len(modules) + 1,
+                name=f"{name}能力建设",
+                related_gaps=[match.skill_name],
+                objective=(
+                    f"补充{name}能力证据（{match.importance.value}要求，"
+                    f"当前支撑分{match.support_score:.1f}；先重要程度、再低分）"
+                ),
+                task=task,
+                evidence_goal=deliverable,
+                completion_criteria=criteria,
             )
         )
     return modules
 
 
-def _module_name(skill_name: str) -> str:
-    normalized = skill_name.casefold()
-    if any(token in normalized for token in ("rag", "embedding", "向量", "rerank")):
-        return "RAG完整链路"
-    if any(token in normalized for token in ("docker", "linux", "部署", "云")):
-        return "Docker、Linux与部署"
-    if any(token in normalized for token in ("agent", "function", "工具调用")):
-        return "Agent与工具调用"
-    if any(token in normalized for token in ("fastapi", "rest", "http", "api")):
-        return "FastAPI与REST接口"
-    if any(token in normalized for token in ("测试", "日志", "异常")):
-        return "测试、日志与异常处理"
-    if any(token in normalized for token in ("python", "编程")):
-        return "Python工程基础"
-    return f"{skill_name}能力建设"
+def _learning_task(skill_name: str) -> tuple[str, str, str]:
+    if skill_name == "SQL":
+        return (
+            "使用合成订单与客户两表完成关联、分组与异常检查",
+            "SQL查询、合成输入、预期结果和指标口径说明",
+            "说明主键与关联粒度；重复键不放大计数；核对关联前后总量及空值",
+        )
+    if skill_name in {"信息系统", "ERP", "需求分析", "业务流程分析"}:
+        return (
+            "为合成业务场景整理字段字典与异常处理流程",
+            "字段字典、流程图、缺失和重复记录清单、处理状态表",
+            "字段有类型与必填规则；覆盖缺失、重复与状态流转；每项异常可追溯处理结果",
+        )
+    if skill_name in {"大模型API", "结构化输出", "Prompt Engineering"}:
+        return (
+            "用固定响应设计结构化提取与人工确认流程，无需调用真实模型",
+            "输入输出样例、字段契约、失败案例、人工修正记录与边界说明",
+            "覆盖正常、空响应、虚构引用、格式错误；未确认项有提示与修正路径",
+        )
+    if skill_name in {
+        "Excel",
+        "pandas",
+        "数据分析",
+        "统计分析",
+        "数据可视化",
+        "Power BI",
+        "Tableau",
+    }:
+        return (
+            f"用{skill_name}整理合成业务数据并解释一个可核对的问题",
+            "数据字典、处理文件或脚本、结果表或图表、口径说明",
+            "保留原始输入；处理缺失与重复；结果可复现并与手算小样本核对",
+        )
+    return (
+        f"围绕岗位中的{skill_name}要求选择一个最小练习，记录前提与失败情况",
+        f"{skill_name}练习输入、操作步骤、输出、失败案例与限制说明",
+        "列出预期输出并逐项核对；另一人可按步骤复现；不确定之处明确标注待确认",
+    )

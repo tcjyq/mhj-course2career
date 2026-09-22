@@ -50,7 +50,7 @@ flowchart LR
 | `api_key_service.py` | 开发者密钥权限、加密和元数据管理 |
 | `course_skill_mapper.py` | 课程关键词规则与技能证据生成 |
 | `scoring.py` | 保留原有单项技能规则和兼容报告能力 |
-| `adaptability.py` | 五维岗位适配度、技能迁移、硬门槛、可信度和解释账本 |
+| `adaptability.py` | 五维岗位适配度、技能迁移、硬门槛、资料完整度和解释账本 |
 | `learning_path.py` | 保留旧报告的确定性学习步骤 |
 | `analysis_service.py` | 保留旧分析报告编排，供兼容路径和测试使用 |
 | `report_exporter.py` | Markdown 和 CSV 导出 |
@@ -78,7 +78,7 @@ flowchart LR
 - 内置 JSON 是可版本控制的规则数据，不在运行时被模型修改。
 - UI 允许人工修正模型或规则结果，修正后统一进入同一分析服务。
 - 岗位适配度不替代硬门槛：学历、专业、毕业年份、到岗时间和城市单独判断。
-- 未填写的候选人资料使用中性值并降低可信度，明确选择“目前没有”才视为证据缺失。
+- 未填写的候选人资料使用中性值并降低资料完整度，明确选择“目前没有”才视为证据缺失。
 - `data/skill_transfer_rules.json`只提供有限迁移证据，不能替代直接项目或实习证据。
 - 最终结果由50分基线和逐项加减分组成，解释账本必须与总分对账。
 - 外部异常在客户端边界转换为不含敏感细节的业务错误。
@@ -108,3 +108,11 @@ GitHub 定时任务每日读取官方目录，发现未知模型时创建一次�
 `showcase/` 是与 Streamlit 应用隔离的 Cloudflare Worker 静态资产部署单元。`wrangler.jsonc` 使用 `assets.directory` 提供 `public/`，`src/worker.js` 只通过 `env.ASSETS.fetch(request)` 返回静态文件并补充安全响应头；它不导入 Python、数据库、Streamlit、模型 SDK 或环境 Secrets。自定义域名 `course2career.tcjyq.cc` 通过 Cloudflare Custom Domain route 绑定到该 Worker。
 
 Showcase 仅承担稳定说明、真实截图和外部链接职责。实际交互仍在 `mhj-course2career.streamlit.app` 完成；该链接可能受 Community Cloud 休眠影响，不能由 Showcase 的流量探测或保活逻辑规避。Streamlit 在无平台模型凭证时动态隐藏系统AI，保持游客本地规则完整路径。
+
+## 2026-09-21 局部扩展
+
+`evidence_display.py`复用技能sources及资格checks统一展示；`SkillMatch.sources`为可选完整来源快照，None表示旧记录未保存来源类型，空列表表示本次未找到证据。原有加权逻辑不依赖标签。
+
+`jd_analyzer.evidence_status`在技能确认表及生成报告时核对当前JD与引用，严格逐字／折叠连续空白，不增加provider调用。技能是否有已知名称或别名明确提及独立检查，不能把规范技能名当原文。报告限制保存生成时核对结论，不新增JD全文持久化。
+
+`demo_cases.py`从公开合成JSON生成合法Excel与输入包，复用分析引擎和报告渲染器。演示结果独立使用demo_result会话键，不保存到账户，也不回填真实输入。LearningModule新增可选task和completion_criteria字段；主路径提供确定性任务，旧路径保持兼容。无数据库迁移或依赖升级。

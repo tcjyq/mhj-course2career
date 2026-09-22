@@ -287,7 +287,10 @@ def test_analysis_page_upload_valid_excel_shows_course_preview(
 
     assert not app.exception
     assert any(message.value == "成功导入 1 门课程。" for message in app.success)
-    assert app.dataframe[0].value.iloc[0]["课程名称"] == "数据库原理"
+    assert any(
+        "课程名称" in frame.value and frame.value.iloc[0]["课程名称"] == "数据库原理"
+        for frame in app.dataframe
+    )
 
 
 def test_guest_analysis_hides_system_ai_without_platform_key(tmp_path: Path) -> None:
@@ -342,6 +345,32 @@ def test_analysis_page_runs_local_flow(tmp_path: Path) -> None:
     assert not app.exception
     assert any(metric.label == "岗位适配度" for metric in app.metric)
     assert any("为什么是这个分数" in block.value for block in app.markdown)
+
+
+def test_demo_isolated_from_draft_and_existing_report(tmp_path: Path) -> None:
+    app = _analysis_app(tmp_path)
+    app.file_uploader[0].upload(
+        "courses.xlsx",
+        _course_excel(),
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    draft = "数据分析实习生，核心要求SQL，负责查询与数据口径核对。"
+    app.text_area[0].set_value(draft)
+    next(b for b in app.button if b.label == "提取岗位技能").click().run()
+    next(b for b in app.button if b.label == "生成岗位适配度报告").click().run()
+    original = app.session_state.analysis_report.model_dump()
+    selector = next(s for s in app.selectbox if s.label == "选择合成案例")
+    for case_id in ("digital-support", "ai-solutions", "data-analysis"):
+        selector.set_value(case_id).run()
+        next(b for b in app.button if b.label == "运行合成规则演示").click().run()
+        assert not app.exception
+        assert app.session_state.demo_result[0] == case_id
+        assert app.text_area[0].value == draft
+        assert app.session_state.analysis_report.model_dump() == original
+        next(b for b in app.button if b.label == "重新开始合成演示").click().run()
+        assert not app.exception
+        assert "demo_result" not in app.session_state
+        assert app.session_state.analysis_report.model_dump() == original
 
 
 def test_analysis_page_reopens_current_saved_report(tmp_path: Path) -> None:

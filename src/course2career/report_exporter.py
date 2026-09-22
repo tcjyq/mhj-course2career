@@ -1,6 +1,11 @@
 import csv
 from io import StringIO
 
+from course2career.evidence_display import (
+    EVIDENCE_NOTICE,
+    eligibility_label,
+    skill_sources,
+)
 from course2career.models import AdaptabilityReport, AnalysisReport
 
 
@@ -13,9 +18,9 @@ def export_adaptability_markdown(report: AdaptabilityReport) -> str:
         "",
         f"- 目标岗位：{title}",
         f"- 岗位适配度：{report.overall_score:.1f}/100",
-        f"- 硬门槛状态：{report.eligibility.status.value}",
-        f"- 数据完整度：{report.data_completeness:.0f}%",
-        f"- 结果可信度：{report.confidence}",
+        f"- 硬门槛状态：{eligibility_label(report.eligibility)}",
+        f"- 资料完整度：{report.data_completeness:.0f}%",
+        f"- 资料完整度等级：{report.confidence}",
         f"- 评分版本：Career Adaptability Model v{report.scoring_version}",
         "",
         "> 岗位适配度用于比较当前证据与岗位要求，不代表录用概率。",
@@ -52,6 +57,11 @@ def export_adaptability_markdown(report: AdaptabilityReport) -> str:
     else:
         lines.append("- 当前JD未设置可结构化核验的硬门槛。")
 
+    lines.extend(["", "## 技能材料与来源", "", EVIDENCE_NOTICE, ""])
+    for match in report.matches:
+        lines.append(f"### {_escape_markdown(match.skill_name)}")
+        lines.extend(f"- {_escape_markdown(source)}" for source in skill_sources(match))
+
     lines.extend(["", "## 能力建设路线", ""])
     for module in report.learning_modules:
         lines.extend(
@@ -60,7 +70,9 @@ def export_adaptability_markdown(report: AdaptabilityReport) -> str:
                 "",
                 f"- 对应缺口：{'、'.join(module.related_gaps)}",
                 f"- 目标：{module.objective}",
-                f"- 证明成果：{module.evidence_goal}",
+                f"- 任务：{module.task or '历史报告未记录具体任务'}",
+                f"- 交付物：{module.evidence_goal}",
+                f"- 验收标准：{module.completion_criteria or '历史报告未记录验收标准'}",
                 "",
             ]
         )
