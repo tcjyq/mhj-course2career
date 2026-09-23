@@ -264,3 +264,79 @@ node --check showcase/src/worker.js
 本轮修改仅为CI matrix、部署说明及验证／开发记录，不改变评分、CSV、数据模型或用户界面，不新增项目依赖。原RC被RC2取代，创建新本地提交`fix: align release candidate with production runtime`。最终SHA以该提交及交付报告为准。
 
 **本地发布前审计通过，无已知本地技术阻断；就绪程度是可进入release branch与PR CI，不是已上线。** 尚需授权后运行三版本远端CI、检查最新main合并结果及生产实际版本。Cloudflare稳定回退参考仍为Version `4237f2e9-3a30-4216-8a91-dec73a45bb10`、Deployment `2e1800ab-6b55-4cba-b9ad-ef4b8d9f2b3d`（前轮只读查询及用户确认）；本轮未部署，正式发布前应刷新。未验证真实模型质量或用户效果，不进入C08／C09。
+
+## 2026-09-22 Production Release
+
+本节更新当前发布状态；前述未上线、未创建PR等结论保留为对应阶段的历史记录。发布日期采用北京时间（UTC+08:00）。范围为C01—C07及Python 3.14 CI／部署说明，不包含C08／C09。本轮没有业务代码修复，正式记录使用独立文档提交。
+
+### Git与CI证据
+
+| 项目 | 已核验记录 |
+| --- | --- |
+| 初始开发Base | `04f1b32834a668813df30418cce414617c8952b7` |
+| PR Base main | `2df8f317f39da20fc39162702728da82e2e26072` |
+| RC2 | `043e2aeb94d82f1ae4bc1c7c4b66343f2b669c47` |
+| Integration Candidate | `ad971e1238ce223b659a94a9f9a59c694107b38d` |
+| Release branch | `release/c01-c07-20260922`，保留，未删除 |
+| PR | [#1](https://github.com/tcjyq/mhj-course2career/pull/1)，40个变更文件，无合并冲突 |
+| Production Git SHA | `7f98fd12b26b6ef8b6f06263c59afd6dfff28b85` |
+| main合并时间 | 2026-09-22 13:06:52，北京时间 |
+| PR CI | [35672869812](https://github.com/tcjyq/mhj-course2career/actions/runs/35672869812) |
+| Production main CI | [35689438901](https://github.com/tcjyq/mhj-course2career/actions/runs/35689438901) |
+
+Release branch从最新main建立，以普通merge保留RC2历史；没有rebase、amend或force push。PR不重复修改base已有的Dev Container配置，Production代码树与Integration Candidate一致。Dev Container的Python 3.11不代表Streamlit生产运行时。
+
+PR与Production main的Python **3.11／3.12／3.14**矩阵均成功，依赖安装、Ruff、format及pytest全部通过，各环境150项测试。Production main的pytest分别为9.24／11.38／9.45秒。保留全部测试及原依赖pin，没有skip、删除测试或放宽断言。
+
+### Streamlit更新与生产验收
+
+[生产应用](https://mhj-course2career.streamlit.app/)的部署坐标已由用户通过管理日志确认：repository `tcjyq/mhj-course2career`、branch `main`、entrypoint `app.py`，runtime **Python 3.14.x**。这取代前阶段只能确认公开证据高度一致的状态；管理日志证据来源是用户确认，不冒充代理直接读取。
+
+合并后GitHub的push webhook返回200，用户提供的Streamlit日志显示拉取代码、处理依赖和`Updated app`，但旧运行实例仍显示旧UI。代理当时暂停Showcase发布；用户人工Reboot后完成fresh redeploy，新版正常生效。2026-09-22下午及19时段的真实浏览器复测均见新版。没有证据将这一发布过程现象归因为应用代码bug，代理没有再次Reboot、重建App或修改平台设置。
+
+**Streamlit production validation passed.** Chrome／Playwright在真实生产URL以游客身份、仅使用合成数据完成：
+
+- 首页、个人分析可访问，三个合成演示入口出现；数字化实施／信息化支持、AI应用／解决方案、数据分析均可运行、查看报告和重置，分别41.2／39.8／50.3分。演示运行不覆盖下方已有合成报告。
+- C01：上传仅含Java程序设计、C语言程序设计、通用编程、数据可视化的合成Excel，Python／pandas／Power BI／Tableau均为15分、无支撑课程、材料未体现；改用明确的Power BI课程后，仅Power BI获得78.7分直接材料，其他三项仍无课程依据。
+- C02：报告及实际下载内容保留直接材料、间接规则推断、Python→FastAPI迁移、材料未体现的区别；另在生产表单填写合成SQL项目，来源明确显示“用户自述：明确填写技能，未独立核验”。
+- C03：未填写门槛显示“未设置／待确认”，而非满足；数据分析演示保留毕业年份硬门槛失败与技能支撑的独立展示。
+- C04：实际编辑确认表中的JD证据为无法定位的合成引用，生成后出现待确认警告及“SQL：待确认：引用无法在当前JD定位”；再手工改为当前JD中的“核心要求SQL”，重新生成后恢复原文命中，警告消失。表格核对列仍按提取时状态展示，生成时的再次核对在结果限制中记录，与页面说明一致。
+- C06：能力建设路线展示任务、交付物和验收标准；Excel、Python及通用技能路线包含可执行动作与完成条件。
+- 下载Excel模板→实际上传→合成JD→本地规则提取→人工确认入口→完整报告成功，基准模板流程为45.5分。
+- 三份实际下载ZIP均可解压，内含Excel可重新解析、JSON／JD与预设一致；Markdown／CSV与同输入后端导出逐字节一致，CSV保留五列。模板Excel有效。
+- 三个演示及完整流程的390px窄屏验证通过，应用iframe的body／documentElement宽度均为390，无整体横向溢出；桌面与窄屏截图复核正常。长表格保留局部滚动。
+- Production Git代码的全量150项回归包含legacy／v2.1恢复；本轮Python 3.14另执行3项历史恢复／重名记录专项，全部通过（4.35秒）。历史验证使用本地隔离合成夹具，没有读取、插入或改写真实生产历史记录。
+
+生产交互未出现`stException`或持续的应用、导入、依赖、数据库初始化错误页面。**当前授权渠道不能直接读取Streamlit Cloud私有服务端日志，因此不能声称已独立检查全部管理日志或后台零错误。** 管理日志采用用户提供的更新／Reboot确认，公开运行结果提供补充证据；未观察到新的生产阻断症状。
+
+浏览器仍记录已知深链`/~/+/analysis/_stcore/health`、`host-config`的404探测，以及Community Cloud匿名外壳`/api/v2/user/details`的404、iframe权限警告；后者不是应用异常堆栈。本轮不声称控制台全零。自动化初轮存在重绘时序、表格定位及合成JD长度／预期技能数不匹配，调整操作与合成输入后完成实际验证，未改产品来绕过检查。所有原始截图、脚本及下载留在D盘临时目录，不进入Git。
+
+### Cloudflare Showcase
+
+在Streamlit业务验收通过后，重新读取稳定部署，确认Worker `course2career-showcase`、域名`course2career.tcjyq.cc`及下列旧版本。`showcase/wrangler.jsonc`无意外变更；待发布差异仅为已审阅C01—C07说明，静态目录只有6个已跟踪公开资产，无Secret或临时文件。
+
+| 部署记录 | 值 |
+| --- | --- |
+| Old Version | `4237f2e9-3a30-4216-8a91-dec73a45bb10` |
+| Old Deployment | `2e1800ab-6b55-4cba-b9ad-ef4b8d9f2b3d` |
+| New Version | `8b2ae339-755a-4b9d-9042-e13e4425fc1e` |
+| New Deployment | `4026456d-7d0d-4548-8c1f-677e6f5f4f67` |
+| 部署创建时间 | 2026-09-22 19:09:45，北京时间 |
+| 生产流量 | 新Version 100%，部署后通过deployments list确认 |
+| Rollback | 未发生 |
+
+使用本机已有Wrangler 4.134.0执行`deploy --config showcase/wrangler.jsonc`，未安装新项目依赖；只上传变化的`index.html`，其余5项静态资产复用。此命令创建版本并更新生产部署，语义依据[Cloudflare部署管理文档](https://developers.cloudflare.com/workers/configuration/versions-and-deployments/deployments/)。未修改DNS、Secrets或其他生产资源。
+
+**Showcase production validation passed.** [生产主页](https://course2career.tcjyq.cc/)HTTP 200、无重定向；首页、新门槛说明、回归测试文案正常。图片naturalWidth为1440，图片／CSS／favicon均200；GitHub和Streamlit链接目标均200。390px页面body／documentElement均390，无整体横向溢出；桌面截图复核正常，无broken assets、pageerror、失败请求，控制台0 errors／0 warnings。
+
+### 发布记录提交与保留限制
+
+本节作为独立提交`docs: record C01-C07 production release`推送main，代码发布SHA与后续文档SHA分开记录；文档提交SHA及推送后的main HEAD以Git历史和最终交付报告为准。提交前再次执行pytest、Ruff、format及diff检查；首次完整复验150 passed（19.69秒）；2026-09-23文档完成后再次全量验证150 passed（23.95秒），Ruff通过、65 files already formatted、diff检查通过，Worker语法检查此前通过。两个原有未跟踪用户资料保持原样，不暂存；发布分支保留。
+
+- Community Cloud本地`instance/course2career.db`仅为作品集Demo临时状态，不保证持久性；Secrets无`COURSE2CAREER_DATABASE_PATH`由用户确认。本次没有SQL schema migration，没有执行生产数据库覆盖、删除或手工修改，也不保证Reboot前后本地临时状态不丢失。
+- 新代码可读取旧快照；旧基线不能直接读取新增`sources`、`task`、`completion_criteria`字段。代码revert不等于数据可无损降级。
+- 已知`_stcore`深链404及Cloud外壳提示保留；管理日志独立可见性限制如上。桌面长门槛metric可能省略，紧邻完整文字可读。
+- 未完成真实用户效果评测、人工Gold模型质量评测；本轮不调用真实付费模型，不把技术测试通过包装成业务效果验证。
+- C08 Developer Multi-Provider／BYOK正式上线前，account、report、encrypted API key、quota、usage、provider profile应迁移到可靠持久存储；这里只保留技术债，不实施C08／C09。
+
+生产发布范围内的可观察技术检查通过，无已知新增发布阻断项。完成文档推送后的可访问性核验即停止；后续C08需要单独授权。
