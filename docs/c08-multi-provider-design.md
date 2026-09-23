@@ -29,7 +29,7 @@
 | `bailian` | OpenAI-compatible Chat | `qwen-plus` 预设；尚无模型发现 | 仅工厂基础，页面未开放 |
 | `openrouter` | OpenAI-compatible Chat | 必须显式传模型；不猜测目录 ID | 仅工厂基础，页面未开放 |
 
-百炼是平台 Provider，Qwen 是其模型家族；因此密钥与用量标记使用 `bailian`，模型 ID 可为 `qwen-*`。首批四个覆盖现有两个生产路径和两个待验证平台，避免在模型与费用尚未验证时扩大维护面。OpenAI 的 Responses API 与 DeepSeek 的专用安全选择具有真实差异，当前不把它们强行迁移到共享适配器。
+百炼是平台 Provider，Qwen 是其模型家族；因此密钥与用量标记使用 `bailian`，模型 ID 可为 `qwen-*`。这四个仅是 C08-A 的基础，不是 C08 的最终供应商范围。C08-B 的 Tier 1 目标为 OpenAI、DeepSeek、百炼、OpenRouter、SiliconFlow、Moonshot/Kimi、Zhipu/GLM、MiniMax、Google Gemini、Anthropic Claude；以后可增加 ModelScope、StepFun、xAI 等。OpenAI 的 Responses API 与 DeepSeek 的专用安全选择具有真实差异，当前不把它们强行迁移到共享适配器。开放范围和引入顺序见 [C08-OSS 研究](c08-open-source-research.md)。
 
 共享 Chat 适配器由预设注入受控 Base URL、模型与能力标记；目前不注入未经验证的 `extra_body`。DeepSeek 禁用 thinking 的 `extra_body` 留在原有适配器中，避免改变已发布请求格式。
 
@@ -43,10 +43,10 @@
 
 ## 安全边界与下一步
 
-本阶段没有自定义任意 Base URL。注册表只接受受控 ID，百炼区域配置只映射到受控端点。任意 OpenAI-compatible Provider 属于后续 P2，必须先有 SSRF 防护、DNS/IP 重绑定检查、重定向限制、凭证域隔离和审计，再讨论开放。外部模型响应仍作为不可信数据通过 `JobAnalysis` 校验，错误消息不回显凭证。
+本阶段没有自定义任意 Base URL。注册表只接受受控 ID，百炼区域配置只映射到受控端点。C08-B/C 的 Provider Preset 仍只使用官方受控端点；任意自定义端点属于 C08-D，必须先有 SSRF 防护、DNS/IP 重绑定检查、重定向限制、凭证域隔离和审计，再讨论开放。外部模型响应仍作为不可信数据通过 `JobAnalysis` 校验，错误消息不回显凭证。
 
-- **C08-B**：Developer/Admin 页面选择与 Key 生命周期、百炼区域和模型确认、端到端隔离测试；逐模型验证 JSON、Token 和费用。
-- **C08-C**：受控模型发现、缓存/失效、价格与币种来源、管理员可观测性；不自动把未知模型投入线上。
-- **C08-D**：发布准备、隐私与成本复核、真实供应商沙盒验证、浏览器回归和分阶段发布评审。
+- **C08-B — Mainstream Provider Presets + Developer BYOK**：以协议而非供应商类为主要适配边界：OpenAI Responses、OpenAI Chat Completions、Anthropic Messages、Gemini API。十家 Tier 1 供应商以受控 preset 加必要的小型 capability adapter 接入 Developer/Admin Key 生命周期与页面；不为每家复制完整 Provider 类。免费用户系统 AI 固定 DeepSeek、BYOK 不消耗 system quota、所有用户 Key 加密；先用 fake 测试并逐模型验证 JSON、Token 与费用，不把未验证能力当生产可用。
+- **C08-C — Model Discovery**：`/v1/models` 或官方目录 API、缓存/失效、模型级能力检测及 `verified/unverified`、价格/币种/上下文元数据与来源；不自动把未知模型投入线上。
+- **C08-D — Custom Provider**：协议选择、自定义端点、端点探测、连接测试，并在凭证发送前完成服务端 SSRF 防护与审计。生产发布另设隐私、成本、真实沙盒和浏览器回归评审，不与 C08-D 的功能范围混同。
 
 完成 C08-A 本地提交不代表 BYOK 已上线，也不代表供应商模型输出达到生产质量。

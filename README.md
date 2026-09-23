@@ -48,7 +48,7 @@ AI 只提取 JD 技能；原文引用核对、映射、评分、门槛与学习�
 - 支持游客、普通用户、开发者和管理员权限。
 - 支持 AI 日额度、历史分析记录和轻量管理员 Dashboard。
 - 开发者 API Key 使用 AES-256-GCM 加密后保存。
-- C08-A 已在本地分支建立四供应商预设基础；百炼/OpenRouter 尚未开放页面或生产调用。[设计与边界](docs/c08-multi-provider-design.md)。免费套餐系统 AI 仍使用 DeepSeek。
+- C08-A 已在本地分支建立四供应商预设基础；百炼/OpenRouter 尚未开放页面或生产调用。C08-B 目标是十家主流官方 Provider Preset 与 Developer BYOK，按四类 API 协议扩展；C08-C 做模型发现，C08-D 做自定义 Provider。[设计与边界](docs/c08-multi-provider-design.md) · [开源架构研究](docs/c08-open-source-research.md)。免费套餐系统 AI 仍使用 DeepSeek。
 - 开发者 API Key 提交后立即清空输入框与对应会话状态，页面只保留末四位元数据。
 - 页面切换采用隔离渲染，避免首页或上一页内容残留到当前页面。
 
