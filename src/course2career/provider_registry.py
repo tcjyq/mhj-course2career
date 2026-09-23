@@ -1,14 +1,21 @@
-"""受控 Provider 预设；新增供应商不能从请求中注入任意端点。"""
+"""静态官方 Provider 预设；用户输入永远不能决定请求端点。"""
 
+from collections.abc import Mapping
 from dataclasses import dataclass, replace
+from enum import StrEnum
 from types import MappingProxyType
-from typing import Literal
 
 from course2career.config import Settings
 from course2career.llm_provider import ProviderName
 from course2career.model_catalog import DEEPSEEK_BASE_URL
 
-ProviderProtocol = Literal["responses", "openai_compatible_chat"]
+
+class ProviderProtocol(StrEnum):
+    OPENAI_RESPONSES = "openai_responses"
+    OPENAI_CHAT = "openai_chat"
+    ANTHROPIC_MESSAGES = "anthropic_messages"
+    GEMINI_NATIVE = "gemini_native"
+
 
 BAILIAN_BASE_URLS = MappingProxyType(
     {
@@ -24,18 +31,52 @@ BAILIAN_BASE_URLS = MappingProxyType(
 class ProviderPreset:
     provider_id: ProviderName
     display_name: str
-    protocol: ProviderProtocol
-    base_url: str | None
+    primary_protocol: ProviderProtocol
+    official_endpoint_by_region: Mapping[str, str]
+    selected_endpoint_id: str
+    api_key_help_url: str
+    auth_scheme: str
     default_model: str | None
-    supports_byok: bool
-    supports_model_discovery: bool
-    supports_structured_output: bool
-    supports_thinking: bool
-    model_catalog_strategy: str
+    model_discovery_strategy: str
+    structured_output_strategy: str
+    reasoning_strategy: str
+    usage_strategy: str
+    capability_adapter_id: str | None
+    pricing_source_policy: str
+    status: str
     system_key_setting: str | None = None
-    cost_setting_prefix: str = ""
-    available_in_ui: bool = False
+    cost_setting_prefix: str | None = None
     model_setting: str | None = None
+
+    @property
+    def allowed_endpoint_ids(self) -> tuple[str, ...]:
+        return tuple(self.official_endpoint_by_region)
+
+    @property
+    def base_url(self) -> str:
+        return self.endpoint(self.selected_endpoint_id)
+
+    @property
+    def protocol(self) -> ProviderProtocol:
+        return self.primary_protocol
+
+    @property
+    def supports_byok(self) -> bool:
+        return True
+
+    @property
+    def supports_model_discovery(self) -> bool:
+        return self.model_discovery_strategy == "auto_safe"
+
+    @property
+    def supports_structured_output(self) -> bool:
+        return self.structured_output_strategy == "json_object"
+
+    def endpoint(self, endpoint_id: str) -> str:
+        try:
+            return self.official_endpoint_by_region[endpoint_id]
+        except KeyError as exc:
+            raise ValueError("不支持的官方端点。") from exc
 
     def configured_model(self, settings: Settings) -> str | None:
         return (
@@ -44,72 +85,200 @@ class ProviderPreset:
             else self.default_model
         )
 
-    def cost_rates(self, settings: Settings) -> tuple[float, float]:
+    def cost_rates(self, settings: Settings) -> tuple[float | None, float | None]:
+        if self.cost_setting_prefix is None:
+            return None, None
         return (
             getattr(settings, f"{self.cost_setting_prefix}_input_cost_per_million"),
             getattr(settings, f"{self.cost_setting_prefix}_output_cost_per_million"),
         )
 
 
-PROVIDER_PRESETS = MappingProxyType(
+def _endpoints(**regions: str) -> Mapping[str, str]:
+    return MappingProxyType(
+        {name.removesuffix("_"): url for name, url in regions.items()}
+    )
+
+
+PROVIDER_PRESETS: Mapping[ProviderName, ProviderPreset] = MappingProxyType(
     {
         ProviderName.OPENAI: ProviderPreset(
             ProviderName.OPENAI,
             "OpenAI",
-            "responses",
-            None,
+            ProviderProtocol.OPENAI_RESPONSES,
+            _endpoints(global_="https://api.openai.com/v1"),
+            "global",
+            "https://platform.openai.com/api-keys",
+            "bearer",
             "gpt-5.6-luna",
-            True,
-            False,
-            True,
-            False,
-            "configured",
+            "later",
+            "responses_pydantic",
+            "model_specific",
+            "responses_usage",
+            None,
+            "configured_rates",
+            "legacy",
             "openai_api_key",
             "openai",
-            True,
             "openai_model",
         ),
         ProviderName.DEEPSEEK: ProviderPreset(
             ProviderName.DEEPSEEK,
             "DeepSeek",
-            "openai_compatible_chat",
-            DEEPSEEK_BASE_URL,
+            ProviderProtocol.OPENAI_CHAT,
+            _endpoints(global_=DEEPSEEK_BASE_URL),
+            "global",
+            "https://platform.deepseek.com/api_keys",
+            "bearer",
             "deepseek-v4-flash",
-            True,
-            True,
-            True,
-            True,
+            "auto_safe",
+            "json_object",
+            "disabled_by_default",
+            "chat_usage",
             "deepseek_auto_safe",
+            "configured_rates",
+            "legacy",
             "deepseek_api_key",
             "deepseek",
-            True,
             "deepseek_model",
         ),
         ProviderName.BAILIAN: ProviderPreset(
             ProviderName.BAILIAN,
             "阿里云百炼",
-            "openai_compatible_chat",
-            BAILIAN_BASE_URLS["cn-beijing"],
+            ProviderProtocol.OPENAI_CHAT,
+            BAILIAN_BASE_URLS,
+            "cn-beijing",
+            "https://help.aliyun.com/en/model-studio/get-api-key",
+            "bearer",
             "qwen-plus",
-            True,
-            False,
-            False,
-            False,
-            "configured",
+            "later",
+            "prompt_json",
+            "model_specific",
+            "chat_usage",
+            None,
+            "configured_rates",
+            "candidate",
             cost_setting_prefix="bailian",
         ),
         ProviderName.OPENROUTER: ProviderPreset(
             ProviderName.OPENROUTER,
             "OpenRouter",
-            "openai_compatible_chat",
-            "https://openrouter.ai/api/v1",
+            ProviderProtocol.OPENAI_CHAT,
+            _endpoints(global_="https://openrouter.ai/api/v1"),
+            "global",
+            "https://openrouter.ai/settings/keys",
+            "bearer",
             None,
-            True,
-            False,
-            False,
-            False,
-            "explicit_model_pending_discovery",
+            "later",
+            "prompt_json",
+            "model_specific",
+            "chat_usage",
+            None,
+            "configured_rates",
+            "candidate",
             cost_setting_prefix="openrouter",
+        ),
+        ProviderName.SILICONFLOW: ProviderPreset(
+            ProviderName.SILICONFLOW,
+            "SiliconFlow",
+            ProviderProtocol.OPENAI_CHAT,
+            _endpoints(cn="https://api.siliconflow.cn/v1"),
+            "cn",
+            "https://docs.siliconflow.cn/docs/userguide/quickstart",
+            "bearer",
+            None,
+            "later",
+            "prompt_json",
+            "model_specific",
+            "chat_usage",
+            None,
+            "unknown",
+            "candidate",
+        ),
+        ProviderName.MOONSHOT: ProviderPreset(
+            ProviderName.MOONSHOT,
+            "Moonshot / Kimi",
+            ProviderProtocol.OPENAI_CHAT,
+            _endpoints(cn="https://api.moonshot.cn/v1"),
+            "cn",
+            "https://platform.kimi.com/docs/api/chat",
+            "bearer",
+            None,
+            "later",
+            "prompt_json",
+            "model_specific",
+            "chat_usage",
+            None,
+            "unknown",
+            "candidate",
+        ),
+        ProviderName.ZHIPU: ProviderPreset(
+            ProviderName.ZHIPU,
+            "Zhipu / GLM",
+            ProviderProtocol.OPENAI_CHAT,
+            _endpoints(cn="https://open.bigmodel.cn/api/paas/v4"),
+            "cn",
+            "https://docs.bigmodel.cn/cn/guide/develop/http/introduction",
+            "bearer",
+            None,
+            "later",
+            "prompt_json",
+            "model_specific",
+            "chat_usage",
+            None,
+            "unknown",
+            "candidate",
+        ),
+        ProviderName.MINIMAX: ProviderPreset(
+            ProviderName.MINIMAX,
+            "MiniMax",
+            ProviderProtocol.OPENAI_CHAT,
+            _endpoints(global_="https://api.minimax.io/v1"),
+            "global",
+            "https://platform.minimax.io/docs/api-reference/text-openai-api",
+            "bearer",
+            "MiniMax-M3",
+            "later",
+            "prompt_json",
+            "model_specific",
+            "chat_usage",
+            "minimax_text_only",
+            "unknown",
+            "candidate",
+        ),
+        ProviderName.GEMINI: ProviderPreset(
+            ProviderName.GEMINI,
+            "Google Gemini",
+            ProviderProtocol.GEMINI_NATIVE,
+            _endpoints(global_="https://generativelanguage.googleapis.com/v1beta"),
+            "global",
+            "https://ai.google.dev/gemini-api/docs/api-key",
+            "x-goog-api-key",
+            None,
+            "later",
+            "json_mime",
+            "model_specific",
+            "gemini_usage",
+            None,
+            "unknown",
+            "candidate",
+        ),
+        ProviderName.ANTHROPIC: ProviderPreset(
+            ProviderName.ANTHROPIC,
+            "Anthropic Claude",
+            ProviderProtocol.ANTHROPIC_MESSAGES,
+            _endpoints(global_="https://api.anthropic.com"),
+            "global",
+            "https://console.anthropic.com/settings/keys",
+            "x-api-key",
+            None,
+            "later",
+            "prompt_json",
+            "model_specific",
+            "messages_usage",
+            None,
+            "unknown",
+            "candidate",
         ),
     }
 )
@@ -124,20 +293,21 @@ def get_provider_preset(
     except (ValueError, KeyError) as exc:
         raise ValueError("不支持的模型供应商。") from exc
     if provider_id == ProviderName.BAILIAN and settings is not None:
-        try:
-            base_url = (
-                settings.bailian_base_url or BAILIAN_BASE_URLS[settings.bailian_region]
-            )
-        except KeyError as exc:
-            raise ValueError("不支持的百炼服务区域。") from exc
-        if base_url not in BAILIAN_BASE_URLS.values():
-            raise ValueError("百炼 Base URL 必须是受控区域端点。")
-        return replace(preset, base_url=base_url)
+        if settings.bailian_base_url:
+            endpoint_ids = [
+                name
+                for name, url in BAILIAN_BASE_URLS.items()
+                if url == settings.bailian_base_url
+            ]
+            if not endpoint_ids:
+                raise ValueError("百炼 Base URL 必须是受控区域端点。")
+            return replace(preset, selected_endpoint_id=endpoint_ids[0])
+        if settings.bailian_region not in BAILIAN_BASE_URLS:
+            raise ValueError("不支持的百炼服务区域。")
+        return replace(preset, selected_endpoint_id=settings.bailian_region)
     return preset
 
 
 def ui_provider_presets() -> tuple[ProviderPreset, ...]:
-    """C08-A 仅保留已发布的两种页面选择，后续阶段再启用新预设。"""
-    return tuple(
-        preset for preset in PROVIDER_PRESETS.values() if preset.available_in_ui
-    )
+    """所有 Developer/Admin 可配置的官方预设；能否分析另看 Key 与模型。"""
+    return tuple(PROVIDER_PRESETS.values())

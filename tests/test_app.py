@@ -464,13 +464,10 @@ render_developer_page(
     ).run()
 
     assert not analysis_app.exception
-    assert "开发者API Key" in analysis_app.radio[0].options
+    assert analysis_app.radio[0].options == ["本地规则"]
     assert not key_app.exception
-    assert key_app.title[0].value == "开发者API Key"
-    assert next(box for box in key_app.selectbox if box.label == "供应商").options == [
-        "OpenAI",
-        "DeepSeek",
-    ]
+    assert key_app.title[0].value == "我的 AI Provider"
+    assert len([box for box in key_app.selectbox if box.label == "官方端点"]) == 10
 
 
 def test_developer_api_key_input_is_cleared_after_save(tmp_path: Path) -> None:
@@ -511,13 +508,19 @@ render_developer_page(
 """
     ).run()
 
-    original_widget_key = app.text_input[0].key
-    app.text_input[0].set_value("sk-test-secret-value")
-    app.button[-1].click().run(timeout=5)
+    secret_input = next(
+        item for item in app.text_input if item.label == "API Key（更新时填写新 Key）"
+    )
+    original_widget_key = secret_input.key
+    secret_input.set_value("sk-test-secret-value")
+    next(item for item in app.button if item.label == "保存配置").click().run(timeout=5)
 
     assert not app.exception
-    assert app.text_input[0].value == ""
-    assert app.text_input[0].key != original_widget_key
+    new_secret_input = next(
+        item for item in app.text_input if item.label == "API Key（更新时填写新 Key）"
+    )
+    assert new_secret_input.value == ""
+    assert new_secret_input.key != original_widget_key
 
 
 def test_quota_and_membership_pages_render(tmp_path: Path) -> None:
@@ -583,7 +586,7 @@ render_admin_dashboard(
         "今日分析次数",
         "AI调用次数",
         "Token消耗",
-        "预计费用",
+        "已配置费率的预计费用",
     }.issubset({metric.label for metric in app.metric})
 
 

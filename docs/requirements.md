@@ -24,7 +24,7 @@
 - 未提取到技能时阻止分析并给出可读提示。
 - 用户可编辑或排除技能，至少保留一项后才能生成报告。
 - DeepSeek 默认采用 Auto-Safe：仅从官方目录中“当前可用且已通过应用验证”的模型选择。
-- C08-A 免费套餐系统 AI 只提供 DeepSeek；已有开发者 OpenAI/DeepSeek 路径保持可用。百炼和 OpenRouter 只具备受控预设与工厂基础，暂不进入页面选择。C08-B 目标为十家主流 Provider Preset + Developer BYOK：OpenAI、DeepSeek、百炼、OpenRouter、SiliconFlow、Moonshot/Kimi、Zhipu/GLM、MiniMax、Google Gemini、Anthropic Claude；按 OpenAI Responses、OpenAI Chat Completions、Anthropic Messages、Gemini API 四类协议复用适配器。BYOK 不消耗平台 system quota，所有用户 Key 加密，预设只使用受控官方端点。C08-C 负责模型发现与能力/价格元数据；C08-D 才开放经 SSRF 防护的自定义 Provider。以上为未来目标，当前尚未实现。
+- C08-B1 本地实现十家主流官方 Provider Preset + Developer/Admin BYOK：OpenAI、DeepSeek、百炼、OpenRouter、SiliconFlow、Moonshot/Kimi、Zhipu/GLM、MiniMax、Google Gemini、Anthropic Claude；按 OpenAI Responses、OpenAI Chat Completions、Anthropic Messages、Gemini API 四类协议复用适配器。免费套餐系统 AI 只提供 DeepSeek；分析页只显示已配置 Key 且有模型 ID 的用户 Provider。用户 Key 使用 AES-256-GCM，BYOK 不消耗平台 system quota，端点只取受控官方 ID。新增模型仅有 fake 契约测试，真实兼容性待验证；价格未知不显示为免费。C08-C 才实现通用模型发现与能力/价格元数据；C08-D 才开放经 SSRF 防护的自定义 Provider。
 - 官方目录不可用时允许使用有效旧缓存或固定回退模型；未知模型不得自动上线。
 - 主模型返回模型不存在错误时，最多尝试一个已验证备用模型；限流、鉴权和服务错误不得触发跨模型重试。
 

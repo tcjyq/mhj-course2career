@@ -34,6 +34,7 @@ from course2career.jd_analyzer import (
 from course2career.llm_client import LLMClientError
 from course2career.llm_provider import ProviderName
 from course2career.llm_providers import ProviderError
+from course2career.model_capability import Verification, model_capability
 from course2career.models import AnalysisReport, JobAnalysis, JobSkill
 from course2career.permissions import (
     Permission,
@@ -44,6 +45,7 @@ from course2career.permissions import (
     authorize,
 )
 from course2career.provider_factory import LLMProviderFactory
+from course2career.provider_profile import ProviderProfileService
 from course2career.provider_registry import get_provider_preset, ui_provider_presets
 from course2career.report_exporter import (
     export_adaptability_markdown,
@@ -61,6 +63,7 @@ def render_analysis_page(
     record_service: AnalysisRecordService,
     api_key_service: APIKeyService | None,
     guest_session_id: str,
+    profile_service: ProviderProfileService | None = None,
 ) -> None:
     st.title("个人分析")
     st.caption("课程、个人经历、岗位要求、五维适配度和能力路线集中在一个流程中。")
@@ -157,10 +160,10 @@ def render_analysis_page(
         analysis_modes = ["本地规则"]
         if system_providers:
             analysis_modes.append("系统AI")
-        if (
-            principal.plan in {Plan.DEVELOPER, Plan.ADMIN}
-            and api_key_service is not None
-        ):
+        byok_providers = configured_byok_providers(
+            principal, api_key_service, profile_service
+        )
+        if byok_providers:
             analysis_modes.append("开发者API Key")
 
         analysis_mode = st.radio(
@@ -178,11 +181,10 @@ def render_analysis_page(
         selected_model = get_provider_preset(ProviderName.OPENAI).configured_model(
             settings
         )
+        selected_endpoint_id: str | None = None
         if analysis_mode != "本地规则":
             provider_options = (
-                system_providers
-                if analysis_mode == "系统AI"
-                else [preset.provider_id for preset in ui_provider_presets()]
+                system_providers if analysis_mode == "系统AI" else list(byok_providers)
             )
             selected_provider = st.selectbox(
                 "模型供应商",
@@ -192,6 +194,11 @@ def render_analysis_page(
             selected_model = get_provider_preset(selected_provider).configured_model(
                 settings
             )
+            if analysis_mode == "开发者API Key" and profile_service is not None:
+                profile = profile_service.get(principal, selected_provider)
+                if profile is not None:
+                    selected_model = profile.model_id
+                    selected_endpoint_id = profile.endpoint_id
             if selected_provider == ProviderName.DEEPSEEK:
                 if getattr(settings, "deepseek_model_mode", "pinned") == "auto_safe":
                     preference = " → ".join(
@@ -206,6 +213,12 @@ def render_analysis_page(
                     st.caption(f"当前固定模型：{selected_model}")
             else:
                 st.caption(f"当前模型：{selected_model}")
+            if analysis_mode == "开发者API Key" and selected_model:
+                if (
+                    model_capability(selected_provider, selected_model).verification
+                    != Verification.VERIFIED
+                ):
+                    st.caption("未验证模型：预设可配置不代表真实提取已通过。")
 
         if st.button("提取岗位技能", type="primary"):
             usage_id = None
@@ -223,6 +236,7 @@ def render_analysis_page(
                         provider=selected_provider,
                         key_mode=key_mode,
                         model=selected_model or "",
+                        endpoint_id=selected_endpoint_id,
                     )
                     usage_id = usage_service.start_call(
                         principal,
@@ -687,6 +701,35 @@ def render_demo_cases() -> None:
         if st.button("重新开始合成演示"):
             st.session_state.pop("demo_result", None)
         saved = st.session_state.get("demo_result")
-        if saved is not None and saved[0] == case_id:
-            # 与真实输入报告共用渲染器；演示仅保存独立会话结果。
-            render_adaptability_report(saved[1], key_prefix="demo_")
+    if saved is not None and saved[0] == case_id:
+        # 与真实输入报告共用渲染器；演示仅保存独立会话结果。
+        render_adaptability_report(saved[1], key_prefix="demo_")
+
+
+def configured_byok_providers(
+    principal: Principal,
+    api_key_service: APIKeyService | None,
+    profile_service: ProviderProfileService | None,
+) -> tuple[ProviderName, ...]:
+    if api_key_service is None:
+        return ()
+    try:
+        authorize(principal, Permission.USE_OWN_API_KEY)
+    except PermissionDeniedError:
+        return ()
+    saved = {item.provider for item in api_key_service.list_keys(principal)}
+    profiles = (
+        {ProviderName(item.provider): item for item in profile_service.list(principal)}
+        if profile_service is not None
+        else {}
+    )
+    return tuple(
+        preset.provider_id
+        for preset in ui_provider_presets()
+        if preset.provider_id in saved
+        and (
+            profiles[preset.provider_id].model_id
+            if preset.provider_id in profiles
+            else preset.default_model
+        )
+    )

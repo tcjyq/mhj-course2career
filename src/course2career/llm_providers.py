@@ -9,7 +9,7 @@ from course2career.model_catalog import (
     DEEPSEEK_BASE_URL,
 )
 from course2career.models import JobAnalysis
-from course2career.provider_registry import ProviderPreset
+from course2career.provider_registry import ProviderPreset, ProviderProtocol
 
 PROMPT_PATH = Path(__file__).resolve().parents[2] / "prompts" / "extract_jd_skills.txt"
 DEEPSEEK_MODELS = APPROVED_DEEPSEEK_MODELS
@@ -28,25 +28,31 @@ class OpenAICompatibleChatProvider:
         preset: ProviderPreset,
         api_key: str,
         model: str,
+        endpoint_id: str | None = None,
         timeout_seconds: float = 30,
         sdk_client: Any | None = None,
     ) -> None:
         if not api_key or not model or not model.strip() or len(model) > 200:
             raise ProviderError("模型或开发者API Key配置无效。")
-        if preset.protocol != "openai_compatible_chat" or not preset.base_url:
+        if preset.primary_protocol != ProviderProtocol.OPENAI_CHAT:
             raise ProviderError("模型供应商协议配置无效。")
+        try:
+            endpoint = preset.endpoint(endpoint_id or preset.selected_endpoint_id)
+        except ValueError as exc:
+            raise ProviderError(str(exc)) from exc
         self.preset = preset
         self.model = model.strip()
         self._last_usage: LLMUsage | None = None
         if sdk_client is None:
             try:
-                from openai import OpenAI
+                from openai import DefaultHttpxClient, OpenAI
             except ImportError as exc:
                 raise ProviderError("未安装OpenAI兼容SDK。") from exc
             sdk_client = OpenAI(
                 api_key=api_key,
-                base_url=preset.base_url,
+                base_url=endpoint,
                 timeout=timeout_seconds,
+                http_client=DefaultHttpxClient(follow_redirects=False),
             )
         self.client = sdk_client
 
@@ -83,6 +89,8 @@ class OpenAICompatibleChatProvider:
         }
         if self.preset.supports_structured_output:
             kwargs["response_format"] = {"type": "json_object"}
+        if self.preset.capability_adapter_id == "minimax_text_only":
+            kwargs["extra_body"] = {"reasoning_split": True}
         try:
             response = self.client.chat.completions.create(**kwargs)
             usage = getattr(response, "usage", None)
@@ -105,6 +113,7 @@ class OpenAICompatibleChatProvider:
                 update={"source": "ai"}
             )
         except Exception as exc:
+            self._last_usage = None
             raise ProviderError("模型服务暂时不可用，请检查配置后重试。") from exc
 
 
@@ -136,13 +145,14 @@ class DeepSeekProvider:
         self._last_usage: LLMUsage | None = None
         if sdk_client is None:
             try:
-                from openai import OpenAI
+                from openai import DefaultHttpxClient, OpenAI
             except ImportError as exc:
                 raise ProviderError("未安装OpenAI兼容SDK。") from exc
             sdk_client = OpenAI(
                 api_key=api_key,
                 base_url=DEEPSEEK_BASE_URL,
                 timeout=timeout_seconds,
+                http_client=DefaultHttpxClient(follow_redirects=False),
             )
         self.client = sdk_client
 

@@ -1,4 +1,5 @@
 import json
+import re
 import sqlite3
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -6,6 +7,7 @@ from pathlib import Path
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
+from course2career.llm_provider import ProviderName
 from course2career.models import AdaptabilityReport, AnalysisReport
 from course2career.user_repository import SQLiteUserRepository
 
@@ -41,12 +43,23 @@ class StoredAPIKey:
 
 
 @dataclass(frozen=True)
+class StoredProviderProfile:
+    user_id: str
+    provider: str
+    endpoint_id: str
+    model_id: str
+    created_time: str
+    updated_time: str
+
+
+@dataclass(frozen=True)
 class AdminOverview:
     user_count: int
     today_analysis_count: int
     ai_call_count: int
     total_tokens: int
     estimated_cost: float
+    unknown_cost_calls: int
 
 
 @dataclass(frozen=True)
@@ -133,6 +146,7 @@ class SQLiteProductRepository(SQLiteUserRepository):
         input_tokens: int = 0,
         output_tokens: int = 0,
         cost: float = 0,
+        cost_status: str = "unknown",
         model: str | None = None,
     ) -> None:
         with self._connect() as connection:
@@ -140,10 +154,19 @@ class SQLiteProductRepository(SQLiteUserRepository):
                 """
                 UPDATE api_usage
                 SET status = ?, input_tokens = ?, output_tokens = ?, cost = ?,
+                    cost_status = ?,
                     model = COALESCE(?, model)
                 WHERE id = ?
                 """,
-                (status, input_tokens, output_tokens, cost, model, usage_id),
+                (
+                    status,
+                    input_tokens,
+                    output_tokens,
+                    cost,
+                    cost_status,
+                    model,
+                    usage_id,
+                ),
             )
 
     def count_ai_calls_today(
@@ -265,7 +288,9 @@ class SQLiteProductRepository(SQLiteUserRepository):
                 """
                 SELECT COUNT(*),
                        COALESCE(SUM(input_tokens + output_tokens), 0),
-                       COALESCE(SUM(cost), 0)
+                       COALESCE(SUM(cost), 0),
+                       COALESCE(SUM(CASE WHEN cost_status = 'unknown'
+                           THEN 1 ELSE 0 END), 0)
                 FROM api_usage
                 """
             ).fetchone()
@@ -275,6 +300,7 @@ class SQLiteProductRepository(SQLiteUserRepository):
             ai_call_count=int(usage[0]),
             total_tokens=int(usage[1]),
             estimated_cost=float(usage[2]),
+            unknown_cost_calls=int(usage[3]),
         )
 
     def list_users_for_admin(self) -> list[AdminUserSummary]:
@@ -370,11 +396,62 @@ class SQLiteProductRepository(SQLiteUserRepository):
                 (user_id, provider),
             )
 
+    def upsert_provider_profile(self, profile: StoredProviderProfile) -> None:
+        with self._connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO user_provider_profiles (
+                    user_id, provider, endpoint_id, model_id,
+                    created_time, updated_time
+                ) VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT(user_id, provider) DO UPDATE SET
+                    endpoint_id = excluded.endpoint_id,
+                    model_id = excluded.model_id,
+                    updated_time = excluded.updated_time
+                """,
+                (
+                    profile.user_id,
+                    profile.provider,
+                    profile.endpoint_id,
+                    profile.model_id,
+                    profile.created_time,
+                    profile.updated_time,
+                ),
+            )
+
+    def get_provider_profile(
+        self, user_id: str, provider: str
+    ) -> StoredProviderProfile | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT * FROM user_provider_profiles "
+                "WHERE user_id = ? AND provider = ?",
+                (user_id, provider),
+            ).fetchone()
+        return StoredProviderProfile(**dict(row)) if row is not None else None
+
+    def list_provider_profiles(self, user_id: str) -> list[StoredProviderProfile]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT * FROM user_provider_profiles "
+                "WHERE user_id = ? ORDER BY provider",
+                (user_id,),
+            ).fetchall()
+        return [StoredProviderProfile(**dict(row)) for row in rows]
+
+    def delete_provider_profile(self, user_id: str, provider: str) -> None:
+        with self._connect() as connection:
+            connection.execute(
+                "DELETE FROM user_provider_profiles WHERE user_id = ? AND provider = ?",
+                (user_id, provider),
+            )
+
     def _initialize_schema(self) -> None:
         super()._initialize_schema()
         with self._connect() as connection:
             connection.executescript(
                 """
+                BEGIN IMMEDIATE;
                 CREATE TABLE IF NOT EXISTS api_usage (
                     id TEXT PRIMARY KEY,
                     user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
@@ -385,6 +462,8 @@ class SQLiteProductRepository(SQLiteUserRepository):
                     input_tokens INTEGER NOT NULL DEFAULT 0 CHECK (input_tokens >= 0),
                     output_tokens INTEGER NOT NULL DEFAULT 0 CHECK (output_tokens >= 0),
                     cost NUMERIC NOT NULL DEFAULT 0 CHECK (cost >= 0),
+                    cost_status TEXT NOT NULL DEFAULT 'unknown'
+                        CHECK (cost_status IN ('estimated', 'unknown')),
                     status TEXT NOT NULL,
                     created_time TEXT NOT NULL,
                     CHECK (user_id IS NOT NULL OR guest_session_id IS NOT NULL)
@@ -410,7 +489,11 @@ class SQLiteProductRepository(SQLiteUserRepository):
                 CREATE TABLE IF NOT EXISTS user_api_keys (
                     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
                     provider TEXT NOT NULL CHECK (
-                        provider IN ('openai', 'deepseek', 'bailian', 'openrouter')
+                        provider IN (
+                            'openai', 'deepseek', 'bailian', 'openrouter',
+                            'siliconflow', 'moonshot', 'zhipu', 'minimax',
+                            'gemini', 'anthropic'
+                        )
                     ),
                     encrypted_key BLOB NOT NULL,
                     nonce BLOB NOT NULL CHECK (length(nonce) = 12),
@@ -418,9 +501,34 @@ class SQLiteProductRepository(SQLiteUserRepository):
                     updated_time TEXT NOT NULL,
                     PRIMARY KEY (user_id, provider)
                 );
+
+                CREATE TABLE IF NOT EXISTS user_provider_profiles (
+                    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    provider TEXT NOT NULL,
+                    endpoint_id TEXT NOT NULL,
+                    model_id TEXT NOT NULL,
+                    created_time TEXT NOT NULL,
+                    updated_time TEXT NOT NULL,
+                    PRIMARY KEY (user_id, provider)
+                );
                 """
             )
-            self._extend_api_key_provider_constraint(connection)
+            try:
+                columns = {
+                    row["name"]
+                    for row in connection.execute("PRAGMA table_info(api_usage)")
+                }
+                if "cost_status" not in columns:
+                    connection.execute(
+                        "ALTER TABLE api_usage ADD COLUMN cost_status TEXT "
+                        "NOT NULL DEFAULT 'unknown' "
+                        "CHECK (cost_status IN ('estimated', 'unknown'))"
+                    )
+                self._extend_api_key_provider_constraint(connection)
+                connection.commit()
+            except Exception:
+                connection.rollback()
+                raise
 
     @staticmethod
     def _extend_api_key_provider_constraint(connection: sqlite3.Connection) -> None:
@@ -429,18 +537,28 @@ class SQLiteProductRepository(SQLiteUserRepository):
             "SELECT sql FROM sqlite_master "
             "WHERE type = 'table' AND name = 'user_api_keys'"
         ).fetchone()[0]
-        if "'bailian'" in schema and "'openrouter'" in schema:
-            return
-        if "provider IN ('openai', 'deepseek')" not in " ".join(schema.split()):
+        match = re.search(r"provider\s+IN\s*\(([^)]*)\)", schema, re.I)
+        if match is None:
             raise RuntimeError("无法识别 API Key 表约束，已停止自动升级。")
-        connection.execute("BEGIN IMMEDIATE")
-        try:
-            connection.execute(
-                """
+        actual = set(re.findall(r"'([a-z0-9_]+)'", match.group(1)))
+        target = {provider.value for provider in ProviderName}
+        if actual == target:
+            return
+        if actual not in (
+            {"openai", "deepseek"},
+            {"openai", "deepseek", "bailian", "openrouter"},
+        ):
+            raise RuntimeError("无法识别 API Key 表约束，已停止自动升级。")
+        connection.execute(
+            """
                 CREATE TABLE user_api_keys_c08 (
                     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
                     provider TEXT NOT NULL CHECK (
-                        provider IN ('openai', 'deepseek', 'bailian', 'openrouter')
+                        provider IN (
+                            'openai', 'deepseek', 'bailian', 'openrouter',
+                            'siliconflow', 'moonshot', 'zhipu', 'minimax',
+                            'gemini', 'anthropic'
+                        )
                     ),
                     encrypted_key BLOB NOT NULL,
                     nonce BLOB NOT NULL CHECK (length(nonce) = 12),
@@ -449,21 +567,17 @@ class SQLiteProductRepository(SQLiteUserRepository):
                     PRIMARY KEY (user_id, provider)
                 )
                 """
-            )
-            connection.execute(
-                """
+        )
+        connection.execute(
+            """
                 INSERT INTO user_api_keys_c08
                     (user_id, provider, encrypted_key, nonce, last_four, updated_time)
                 SELECT user_id, provider, encrypted_key, nonce, last_four, updated_time
                 FROM user_api_keys
                 """
-            )
-            connection.execute("DROP TABLE user_api_keys")
-            connection.execute("ALTER TABLE user_api_keys_c08 RENAME TO user_api_keys")
-            connection.commit()
-        except Exception:
-            connection.rollback()
-            raise
+        )
+        connection.execute("DROP TABLE user_api_keys")
+        connection.execute("ALTER TABLE user_api_keys_c08 RENAME TO user_api_keys")
 
 
 def _parse_report_snapshot(snapshot: str) -> AnalysisReport | AdaptabilityReport:

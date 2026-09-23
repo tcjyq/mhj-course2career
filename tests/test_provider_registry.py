@@ -13,19 +13,33 @@ from course2career.provider_registry import (
 )
 
 
-def test_registry_has_exactly_four_stable_ids_and_labels() -> None:
+def test_registry_has_ten_stable_ids_and_labels() -> None:
     assert set(PROVIDER_PRESETS) == set(ProviderName)
     assert {item.provider_id.value for item in PROVIDER_PRESETS.values()} == {
         "deepseek",
         "openai",
         "bailian",
         "openrouter",
+        "siliconflow",
+        "moonshot",
+        "zhipu",
+        "minimax",
+        "gemini",
+        "anthropic",
     }
     assert get_provider_preset("bailian").display_name == "阿里云百炼"
     assert get_provider_preset("openrouter").display_name == "OpenRouter"
     assert [preset.provider_id for preset in ui_provider_presets()] == [
         ProviderName.OPENAI,
         ProviderName.DEEPSEEK,
+        ProviderName.BAILIAN,
+        ProviderName.OPENROUTER,
+        ProviderName.SILICONFLOW,
+        ProviderName.MOONSHOT,
+        ProviderName.ZHIPU,
+        ProviderName.MINIMAX,
+        ProviderName.GEMINI,
+        ProviderName.ANTHROPIC,
     ]
 
 

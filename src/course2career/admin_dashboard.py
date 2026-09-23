@@ -50,10 +50,15 @@ def render_admin_dashboard(
 
     st.markdown("## AI成本")
     st.metric(
-        "预计费用",
+        "已配置费率的预计费用",
         f"{overview.estimated_cost:,.4f}",
         help="所有供应商单价需使用同一币种；仅用于预算观察，不作为账单依据。",
     )
+    if overview.unknown_cost_calls:
+        st.caption(
+            f"另有 {overview.unknown_cost_calls} 次调用费用估算未配置；"
+            "上方合计不代表全部实际费用。"
+        )
 
     if settings is not None and model_catalog is not None:
         _render_deepseek_model_status(settings, model_catalog)

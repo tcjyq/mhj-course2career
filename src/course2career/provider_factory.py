@@ -14,8 +14,9 @@ from course2career.model_catalog import (
     DeepSeekModelCatalog,
     ModelDiscoveryError,
 )
+from course2career.native_providers import AnthropicMessagesProvider, GeminiProvider
 from course2career.permissions import Plan, Principal
-from course2career.provider_registry import get_provider_preset
+from course2career.provider_registry import ProviderProtocol, get_provider_preset
 
 
 class LLMProviderFactory:
@@ -42,12 +43,17 @@ class LLMProviderFactory:
         provider: ProviderName,
         key_mode: str,
         model: str,
+        endpoint_id: str | None = None,
     ) -> LLMProvider:
         try:
             preset = get_provider_preset(provider, self.settings)
         except ValueError as exc:
             raise ProviderError(str(exc)) from exc
         provider = preset.provider_id
+        try:
+            preset.endpoint(endpoint_id or preset.selected_endpoint_id)
+        except ValueError as exc:
+            raise ProviderError(str(exc)) from exc
         if (
             key_mode == "system"
             and principal.plan == Plan.FREE
@@ -87,13 +93,35 @@ class LLMProviderFactory:
             )
         if (
             key_mode == "user"
-            and preset.supports_byok
-            and preset.protocol == "openai_compatible_chat"
+            and preset.primary_protocol == ProviderProtocol.OPENAI_CHAT
         ):
             return OpenAICompatibleChatProvider(
                 preset=preset,
                 api_key=api_key,
                 model=model or preset.default_model or "",
+                endpoint_id=endpoint_id,
+                timeout_seconds=self.settings.openai_timeout_seconds,
+            )
+        if (
+            key_mode == "user"
+            and preset.primary_protocol == ProviderProtocol.ANTHROPIC_MESSAGES
+        ):
+            return AnthropicMessagesProvider(
+                preset=preset,
+                api_key=api_key,
+                model=model or preset.default_model or "",
+                endpoint_id=endpoint_id,
+                timeout_seconds=self.settings.openai_timeout_seconds,
+            )
+        if (
+            key_mode == "user"
+            and preset.primary_protocol == ProviderProtocol.GEMINI_NATIVE
+        ):
+            return GeminiProvider(
+                preset=preset,
+                api_key=api_key,
+                model=model or preset.default_model or "",
+                endpoint_id=endpoint_id,
                 timeout_seconds=self.settings.openai_timeout_seconds,
             )
         raise ProviderError("不支持的模型供应商。")

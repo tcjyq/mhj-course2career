@@ -11,6 +11,12 @@ class ProviderName(StrEnum):
     DEEPSEEK = "deepseek"
     BAILIAN = "bailian"
     OPENROUTER = "openrouter"
+    SILICONFLOW = "siliconflow"
+    MOONSHOT = "moonshot"
+    ZHIPU = "zhipu"
+    MINIMAX = "minimax"
+    GEMINI = "gemini"
+    ANTHROPIC = "anthropic"
 
 
 class LLMUsage(BaseModel):

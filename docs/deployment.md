@@ -72,6 +72,8 @@ Streamlit Community Cloud 本地 SQLite 仅适合作品集 Demo / 临时状态�
 
 初始化采用幂等建表及管理员初始化逻辑；保留管理员 Secrets 不等于备份全部账户、报告或额度记录。C01—C07 没有 SQLite 表结构迁移，只有报告 JSON 新增可选 `sources`、`task`、`completion_criteria` 字段：新版本可读取旧快照，基线版本的严格模型会拒绝含新字段的快照。代码回退与数据恢复必须分别处理，不能直接覆盖或删除生产数据库。
 
+C08-B1 本地代码首次启动会在事务中把 `user_api_keys.provider` 的旧 2/4 值约束扩展到十值，原样复制密文、nonce、时间戳和用户归属；同时建立 `user_provider_profiles` 并给用量表增加 `cost_status`，旧费用状态保守记为 `unknown`。迁移可重复执行且失败会回滚。**尚未在生产数据库执行**；部署前需对生产数据做备份、恢复演练与迁移审查。所有用户 Key 继续使用原 AES-GCM 关联数据，必须保留原加密主密钥。B1 不增加供应商生产 Secret，也不开放 Custom Base URL。
+
 在 C08 Developer BYOK 正式上线前，应将 account、report、encrypted API key、quota、usage、provider profile 迁移到可靠持久存储，并验证备份恢复与权限隔离。本条仅记录技术债，C01—C07 不实施该迁移或 Provider Profile 功能。
 
 ### 生产运行时与发布门槛

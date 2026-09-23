@@ -1,5 +1,11 @@
 # Course2Career 开发日志
 
+## 2026-09-23 C08-B1 主流 Provider BYOK 基础（本地，未发布）
+
+新增十家官方受控预设和四类协议路由，保留旧 OpenAI Responses 与 DeepSeek Auto-Safe；Developer/Admin 统一卡片可加密保存、更新、删除 Key，配置端点 ID／模型 ID，分析页只列当前账户已配置 Provider。新增 Anthropic Messages、Gemini Native 适配器、合成 JD 连接测试契约和模型级验证状态。SQLite 将旧 2/4 值 Key 约束事务化扩到十值，保留原密文与 nonce，新增用户 Profile 和费用 `estimated/unknown`。官方来源见 [Provider 矩阵](c08-provider-matrix.md)，架构决定见 [ADR 003](decisions/003-protocol-based-byok-provider-presets.md)。本轮只使用 fake Key/响应，未做真实供应商调用、推送或部署；验证结果见本次交付报告。
+
+安全复核时发现本地 OpenAI SDK 默认 HTTP 客户端会跟随重定向；本阶段为 OpenAI Responses、DeepSeek 调用／目录和共享 Chat 显式禁用重定向，原生 Anthropic/Gemini 同样拒绝重定向。本地隔离浏览器已走通游客/Free 权限、Developer 添加／更新／删除／重新登录后持久化、Admin 十卡与 390px 无整体溢出；强制浏览器刷新会丢失 Streamlit 会话并要求重新登录。直接刷新子路由时浏览器记录两条 Streamlit `_stcore` 相对路径 404，页面可继续显示；未将其归为供应商调用结果。
+
 ## 2026-09-23 C08-A 多供应商基础（本地，未发布）
 
 从 `3c9378683640bfbeb1ddcaec1a909a8ca0286c82` 创建 `feature/c08-multi-provider`。新增四项受控 Provider 预设及百炼/OpenRouter 共享兼容 Chat 适配器；保留 DeepSeek Auto-Safe 和 OpenAI Responses 路径。免费套餐系统AI固定 DeepSeek；用户 Key 与系统额度分离。旧 SQLite API Key 表约束事务化扩展，密文原样保留。百炼/OpenRouter 尚未开放页面或真实调用；设计、验证和后续阶段见 [C08 设计](c08-multi-provider-design.md)。

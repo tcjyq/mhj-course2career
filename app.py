@@ -21,9 +21,17 @@ from course2career.key_encryption import (
 )
 from course2career.membership_service import MembershipService
 from course2career.model_catalog import DeepSeekModelCatalog
-from course2career.permissions import Plan, Principal, Role
+from course2career.permissions import (
+    Permission,
+    PermissionDeniedError,
+    Plan,
+    Principal,
+    Role,
+    authorize,
+)
 from course2career.product_repository import SQLiteProductRepository
 from course2career.provider_factory import LLMProviderFactory
+from course2career.provider_profile import ProviderProfileService
 from course2career.ui.analysis_page import render_analysis_page
 from course2career.ui.auth_page import render_auth_page
 from course2career.ui.developer_page import render_developer_page
@@ -62,7 +70,7 @@ def get_deepseek_model_catalog(
 
 
 settings = load_settings()
-repository = get_repository(settings.database_path, schema_revision=3)
+repository = get_repository(settings.database_path, schema_revision=4)
 auth_service = AuthService(repository)
 admin_username = getattr(settings, "admin_username", None)
 admin_password = getattr(settings, "admin_password", None)
@@ -84,6 +92,7 @@ usage_service = AIUsageService(repository)
 record_service = AnalysisRecordService(repository)
 dashboard_service = AdminDashboardService(repository)
 membership_service = MembershipService(repository)
+profile_service = ProviderProfileService(repository)
 
 api_key_service = None
 key_configuration_error = None
@@ -175,6 +184,7 @@ analysis_page = st.Page(
         record_service,
         api_key_service,
         st.session_state.guest_session_id,
+        profile_service,
     ),
     title="个人分析",
     url_path="analysis",
@@ -198,15 +208,25 @@ developer_page = st.Page(
         principal,
         api_key_service,
         key_configuration_error,
+        profile_service,
+        provider_factory,
     ),
-    title="开发者API Key",
+    title="我的 AI Provider",
     url_path="developer",
 )
+
+account_pages = [membership_page]
+try:
+    authorize(principal, Permission.CONFIGURE_OWN_API_KEY)
+except PermissionDeniedError:
+    pass
+else:
+    account_pages.append(developer_page)
 
 navigation = {
     "开始": [home_page, login_page],
     "工作台": [analysis_page, quota_page],
-    "账户": [membership_page, developer_page],
+    "账户": account_pages,
 }
 if principal.role == Role.ADMIN and principal.plan == Plan.ADMIN:
     admin_page = st.Page(

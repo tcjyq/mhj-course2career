@@ -158,12 +158,13 @@ class DeepSeekModelCatalog:
 
 
 def _create_deepseek_client(api_key: str, timeout_seconds: float) -> Any:
-    from openai import OpenAI
+    from openai import DefaultHttpxClient, OpenAI
 
     return OpenAI(
         api_key=api_key,
         base_url=DEEPSEEK_BASE_URL,
         timeout=timeout_seconds,
+        http_client=DefaultHttpxClient(follow_redirects=False),
     )
 
 

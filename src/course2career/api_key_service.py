@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from datetime import UTC, datetime
 
 from pydantic import BaseModel, ConfigDict
@@ -37,12 +38,15 @@ class APIKeyService:
         principal: Principal,
         provider: ProviderName,
         api_key: str,
+        validator: Callable[[str], None] | None = None,
     ) -> APIKeyMetadata:
         authorize(principal, Permission.CONFIGURE_OWN_API_KEY)
         user_id = _require_user_id(principal)
         cleaned_key = api_key.strip()
         if not 8 <= len(cleaned_key) <= 512:
             raise ValueError("API Key长度无效。")
+        if validator is not None:
+            validator(cleaned_key)
         encrypted = self.cipher.encrypt(cleaned_key, user_id=user_id, provider=provider)
         updated_time = datetime.now(UTC).isoformat()
         self.repository.upsert_api_key(

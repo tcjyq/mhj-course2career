@@ -22,7 +22,7 @@ class OpenAIJDClient:
         self._last_usage: LLMUsage | None = None
         if sdk_client is None:
             try:
-                from openai import OpenAI
+                from openai import DefaultHttpxClient, OpenAI
             except ImportError as exc:
                 raise LLMClientError(
                     "未安装 OpenAI SDK，无法启用 AI 分析模式。"
@@ -30,6 +30,7 @@ class OpenAIJDClient:
             sdk_client = OpenAI(
                 api_key=settings.openai_api_key,
                 timeout=settings.openai_timeout_seconds,
+                http_client=DefaultHttpxClient(follow_redirects=False),
             )
         self.client = sdk_client
 
