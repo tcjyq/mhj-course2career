@@ -26,6 +26,7 @@
 - 单元测试使用模拟响应，不产生 API 成本。
 - C08-B1 十家预设均通过受控映射、fake SDK/transport、加密 Key、页面和仓储回归；这些测试不证明真实模型兼容性。每个拟投入生产的 Provider/模型组合还须用持有人自己的 Key 验证合成 JD → 提取 → `JobAnalysis`、实际模型回写、Token、错误脱敏及价格来源。费用未知必须保持 `unknown`，不能当作 0 元。
 - C08-B2 固定 4 个合成 JD，逐个核对技能命中、否定项、`evidence_text` 原文、JobAnalysis、实际模型、usage 与脱敏错误；只有完整通过才是 `VERIFIED`。本次 OpenAI 与 Anthropic 各 1 次真实连接均 HTTP 401，未执行 fixture，不能推断模型不支持。离线 mock 测试只证明编排和 adapter 请求格式；[真实证据与限制](c08-provider-validation.md)。
+- C08-B3 权限回归覆盖普通 Free/Pro 自助开启后额度不变、游客拒绝、Admin 与历史 Developer Role/Plan、关闭后旧会话的 Key/Profile/用户 Key 调用拒绝、跨用户隔离、重开后密文不变，以及 SQLite 重复初始化和失败回滚。浏览器使用隔离假 Key 验证注册、登录、刷新、开关与 390px 布局；不发真实供应商请求。
 - Prompt 或模型变更时，对固定黄金样例离线重跑并记录模型名、日期和指标。
 - DeepSeek 白名单新增模型前，必须验证 JSON 契约、实际模型回写、Token usage、最大输出限制和 404 单次回退。
 - 不要求生成文本逐字一致，只验证结构和语义标准。

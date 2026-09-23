@@ -2,22 +2,24 @@
 
 ## 1. 当前范围
 
-本阶段只实现套餐字段、能力权限、AI额度和套餐生效服务，不实现价格、订单、支付页面、支付SDK、异步回调或退款。
+本阶段实现套餐字段、平台 AI 额度、独立的免费开发者模式和管理员套餐生效服务，不实现价格、订单、支付页面、支付 SDK、异步回调或退款。
 
 ## 2. 角色与套餐
 
 `role`表示安全身份，`plan`表示产品套餐：
 
-| plan | 对应role | 能力 |
+| plan | 常见 role | 平台能力 |
 |---|---|---|
 | `free` | `user` | 基础分析、保存历史、每天5次平台AI |
 | `pro` | `user` | Free全部能力、每天20次平台AI、高级报告权限 |
-| `developer` | `developer` | Pro全部能力、配置并使用自己的API Key |
+| `developer` | `developer` | 历史兼容套餐，保留每天20次平台AI与BYOK权限 |
 | `admin` | `admin` | 全部能力、系统状态和会员管理、不限平台AI |
 
 游客使用`guest`角色，不建立数据库用户，按匿名会话每天限制2次平台AI。
 
-权限采用双重判断：
+普通账户的 BYOK 权限单独存于 `user_byok_settings(user_id, byok_enabled, updated_at)`。公开注册仍创建 `user + free`；启用开发者模式只更新该设置。Free 保持每天 5 次平台 AI，Pro 保持每天 20 次；用户自带 Key 调用不占平台额度。关闭模式停止新的 BYOK 配置和调用，原 Key 密文保留。Admin 及历史 Developer Role 或 Plan 保留访问能力。
+
+普通平台能力仍按角色与套餐判断：
 
 ```text
 请求
@@ -26,7 +28,7 @@
 → 两者均通过后执行服务
 ```
 
-这可以避免仅修改`plan`字符串就获得管理员能力，也可以避免普通用户伪装Developer套餐后直接读取API Key。
+管理员能力仍需要管理员身份；BYOK 另由登录状态与持久化开关授权，服务层按当前用户 ID 读写 Key。
 
 ## 3. 权限项
 
@@ -34,7 +36,7 @@
 - `ai:use_system`：使用平台AI。
 - `analysis:save`、`analysis:view_own`：个人分析历史。
 - `report:view_advanced`：高级报告功能开关；当前只实现权限位，不实现新的报告内容。
-- `api_key:configure_own`、`ai:use_own_key`：Developer自带Key能力。
+- `api_key:configure_own`、`ai:use_own_key`：已启用开发者模式的登录用户、Admin 或历史 Developer 自带 Key 能力。
 - `system:view_status`：管理员系统状态。
 - `membership:manage`：管理员分配套餐。
 
@@ -47,7 +49,7 @@
 3. 返回生效后的会员状态。
 4. 不接收价格、支付渠道或客户端提交的“支付成功”标记。
 
-当前只允许管理员人工分配，不提供用户自助升级按钮。
+当前只允许管理员人工分配套餐，不提供用户自助套餐升级按钮；用户可自行启用免费开发者模式。
 
 ## 5. 未来支付接入
 

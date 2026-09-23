@@ -53,6 +53,13 @@ class StoredProviderProfile:
 
 
 @dataclass(frozen=True)
+class StoredBYOKMode:
+    user_id: str
+    byok_enabled: bool
+    updated_at: str
+
+
+@dataclass(frozen=True)
 class AdminOverview:
     user_count: int
     today_analysis_count: int
@@ -446,6 +453,51 @@ class SQLiteProductRepository(SQLiteUserRepository):
                 (user_id, provider),
             )
 
+    def get_byok_mode(self, user_id: str) -> StoredBYOKMode | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT user_id, byok_enabled, updated_at "
+                "FROM user_byok_settings WHERE user_id = ?",
+                (user_id,),
+            ).fetchone()
+        if row is None:
+            return None
+        return StoredBYOKMode(
+            user_id=row["user_id"],
+            byok_enabled=bool(row["byok_enabled"]),
+            updated_at=row["updated_at"],
+        )
+
+    def set_byok_mode(
+        self, user_id: str, enabled: bool, updated_at: str
+    ) -> StoredBYOKMode:
+        connection = self._connect()
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            user = connection.execute(
+                "SELECT id FROM users WHERE id = ? AND status = 'active'",
+                (user_id,),
+            ).fetchone()
+            if user is None:
+                raise LookupError("用户不存在或已停用。")
+            connection.execute(
+                """
+                INSERT INTO user_byok_settings (user_id, byok_enabled, updated_at)
+                VALUES (?, ?, ?)
+                ON CONFLICT(user_id) DO UPDATE SET
+                    byok_enabled = excluded.byok_enabled,
+                    updated_at = excluded.updated_at
+                """,
+                (user_id, int(enabled), updated_at),
+            )
+            connection.commit()
+        except Exception:
+            connection.rollback()
+            raise
+        finally:
+            connection.close()
+        return StoredBYOKMode(user_id, enabled, updated_at)
+
     def _initialize_schema(self) -> None:
         super()._initialize_schema()
         with self._connect() as connection:
@@ -510,6 +562,13 @@ class SQLiteProductRepository(SQLiteUserRepository):
                     created_time TEXT NOT NULL,
                     updated_time TEXT NOT NULL,
                     PRIMARY KEY (user_id, provider)
+                );
+
+                CREATE TABLE IF NOT EXISTS user_byok_settings (
+                    user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+                    byok_enabled INTEGER NOT NULL DEFAULT 0
+                        CHECK (byok_enabled IN (0, 1)),
+                    updated_at TEXT NOT NULL
                 );
                 """
             )

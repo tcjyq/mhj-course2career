@@ -14,6 +14,7 @@ from course2career.auth_service import (
     AuthService,
     InvalidSessionError,
 )
+from course2career.byok_mode import BYOKModeService
 from course2career.config import load_settings
 from course2career.key_encryption import (
     APIKeyCipher,
@@ -21,14 +22,7 @@ from course2career.key_encryption import (
 )
 from course2career.membership_service import MembershipService
 from course2career.model_catalog import DeepSeekModelCatalog
-from course2career.permissions import (
-    Permission,
-    PermissionDeniedError,
-    Plan,
-    Principal,
-    Role,
-    authorize,
-)
+from course2career.permissions import Plan, Principal, Role
 from course2career.product_repository import SQLiteProductRepository
 from course2career.provider_factory import LLMProviderFactory
 from course2career.provider_profile import ProviderProfileService
@@ -70,7 +64,7 @@ def get_deepseek_model_catalog(
 
 
 settings = load_settings()
-repository = get_repository(settings.database_path, schema_revision=4)
+repository = get_repository(settings.database_path, schema_revision=5)
 auth_service = AuthService(repository)
 admin_username = getattr(settings, "admin_username", None)
 admin_password = getattr(settings, "admin_password", None)
@@ -92,6 +86,7 @@ usage_service = AIUsageService(repository)
 record_service = AnalysisRecordService(repository)
 dashboard_service = AdminDashboardService(repository)
 membership_service = MembershipService(repository)
+byok_mode_service = BYOKModeService(repository)
 profile_service = ProviderProfileService(repository)
 
 api_key_service = None
@@ -199,8 +194,8 @@ quota_page = st.Page(
     url_path="quota",
 )
 membership_page = st.Page(
-    lambda: render_membership_page(principal),
-    title="会员升级",
+    lambda: render_membership_page(principal, byok_mode_service, developer_page),
+    title="会员方案",
     url_path="membership",
 )
 developer_page = st.Page(
@@ -210,18 +205,13 @@ developer_page = st.Page(
         key_configuration_error,
         profile_service,
         provider_factory,
+        byok_mode_service,
     ),
     title="我的 AI Provider",
     url_path="developer",
 )
 
-account_pages = [membership_page]
-try:
-    authorize(principal, Permission.CONFIGURE_OWN_API_KEY)
-except PermissionDeniedError:
-    pass
-else:
-    account_pages.append(developer_page)
+account_pages = [membership_page, developer_page]
 
 navigation = {
     "开始": [home_page, login_page],

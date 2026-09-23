@@ -1,5 +1,11 @@
 # Course2Career 开发日志
 
+## 2026-09-23 C08-B3 开发者模式自助启用（本地，未发布）
+
+普通注册用户可免费开启或关闭独立的 BYOK capability，不改变 Role、Plan 和平台系统 AI 额度。新 `user_byok_settings` 表持久化用户 ID、开关和更新时间；Admin 与历史 Developer Role/Plan 兼容。Key、Profile 与用户 Key 调用在服务层读取最新状态，关闭后拒绝新操作但保留 AES-256-GCM 密文。会员页把 Free/Pro 套餐演示与免费开发者模式分开，开发者页提供介绍、启用、Provider Hub 和关闭入口。决策见 [ADR 005](decisions/005-self-service-byok-capability.md)。
+
+权限与迁移回归覆盖 Free/Pro 额度、旧会话、跨用户隔离、历史用户、重复初始化与回滚。本轮浏览器使用隔离账号和假 Key，完成注册、登录、启用、保存、刷新后重新登录、关闭与重开；390px 页面宽度无整体溢出，见[截图](../screenshots/c08-b3-developer-mobile.png)。直接访问子路由与刷新时仍会出现 Streamlit `_stcore` 两条相对路径 404，页面可继续使用。本轮不进行真实供应商调用；最终检查结果见本次交付报告。未推送或部署。
+
 ## 2026-09-23 C08-B2 真实 Provider 兼容性验证（本地，未发布）
 
 新增协议输出策略、Anthropic/Gemini/百炼小型 schema adapter、精确 Provider × 官方端点 × 模型验证记录、4 个固定合成 JD 和脱敏错误分类。连接测试最多达到 `SCHEMA_COMPATIBLE`，完整 fixture、usage、返回模型和原文 evidence 均通过才可标 `VERIFIED`；DeepSeek 历史 Auto-Safe 白名单不再直接显示为 B2 VERIFIED。百炼默认候选改为 `qwen3.8-flash`，OpenRouter 需模型 metadata 证明支持 strict schema。决策见 [ADR 004](decisions/004-provider-validation-evidence.md)，官方依据与真实记录见 [B2 验证报告](c08-provider-validation.md)。

@@ -5,12 +5,14 @@ from collections.abc import Callable
 import streamlit as st
 
 from course2career.api_key_service import APIKeyMetadata, APIKeyService
+from course2career.byok_mode import BYOKModeService, is_legacy_byok_principal
 from course2career.llm_provider import ProviderName
 from course2career.model_capability import Verification, model_capability
 from course2career.permissions import (
     Permission,
     PermissionDeniedError,
     Principal,
+    Role,
     authorize,
 )
 from course2career.product_repository import StoredProviderProfile
@@ -18,6 +20,7 @@ from course2career.provider_connection import test_provider_connection
 from course2career.provider_factory import LLMProviderFactory
 from course2career.provider_profile import ProviderProfileService
 from course2career.provider_registry import ProviderPreset, ui_provider_presets
+from course2career.ui.byok_mode_controls import render_byok_mode_controls
 
 
 def render_developer_page(
@@ -26,13 +29,31 @@ def render_developer_page(
     configuration_error: str | None,
     profile_service: ProviderProfileService | None = None,
     provider_factory: LLMProviderFactory | None = None,
+    byok_mode_service: BYOKModeService | None = None,
 ) -> None:
-    st.title("我的 AI Provider")
+    active = (
+        principal.role != Role.GUEST
+        and principal.user_id is not None
+        and (
+            is_legacy_byok_principal(principal)
+            or (
+                byok_mode_service is not None
+                and byok_mode_service.is_enabled(principal)
+            )
+        )
+    )
+    st.title("我的 AI Provider" if active else "开发者模式")
+    if not active:
+        st.write("连接你自己的大模型 API，模型费用由你的 API 服务商账户承担。")
+        render_byok_mode_controls(principal, byok_mode_service, key_prefix="developer")
+        return
     st.caption("使用自己的 API Key；保存后只显示末四位。新增预设尚需真实模型验证。")
+    st.markdown("## 开发者模式")
+    render_byok_mode_controls(principal, byok_mode_service, key_prefix="developer")
     try:
         authorize(principal, Permission.CONFIGURE_OWN_API_KEY)
     except PermissionDeniedError:
-        st.info("此功能仅对 Developer / Admin 开放。")
+        st.info("请先启用开发者模式。")
         return
     if api_key_service is None:
         st.warning(

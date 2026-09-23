@@ -1,5 +1,7 @@
 # Open Source Research — C08-OSS
 
+> 此文记录 C08-OSS 阶段研究时的权限假设；C08-B3 已将普通登录用户的 BYOK 改为免费自助开关，历史 Developer/Admin 继续兼容。当前权限决定见 [ADR 005](decisions/005-self-service-byok-capability.md)。
+
 研究日期：2026-09-23（东八区）。范围是 C08-B 前的架构与许可证研究；没有向第三方发出真实 API Key、调用真实模型、复制第三方代码、安装依赖或修改生产环境。本文的 Stars、端点和模型能力是日期快照，实施前须复核。
 
 ## Projects reviewed

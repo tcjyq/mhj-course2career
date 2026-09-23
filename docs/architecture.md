@@ -64,6 +64,7 @@ flowchart LR
 | `provider_error_classification.py` | 仅依据异常类型与 HTTP 状态返回脱敏错误分类 |
 | `key_encryption.py` | AES-256-GCM密钥加解密 |
 | `api_key_service.py` | 开发者密钥权限、加密和元数据管理 |
+| `byok_mode.py` | 登录用户自助开关和读取持久化 BYOK 权限；兼容历史 Developer/Admin |
 | `course_skill_mapper.py` | 课程关键词规则与技能证据生成 |
 | `scoring.py` | 保留原有单项技能规则和兼容报告能力 |
 | `adaptability.py` | 五维岗位适配度、技能迁移、硬门槛、资料完整度和解释账本 |
@@ -79,8 +80,9 @@ flowchart LR
 | `ui/analysis_page.py` | 课程、JD、技能确认、报告和历史分析流程 |
 | `ui/candidate_profile_form.py` | 教育、项目、实习、潜力、到岗条件和岗位门槛输入 |
 | `ui/quota_page.py` | 当前套餐的每日AI额度状态 |
-| `ui/membership_page.py` | 套餐对比与不改变权限的升级演示 |
-| `ui/developer_page.py` | 开发者API Key保存、更新和删除 |
+| `ui/membership_page.py` | Free/Pro 套餐演示及独立的免费开发者模式入口 |
+| `ui/developer_page.py` | 启用开发者模式、Provider Hub 和加密 Key 管理 |
+| `ui/byok_mode_controls.py` | 账户页和 Provider Hub 共用的模式说明与开关 |
 | `ui/styles.py` | 克制的全局Streamlit视觉样式 |
 | `auth_service.py` | 公开注册和登录认证 |
 | `access_services.py` | AI额度、历史归属和管理员状态 |
@@ -90,6 +92,7 @@ flowchart LR
 ## 3. 关键边界
 
 - 外部模型仅用于结构化提取 JD 语义，不计算分数。
+- `Role` 表示身份与管理边界，`Plan` 决定平台系统 AI 额度，`user_byok_settings` 独立保存普通用户的 `byok_enabled` 与更新时间。Admin 和历史 Developer Role/Plan 继续拥有 BYOK 权限。Key/Profile/用户 Key 调用在服务层重新读取该设置；关闭模式不删除密文或改变额度。
 - `jd_analyzer.py`只依赖`LLMProvider`，不依赖OpenAI或DeepSeek实现。
 - 内置 JSON 是可版本控制的规则数据，不在运行时被模型修改。
 - UI 允许人工修正模型或规则结果，修正后统一进入同一分析服务。

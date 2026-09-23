@@ -36,7 +36,7 @@ AI 只提取 JD 技能；原文引用核对、映射、评分、门槛与学习�
 ## 核心能力
 
 - 下载并上传课程 Excel 模板，提供字段、范围和重复值校验。
-- 通过本地规则、已配置的系统 OpenAI/DeepSeek，或 Developer/Admin 自带 Key 的官方 Provider 预设提取岗位技能。
+- 通过本地规则、已配置的系统 OpenAI/DeepSeek，或已启用开发者模式的登录用户及历史 Developer/Admin 自带 Key 的官方 Provider 预设提取岗位技能。
 - DeepSeek 支持 Auto-Safe 模型发现：只在官方当前可用且列入历史兼容白名单的模型中自动选择，并在模型下线时执行一次受控回退；白名单不等于 C08-B2 当前真实验证状态。
 - 规范化技能并允许用户在分析前人工确认。
 - 采集教育、项目、实习、成长潜力和到岗条件，并区分“未填写”与“目前没有”。
@@ -48,7 +48,8 @@ AI 只提取 JD 技能；原文引用核对、映射、评分、门槛与学习�
 - 支持游客、普通用户、开发者和管理员权限。
 - 支持 AI 日额度、历史分析记录和轻量管理员 Dashboard。
 - 开发者 API Key 使用 AES-256-GCM 加密后保存。
-- C08-B1 在本地分支提供 OpenAI、DeepSeek、百炼、OpenRouter、SiliconFlow、Moonshot、智谱、MiniMax、Gemini、Anthropic 十家受控官方预设和 Developer/Admin BYOK 配置，按四类协议适配；分析页仅列已配置 Key 和模型的 Provider。免费套餐系统 AI 仍固定 DeepSeek。新增模型的真实兼容性与价格尚未验证，不能视为生产可用；C08-C 做模型发现，C08-D 才讨论自定义端点。[设计与边界](docs/c08-multi-provider-design.md) · [官方端点矩阵](docs/c08-provider-matrix.md) · [开源架构研究](docs/c08-open-source-research.md)。
+- C08-B1 在本地分支提供 OpenAI、DeepSeek、百炼、OpenRouter、SiliconFlow、Moonshot、智谱、MiniMax、Gemini、Anthropic 十家受控官方预设，按四类协议适配；分析页仅列已配置 Key 和模型的 Provider。免费套餐系统 AI 仍固定 DeepSeek。新增模型的真实兼容性与价格尚未验证，不能视为生产可用；C08-C 做模型发现，C08-D 才讨论自定义端点。[设计与边界](docs/c08-multi-provider-design.md) · [官方端点矩阵](docs/c08-provider-matrix.md) · [开源架构研究](docs/c08-open-source-research.md)。
+- C08-B3 在本地分支允许普通登录用户免费启用开发者模式并管理自己的加密 API Key。启用或关闭不改变 Free/Pro 套餐及系统 AI 日额度；关闭后停止新的 BYOK 使用，已保存的 Key 保留，可重新开启。历史 Developer/Admin 权限继续可用。会员页的 Free/Pro 升级仍只是演示，线上状态以部署版本为准。
 - C08-B2 增加模型级真实验证记录、固定合成 JD 套件及原生 schema adapter。当前仅 OpenAI 与 Anthropic 环境变量存在，分别一次真实请求均返回 401；十家均未达到 VERIFIED。连接成功、Schema 兼容、完整验证在页面中分开显示；失败不会删除 Key。[真实验证报告](docs/c08-provider-validation.md)。
 - 开发者 API Key 提交后立即清空输入框与对应会话状态，页面只保留末四位元数据。
 - 页面切换采用隔离渲染，避免首页或上一页内容残留到当前页面。

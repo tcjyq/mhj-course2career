@@ -715,14 +715,17 @@ def configured_byok_providers(
         return ()
     try:
         authorize(principal, Permission.USE_OWN_API_KEY)
+        saved = {item.provider for item in api_key_service.list_keys(principal)}
+        profiles = (
+            {
+                ProviderName(item.provider): item
+                for item in profile_service.list(principal)
+            }
+            if profile_service is not None
+            else {}
+        )
     except PermissionDeniedError:
         return ()
-    saved = {item.provider for item in api_key_service.list_keys(principal)}
-    profiles = (
-        {ProviderName(item.provider): item for item in profile_service.list(principal)}
-        if profile_service is not None
-        else {}
-    )
     return tuple(
         preset.provider_id
         for preset in ui_provider_presets()

@@ -1,7 +1,9 @@
 import pandas as pd
 import streamlit as st
 
+from course2career.byok_mode import BYOKModeService
 from course2career.permissions import Plan, Principal, Role
+from course2career.ui.byok_mode_controls import render_byok_mode_controls
 
 PLAN_LABELS = {
     Plan.FREE: "Free",
@@ -11,9 +13,13 @@ PLAN_LABELS = {
 }
 
 
-def render_membership_page(principal: Principal) -> None:
+def render_membership_page(
+    principal: Principal,
+    byok_mode_service: BYOKModeService | None = None,
+    developer_page: object | None = None,
+) -> None:
     st.title("会员方案")
-    st.caption("当前为产品演示页，不会创建订单、扣款或改变真实套餐。")
+    st.caption("Free / Pro 为套餐演示；开发者模式可独立免费启用。")
 
     current_plan = (
         "游客" if principal.role == Role.GUEST else PLAN_LABELS[principal.plan]
@@ -27,28 +33,12 @@ def render_membership_page(principal: Principal) -> None:
                     "平台AI": "5次/天",
                     "历史记录": "支持",
                     "高级报告": "—",
-                    "自带Key": "—",
                 },
                 {
                     "方案": "Pro",
                     "平台AI": "20次/天",
                     "历史记录": "支持",
                     "高级报告": "支持",
-                    "自带Key": "—",
-                },
-                {
-                    "方案": "Developer",
-                    "平台AI": "20次/天",
-                    "历史记录": "支持",
-                    "高级报告": "支持",
-                    "自带Key": "支持",
-                },
-                {
-                    "方案": "Admin",
-                    "平台AI": "不限",
-                    "历史记录": "支持",
-                    "高级报告": "支持",
-                    "自带Key": "支持",
                 },
             ]
         ),
@@ -56,15 +46,25 @@ def render_membership_page(principal: Principal) -> None:
         hide_index=True,
     )
 
-    st.markdown("## 升级演示")
+    st.markdown("## 开发者模式")
+    enabled = render_byok_mode_controls(
+        principal, byok_mode_service, key_prefix="membership"
+    )
+    if developer_page is not None and principal.role != Role.GUEST:
+        st.page_link(
+            developer_page,
+            label="管理 API Key" if enabled else "前往开发者模式",
+        )
+
+    st.markdown("## 套餐演示")
     if principal.role == Role.GUEST:
-        st.info("请先在登录页面创建账户，再体验升级流程。")
+        st.info("登录后可体验 Free / Pro 套餐演示。")
         return
 
     with st.form("membership_demo_form"):
         target_plan = st.selectbox(
             "目标方案",
-            [Plan.FREE, Plan.PRO, Plan.DEVELOPER],
+            [Plan.FREE, Plan.PRO],
             format_func=lambda plan: PLAN_LABELS[plan],
         )
         submitted = st.form_submit_button("演示升级", type="primary")
@@ -72,8 +72,5 @@ def render_membership_page(principal: Principal) -> None:
         if target_plan == principal.plan:
             st.info("你当前已经是该方案。")
         else:
-            st.success(
-                f"演示完成：正式支付接入后，这里会创建"
-                f"{PLAN_LABELS[target_plan]}升级订单。当前套餐未改变。"
-            )
-    st.caption("Admin不是可购买方案，只能通过受信任的管理流程授予。")
+            st.success(f"{PLAN_LABELS[target_plan]} 界面演示完成，当前套餐未改变。")
+    st.caption("此演示不创建订单、不扣款，也不启用开发者模式。")

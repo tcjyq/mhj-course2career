@@ -1,6 +1,6 @@
 # C08 多供应商设计与阶段状态
 
-状态：C08-A 为历史基础；C08-B1 已在本地分支实现十家官方预设的 Developer/Admin BYOK 配置与协议适配。C08-B2 发起两次真实调用，OpenAI 与 Anthropic 均返回 401，尚无 VERIFIED，未发布。当前证据见 [官方矩阵](c08-provider-matrix.md)和 [B2 验证报告](c08-provider-validation.md)。
+状态：C08-A 为历史基础；C08-B1 已在本地分支实现十家官方预设的 BYOK 配置与协议适配。C08-B2 发起两次真实调用，OpenAI 与 Anthropic 均返回 401，尚无 VERIFIED。C08-B3 已在本地增加普通用户免费自助启用 BYOK 的独立 capability，保留历史 Developer/Admin 权限；未发布。当前证据见 [官方矩阵](c08-provider-matrix.md)、[B2 验证报告](c08-provider-validation.md)和 [ADR 005](decisions/005-self-service-byok-capability.md)。
 
 ## 起点与现状审计
 
