@@ -1,4 +1,5 @@
 import json
+import sqlite3
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -409,7 +410,7 @@ class SQLiteProductRepository(SQLiteUserRepository):
                 CREATE TABLE IF NOT EXISTS user_api_keys (
                     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
                     provider TEXT NOT NULL CHECK (
-                        provider IN ('openai', 'deepseek')
+                        provider IN ('openai', 'deepseek', 'bailian', 'openrouter')
                     ),
                     encrypted_key BLOB NOT NULL,
                     nonce BLOB NOT NULL CHECK (length(nonce) = 12),
@@ -419,6 +420,50 @@ class SQLiteProductRepository(SQLiteUserRepository):
                 );
                 """
             )
+            self._extend_api_key_provider_constraint(connection)
+
+    @staticmethod
+    def _extend_api_key_provider_constraint(connection: sqlite3.Connection) -> None:
+        """只在旧表约束存在时重建表，原样复制密文与绑定字段。"""
+        schema = connection.execute(
+            "SELECT sql FROM sqlite_master "
+            "WHERE type = 'table' AND name = 'user_api_keys'"
+        ).fetchone()[0]
+        if "'bailian'" in schema and "'openrouter'" in schema:
+            return
+        if "provider IN ('openai', 'deepseek')" not in " ".join(schema.split()):
+            raise RuntimeError("无法识别 API Key 表约束，已停止自动升级。")
+        connection.execute("BEGIN IMMEDIATE")
+        try:
+            connection.execute(
+                """
+                CREATE TABLE user_api_keys_c08 (
+                    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    provider TEXT NOT NULL CHECK (
+                        provider IN ('openai', 'deepseek', 'bailian', 'openrouter')
+                    ),
+                    encrypted_key BLOB NOT NULL,
+                    nonce BLOB NOT NULL CHECK (length(nonce) = 12),
+                    last_four TEXT NOT NULL,
+                    updated_time TEXT NOT NULL,
+                    PRIMARY KEY (user_id, provider)
+                )
+                """
+            )
+            connection.execute(
+                """
+                INSERT INTO user_api_keys_c08
+                    (user_id, provider, encrypted_key, nonce, last_four, updated_time)
+                SELECT user_id, provider, encrypted_key, nonce, last_four, updated_time
+                FROM user_api_keys
+                """
+            )
+            connection.execute("DROP TABLE user_api_keys")
+            connection.execute("ALTER TABLE user_api_keys_c08 RENAME TO user_api_keys")
+            connection.commit()
+        except Exception:
+            connection.rollback()
+            raise
 
 
 def _parse_report_snapshot(snapshot: str) -> AnalysisReport | AdaptabilityReport:

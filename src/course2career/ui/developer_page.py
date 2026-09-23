@@ -8,10 +8,10 @@ from course2career.permissions import (
     Plan,
     Principal,
 )
+from course2career.provider_registry import get_provider_preset, ui_provider_presets
 
 PROVIDER_LABELS = {
-    ProviderName.OPENAI: "OpenAI",
-    ProviderName.DEEPSEEK: "DeepSeek",
+    preset.provider_id: preset.display_name for preset in ui_provider_presets()
 }
 
 
@@ -68,7 +68,7 @@ def render_developer_page(
             pd.DataFrame(
                 [
                     {
-                        "供应商": PROVIDER_LABELS[key.provider],
+                        "供应商": get_provider_preset(key.provider).display_name,
                         "末四位": key.last_four,
                         "更新时间": key.updated_time,
                     }
@@ -81,7 +81,7 @@ def render_developer_page(
         delete_provider = st.selectbox(
             "删除指定供应商Key",
             [key.provider for key in saved_keys],
-            format_func=lambda provider: PROVIDER_LABELS[provider],
+            format_func=lambda provider: get_provider_preset(provider).display_name,
         )
         if st.button("删除Key"):
             api_key_service.delete_key(principal, delete_provider)
@@ -91,7 +91,7 @@ def render_developer_page(
         st.info("尚未保存API Key。")
 
     st.markdown("## 保存或更新")
-    providers = list(ProviderName)
+    providers = list(PROVIDER_LABELS)
     with st.form(f"developer_api_key_form_{form_version}"):
         st.selectbox(
             "供应商",

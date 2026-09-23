@@ -17,7 +17,7 @@ from course2career.permissions import (
     Principal,
     Role,
 )
-from course2career.product_repository import SQLiteProductRepository
+from course2career.product_repository import SQLiteProductRepository, StoredAPIKey
 from course2career.user_repository import StoredUser
 
 
@@ -101,3 +101,84 @@ def test_normal_user_cannot_save_or_read_own_api_key(tmp_path: Path) -> None:
 
     with pytest.raises(PermissionDeniedError):
         service.save_key(user, ProviderName.OPENAI, "secret-api-key")
+
+
+@pytest.mark.parametrize("provider", [ProviderName.OPENAI, ProviderName.DEEPSEEK])
+def test_legacy_provider_rows_decrypt_without_migration(
+    tmp_path: Path, provider: ProviderName
+) -> None:
+    repository = SQLiteProductRepository(tmp_path / "legacy.db")
+    developer = _add_developer(repository)
+    cipher = APIKeyCipher.from_base64_key(_master_key())
+    encrypted = cipher.encrypt(
+        "legacy-fake-key", user_id="developer-1", provider=provider
+    )
+    repository.upsert_api_key(
+        StoredAPIKey(
+            user_id="developer-1",
+            provider=provider.value,
+            encrypted_key=encrypted.ciphertext,
+            nonce=encrypted.nonce,
+            last_four="-key",
+            updated_time="2026-07-23T00:00:00+00:00",
+        )
+    )
+    service = APIKeyService(repository, cipher)
+
+    assert service.get_key(developer, provider) == "legacy-fake-key"
+    assert service.list_keys(developer)[0].provider == provider
+
+
+def test_existing_sqlite_key_table_upgrades_without_changing_ciphertext(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "legacy-schema.db"
+    repository = SQLiteProductRepository(database_path)
+    developer = _add_developer(repository)
+    cipher = APIKeyCipher.from_base64_key(_master_key())
+    encrypted = cipher.encrypt(
+        "legacy-fake-key", user_id="developer-1", provider=ProviderName.OPENAI
+    )
+    with sqlite3.connect(database_path) as connection:
+        connection.execute("DROP TABLE user_api_keys")
+        connection.execute(
+            """
+            CREATE TABLE user_api_keys (
+                user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                provider TEXT NOT NULL CHECK (provider IN ('openai', 'deepseek')),
+                encrypted_key BLOB NOT NULL,
+                nonce BLOB NOT NULL CHECK (length(nonce) = 12),
+                last_four TEXT NOT NULL,
+                updated_time TEXT NOT NULL,
+                PRIMARY KEY (user_id, provider)
+            )
+            """
+        )
+        connection.execute(
+            "INSERT INTO user_api_keys VALUES (?, ?, ?, ?, ?, ?)",
+            (
+                "developer-1",
+                "openai",
+                encrypted.ciphertext,
+                encrypted.nonce,
+                "-key",
+                "2026-07-23T00:00:00+00:00",
+            ),
+        )
+
+    upgraded = SQLiteProductRepository(database_path)
+    service = APIKeyService(upgraded, cipher)
+    assert service.get_key(developer, ProviderName.OPENAI) == "legacy-fake-key"
+    with sqlite3.connect(database_path) as connection:
+        row = connection.execute(
+            "SELECT encrypted_key, nonce FROM user_api_keys WHERE provider = 'openai'"
+        ).fetchone()
+    assert row == (encrypted.ciphertext, encrypted.nonce)
+    service.save_key(developer, ProviderName.BAILIAN, "new-fake-key")
+    assert service.get_key(developer, ProviderName.BAILIAN) == "new-fake-key"
+    assert (
+        APIKeyService(SQLiteProductRepository(database_path), cipher).get_key(
+            developer, ProviderName.OPENAI
+        )
+        == "legacy-fake-key"
+    )

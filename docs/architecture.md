@@ -12,8 +12,12 @@ flowchart LR
     UI --> JD["JD 分析器"]
     JD --> RULE["本地规则"]
     JD --> LLM["LLMProvider接口"]
+    UI --> FACTORY["ProviderFactory"]
+    FACTORY --> REGISTRY["受控ProviderRegistry"]
+    FACTORY --> LLM
     LLM --> OPENAI["OpenAI适配器"]
     LLM --> DEEPSEEK["DeepSeek适配器"]
+    LLM --> COMPAT["兼容Chat适配器：百炼/OpenRouter基础"]
     DEEPSEEK --> CATALOG["官方模型目录缓存"]
     CATALOG --> POLICY["Auto-Safe白名单策略"]
     UI --> AUTH["认证与权限层"]
@@ -46,6 +50,7 @@ flowchart LR
 | `llm_providers.py` | DeepSeek等供应商适配器 |
 | `model_catalog.py` | DeepSeek官方模型发现、缓存、白名单选择与安全回退策略 |
 | `provider_factory.py` | 根据供应商和系统/用户密钥模式创建客户端 |
+| `provider_registry.py` | 四个受控供应商预设、标签、协议、模型策略与费率配置入口；C08-A 新供应商尚未进入页面 |
 | `key_encryption.py` | AES-256-GCM密钥加解密 |
 | `api_key_service.py` | 开发者密钥权限、加密和元数据管理 |
 | `course_skill_mapper.py` | 课程关键词规则与技能证据生成 |
@@ -89,6 +94,7 @@ flowchart LR
 - 角色负责安全边界，套餐负责产品能力，敏感操作需要两层权限同时允许。
 - 管理员Dashboard只读取聚合指标和脱敏用户字段，不读取密码哈希或API Key密文。
 - 开发者API Key以AES-256-GCM密文持久化，主密钥只来自环境变量。
+- C08-A 的受控注册表在工厂之前解析供应商；OpenAI Responses 和 DeepSeek 原路径保留，百炼/OpenRouter 复用兼容 Chat 适配器且只支持用户 Key。SQLite 旧表约束事务化扩展，密文与关联数据不变；详细边界见 [C08 设计](c08-multi-provider-design.md)。
 - 开发者密钥表单通过提交回调完成加密保存；回调结束前删除明文状态并递增表单版本，使前端创建全新的空密码组件，重跑后的页面只读取脱敏元数据。
 - 页面使用`st.navigation`按角色动态展示入口，页面隐藏不替代服务端权限判断。
 - 页面内容运行在可清空占位容器中；检测到路由变化时先清空旧容器并执行一次受控重跑，规避 Streamlit 页面切换时的内容残留。

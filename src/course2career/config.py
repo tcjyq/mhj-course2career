@@ -25,6 +25,12 @@ class Settings:
     openai_output_cost_per_million: float = 0.0
     deepseek_input_cost_per_million: float = 0.0
     deepseek_output_cost_per_million: float = 0.0
+    bailian_region: str = "cn-beijing"
+    bailian_base_url: str | None = None
+    bailian_input_cost_per_million: float = 0.0
+    bailian_output_cost_per_million: float = 0.0
+    openrouter_input_cost_per_million: float = 0.0
+    openrouter_output_cost_per_million: float = 0.0
     openai_timeout_seconds: float = 30.0
     database_path: str = "instance/course2career.db"
     key_encryption_key: str | None = field(default=None, repr=False)
@@ -78,6 +84,20 @@ def load_settings() -> Settings:
         ),
         deepseek_output_cost_per_million=_nonnegative_float_env(
             "DEEPSEEK_OUTPUT_COST_PER_MILLION"
+        ),
+        bailian_region=os.getenv("BAILIAN_REGION", "cn-beijing"),
+        bailian_base_url=os.getenv("BAILIAN_BASE_URL") or None,
+        bailian_input_cost_per_million=_nonnegative_float_env(
+            "BAILIAN_INPUT_COST_PER_MILLION"
+        ),
+        bailian_output_cost_per_million=_nonnegative_float_env(
+            "BAILIAN_OUTPUT_COST_PER_MILLION"
+        ),
+        openrouter_input_cost_per_million=_nonnegative_float_env(
+            "OPENROUTER_INPUT_COST_PER_MILLION"
+        ),
+        openrouter_output_cost_per_million=_nonnegative_float_env(
+            "OPENROUTER_OUTPUT_COST_PER_MILLION"
         ),
         openai_timeout_seconds=max(timeout, 1.0),
         database_path=os.getenv(

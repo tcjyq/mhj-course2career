@@ -5,12 +5,17 @@ from course2career.config import Settings
 from course2career.key_encryption import KeyDecryptionError
 from course2career.llm_client import OpenAIJDClient
 from course2career.llm_provider import LLMProvider, ProviderName
-from course2career.llm_providers import DeepSeekProvider, ProviderError
+from course2career.llm_providers import (
+    DeepSeekProvider,
+    OpenAICompatibleChatProvider,
+    ProviderError,
+)
 from course2career.model_catalog import (
     DeepSeekModelCatalog,
     ModelDiscoveryError,
 )
-from course2career.permissions import Principal
+from course2career.permissions import Plan, Principal
+from course2career.provider_registry import get_provider_preset
 
 
 class LLMProviderFactory:
@@ -38,6 +43,17 @@ class LLMProviderFactory:
         key_mode: str,
         model: str,
     ) -> LLMProvider:
+        try:
+            preset = get_provider_preset(provider, self.settings)
+        except ValueError as exc:
+            raise ProviderError(str(exc)) from exc
+        provider = preset.provider_id
+        if (
+            key_mode == "system"
+            and principal.plan == Plan.FREE
+            and provider != ProviderName.DEEPSEEK
+        ):
+            raise ProviderError("免费套餐的系统AI仅使用 DeepSeek。")
         api_key = self._resolve_api_key(principal, provider, key_mode)
         if provider == ProviderName.OPENAI:
             provider_settings = replace(
@@ -69,6 +85,17 @@ class LLMProviderFactory:
                 ),
                 timeout_seconds=self.settings.openai_timeout_seconds,
             )
+        if (
+            key_mode == "user"
+            and preset.supports_byok
+            and preset.protocol == "openai_compatible_chat"
+        ):
+            return OpenAICompatibleChatProvider(
+                preset=preset,
+                api_key=api_key,
+                model=model or preset.default_model or "",
+                timeout_seconds=self.settings.openai_timeout_seconds,
+            )
         raise ProviderError("不支持的模型供应商。")
 
     def _resolve_api_key(
@@ -91,12 +118,10 @@ class LLMProviderFactory:
         if not getattr(self.settings, "system_ai_enabled", True):
             raise ProviderError("系统AI当前已暂停，请使用本地规则模式。")
 
-        api_key = (
-            self.settings.openai_api_key
-            if provider == ProviderName.OPENAI
-            else self.settings.deepseek_api_key
-        )
+        preset = get_provider_preset(provider, self.settings)
+        if preset.system_key_setting is None:
+            raise ProviderError("该供应商未开放系统API Key模式。")
+        api_key = getattr(self.settings, preset.system_key_setting)
         if not api_key:
-            provider_label = "OpenAI" if provider == ProviderName.OPENAI else "DeepSeek"
-            raise ProviderError(f"未配置平台 {provider_label} API Key。")
+            raise ProviderError(f"未配置平台 {preset.display_name} API Key。")
         return api_key

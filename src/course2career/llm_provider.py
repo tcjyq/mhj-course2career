@@ -9,6 +9,8 @@ from course2career.models import JobAnalysis
 class ProviderName(StrEnum):
     OPENAI = "openai"
     DEEPSEEK = "deepseek"
+    BAILIAN = "bailian"
+    OPENROUTER = "openrouter"
 
 
 class LLMUsage(BaseModel):

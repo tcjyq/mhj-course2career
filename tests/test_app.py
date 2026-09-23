@@ -8,11 +8,14 @@ from course2career.auth_service import AuthService
 from course2career.permissions import Plan, Role
 from course2career.product_repository import SQLiteProductRepository
 
+APP_PATH = Path(__file__).resolve().parents[1] / "app.py"
+
 
 def _analysis_app(
     tmp_path: Path,
     *,
     developer: bool = False,
+    system_keys: bool = False,
 ) -> AppTest:
     database_path = (tmp_path / "analysis.db").as_posix()
     principal_source = (
@@ -31,6 +34,12 @@ principal = Principal()
 key_service = None
 """
     )
+    settings_source = (
+        'Settings(openai_api_key="fake-openai-key", '
+        'deepseek_api_key="fake-deepseek-key")'
+        if system_keys
+        else "Settings(openai_api_key=None, deepseek_api_key=None)"
+    )
     return AppTest.from_string(
         f"""
 from course2career.access_services import AIUsageService, AnalysisRecordService
@@ -43,7 +52,7 @@ from course2career.provider_factory import LLMProviderFactory
 from course2career.ui.analysis_page import render_analysis_page
 
 repository = SQLiteProductRepository(r"{database_path}")
-settings = Settings(openai_api_key=None, deepseek_api_key=None)
+settings = {settings_source}
 {principal_source}
 render_analysis_page(
     principal,
@@ -173,7 +182,7 @@ render_analysis_page(
 
 
 def test_app_initial_page_is_product_home() -> None:
-    app = AppTest.from_file("app.py").run()
+    app = AppTest.from_file(APP_PATH).run()
 
     assert not app.exception
     assert app.title[0].value == "把学过的课程，翻译成求职能力"
@@ -244,7 +253,7 @@ def test_app_bootstraps_owner_admin_from_environment(
     monkeypatch.setenv("ADMIN_PASSWORD", "unique-admin-pass-123")
     monkeypatch.delenv("ADMIN_PASSWORD_HASH", raising=False)
 
-    app = AppTest.from_file("app.py").run()
+    app = AppTest.from_file(APP_PATH).run()
 
     assert not app.exception
     principal = AuthService(SQLiteProductRepository(database_path)).authenticate(
@@ -305,6 +314,22 @@ def test_guest_analysis_hides_system_ai_without_platform_key(tmp_path: Path) -> 
     assert any(
         "公开 Demo 默认使用“本地规则”" in caption.value for caption in app.caption
     )
+
+
+def test_free_system_ai_only_shows_deepseek_when_both_platform_keys_exist(
+    tmp_path: Path,
+) -> None:
+    app = _analysis_app(tmp_path, system_keys=True)
+    extraction_mode = next(
+        radio for radio in app.radio if radio.label == "技能提取模式"
+    )
+    assert extraction_mode.options == ["本地规则", "系统AI"]
+
+    extraction_mode.set_value("系统AI").run()
+
+    provider = next(box for box in app.selectbox if box.label == "模型供应商")
+    assert not app.exception
+    assert provider.options == ["DeepSeek"]
 
 
 def test_analysis_page_upload_invalid_excel_shows_readable_error(
@@ -442,6 +467,10 @@ render_developer_page(
     assert "开发者API Key" in analysis_app.radio[0].options
     assert not key_app.exception
     assert key_app.title[0].value == "开发者API Key"
+    assert next(box for box in key_app.selectbox if box.label == "供应商").options == [
+        "OpenAI",
+        "DeepSeek",
+    ]
 
 
 def test_developer_api_key_input_is_cleared_after_save(tmp_path: Path) -> None:

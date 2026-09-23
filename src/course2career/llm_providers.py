@@ -9,6 +9,7 @@ from course2career.model_catalog import (
     DEEPSEEK_BASE_URL,
 )
 from course2career.models import JobAnalysis
+from course2career.provider_registry import ProviderPreset
 
 PROMPT_PATH = Path(__file__).resolve().parents[2] / "prompts" / "extract_jd_skills.txt"
 DEEPSEEK_MODELS = APPROVED_DEEPSEEK_MODELS
@@ -16,6 +17,95 @@ DEEPSEEK_MODELS = APPROVED_DEEPSEEK_MODELS
 
 class ProviderError(LLMClientError):
     """模型供应商配置或调用失败。"""
+
+
+class OpenAICompatibleChatProvider:
+    """供新预设复用的 Chat Completions 适配器。"""
+
+    def __init__(
+        self,
+        *,
+        preset: ProviderPreset,
+        api_key: str,
+        model: str,
+        timeout_seconds: float = 30,
+        sdk_client: Any | None = None,
+    ) -> None:
+        if not api_key or not model or not model.strip() or len(model) > 200:
+            raise ProviderError("模型或开发者API Key配置无效。")
+        if preset.protocol != "openai_compatible_chat" or not preset.base_url:
+            raise ProviderError("模型供应商协议配置无效。")
+        self.preset = preset
+        self.model = model.strip()
+        self._last_usage: LLMUsage | None = None
+        if sdk_client is None:
+            try:
+                from openai import OpenAI
+            except ImportError as exc:
+                raise ProviderError("未安装OpenAI兼容SDK。") from exc
+            sdk_client = OpenAI(
+                api_key=api_key,
+                base_url=preset.base_url,
+                timeout=timeout_seconds,
+            )
+        self.client = sdk_client
+
+    @property
+    def provider_name(self) -> ProviderName:
+        return self.preset.provider_id
+
+    @property
+    def model_name(self) -> str:
+        return self.model
+
+    @property
+    def last_usage(self) -> LLMUsage | None:
+        return self._last_usage
+
+    def extract_job_skills(self, jd_text: str) -> JobAnalysis:
+        self._last_usage = None
+        schema = json.dumps(
+            JobAnalysis.model_json_schema(), ensure_ascii=False, separators=(",", ":")
+        )
+        instructions = (
+            PROMPT_PATH.read_text(encoding="utf-8")
+            + "\n请只输出JSON对象，不要使用Markdown代码块。JSON Schema："
+            + schema
+        )
+        kwargs: dict[str, Any] = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": instructions},
+                {"role": "user", "content": jd_text},
+            ],
+            "max_tokens": 1500,
+            "stream": False,
+        }
+        if self.preset.supports_structured_output:
+            kwargs["response_format"] = {"type": "json_object"}
+        try:
+            response = self.client.chat.completions.create(**kwargs)
+            usage = getattr(response, "usage", None)
+            if usage is not None:
+                self._last_usage = LLMUsage(
+                    input_tokens=coerce_token_count(getattr(usage, "prompt_tokens", 0)),
+                    output_tokens=coerce_token_count(
+                        getattr(usage, "completion_tokens", 0)
+                    ),
+                    model=_safe_optional_text(getattr(response, "model", None))
+                    or self.model,
+                    system_fingerprint=_safe_optional_text(
+                        getattr(response, "system_fingerprint", None)
+                    ),
+                )
+            content = response.choices[0].message.content
+            if not content:
+                raise ValueError("empty response content")
+            return JobAnalysis.model_validate_json(content).model_copy(
+                update={"source": "ai"}
+            )
+        except Exception as exc:
+            raise ProviderError("模型服务暂时不可用，请检查配置后重试。") from exc
 
 
 class DeepSeekProvider:

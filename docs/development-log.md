@@ -1,5 +1,11 @@
 # Course2Career 开发日志
 
+## 2026-09-23 C08-A 多供应商基础（本地，未发布）
+
+从 `3c9378683640bfbeb1ddcaec1a909a8ca0286c82` 创建 `feature/c08-multi-provider`。新增四项受控 Provider 预设及百炼/OpenRouter 共享兼容 Chat 适配器；保留 DeepSeek Auto-Safe 和 OpenAI Responses 路径。免费套餐系统AI固定 DeepSeek；用户 Key 与系统额度分离。旧 SQLite API Key 表约束事务化扩展，密文原样保留。百炼/OpenRouter 尚未开放页面或真实调用；设计、验证和后续阶段见 [C08 设计](c08-multi-provider-design.md)。
+
+本地验证：Python 3.12 与 3.14 全量 pytest 通过，Ruff 检查与格式检查通过，3.14 `pip check` 通过；隔离浏览器以假平台 Key 验证游客系统AI仅显示 DeepSeek，控制台无错误或警告，未发出模型请求。以上不代表真实供应商兼容性验证或生产发布。
+
 ## 记录规则
 
 每次完成一个可验证的开发阶段后追加记录，包含日期、目标、完成内容、验证结果、技术决策和后续任务。时间统一使用东八区。

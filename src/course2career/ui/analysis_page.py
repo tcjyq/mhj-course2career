@@ -44,6 +44,7 @@ from course2career.permissions import (
     authorize,
 )
 from course2career.provider_factory import LLMProviderFactory
+from course2career.provider_registry import get_provider_preset, ui_provider_presets
 from course2career.report_exporter import (
     export_adaptability_markdown,
     export_markdown,
@@ -140,15 +141,21 @@ def render_analysis_page(
             max_chars=12_000,
             placeholder="粘贴岗位名称、岗位职责和任职要求。",
         )
-        system_provider_labels: list[str] = []
+        system_providers: list[ProviderName] = []
         if getattr(settings, "system_ai_enabled", True):
-            if settings.openai_api_key:
-                system_provider_labels.append("OpenAI")
-            if settings.deepseek_api_key:
-                system_provider_labels.append("DeepSeek")
+            for preset in ui_provider_presets():
+                if (
+                    preset.system_key_setting
+                    and getattr(settings, preset.system_key_setting)
+                    and (
+                        principal.plan != Plan.FREE
+                        or preset.provider_id == ProviderName.DEEPSEEK
+                    )
+                ):
+                    system_providers.append(preset.provider_id)
 
         analysis_modes = ["本地规则"]
-        if system_provider_labels:
+        if system_providers:
             analysis_modes.append("系统AI")
         if (
             principal.plan in {Plan.DEVELOPER, Plan.ADMIN}
@@ -162,23 +169,30 @@ def render_analysis_page(
             horizontal=True,
             help="本地规则不消耗AI额度；平台已配置模型时才显示系统AI。",
         )
-        if not system_provider_labels:
+        if not system_providers:
             st.caption(
                 "公开 Demo 默认使用“本地规则”，无需注册或平台 AI Key，"
                 "可完成完整核心分析流程。"
             )
         selected_provider = ProviderName.OPENAI
-        selected_model = settings.openai_model
+        selected_model = get_provider_preset(ProviderName.OPENAI).configured_model(
+            settings
+        )
         if analysis_mode != "本地规则":
             provider_options = (
-                system_provider_labels
+                system_providers
                 if analysis_mode == "系统AI"
-                else ["OpenAI", "DeepSeek"]
+                else [preset.provider_id for preset in ui_provider_presets()]
             )
-            provider_label = st.selectbox("模型供应商", provider_options)
-            if provider_label == "DeepSeek":
-                selected_provider = ProviderName.DEEPSEEK
-                selected_model = settings.deepseek_model
+            selected_provider = st.selectbox(
+                "模型供应商",
+                provider_options,
+                format_func=lambda item: get_provider_preset(item).display_name,
+            )
+            selected_model = get_provider_preset(selected_provider).configured_model(
+                settings
+            )
+            if selected_provider == ProviderName.DEEPSEEK:
                 if getattr(settings, "deepseek_model_mode", "pinned") == "auto_safe":
                     preference = " → ".join(
                         getattr(
@@ -196,12 +210,9 @@ def render_analysis_page(
         if st.button("提取岗位技能", type="primary"):
             usage_id = None
             client = None
-            if selected_provider == ProviderName.DEEPSEEK:
-                input_cost_per_million = settings.deepseek_input_cost_per_million
-                output_cost_per_million = settings.deepseek_output_cost_per_million
-            else:
-                input_cost_per_million = settings.openai_input_cost_per_million
-                output_cost_per_million = settings.openai_output_cost_per_million
+            input_cost_per_million, output_cost_per_million = get_provider_preset(
+                selected_provider
+            ).cost_rates(settings)
             try:
                 if analysis_mode == "本地规则":
                     authorize(principal, Permission.USE_DEMO)
@@ -211,7 +222,7 @@ def render_analysis_page(
                         principal,
                         provider=selected_provider,
                         key_mode=key_mode,
-                        model=selected_model,
+                        model=selected_model or "",
                     )
                     usage_id = usage_service.start_call(
                         principal,

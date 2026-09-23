@@ -48,6 +48,7 @@ AI 只提取 JD 技能；原文引用核对、映射、评分、门槛与学习�
 - 支持游客、普通用户、开发者和管理员权限。
 - 支持 AI 日额度、历史分析记录和轻量管理员 Dashboard。
 - 开发者 API Key 使用 AES-256-GCM 加密后保存。
+- C08-A 已在本地分支建立四供应商预设基础；百炼/OpenRouter 尚未开放页面或生产调用。[设计与边界](docs/c08-multi-provider-design.md)。免费套餐系统 AI 仍使用 DeepSeek。
 - 开发者 API Key 提交后立即清空输入框与对应会话状态，页面只保留末四位元数据。
 - 页面切换采用隔离渲染，避免首页或上一页内容残留到当前页面。
 
@@ -111,6 +112,10 @@ Copy-Item .env.example .env
 | `OPENAI_MODEL` | OpenAI 模型名称 | 否 |
 | `DEEPSEEK_API_KEY` | 平台 DeepSeek 调用 | 仅 DeepSeek 系统模式 |
 | `DEEPSEEK_MODEL` | DeepSeek 模型名称 | 否 |
+| `BAILIAN_REGION` | 百炼受控端点区域（北京/新加坡/美国/香港），C08-A 页面尚未开放 | 否 |
+| `BAILIAN_BASE_URL` | 可覆盖为注册表列出的官方百炼区域端点；拒绝任意 URL | 否 |
+| `BAILIAN_INPUT_COST_PER_MILLION` / `BAILIAN_OUTPUT_COST_PER_MILLION` | 百炼估算费率，默认 0 表示未配置 | 否 |
+| `OPENROUTER_INPUT_COST_PER_MILLION` / `OPENROUTER_OUTPUT_COST_PER_MILLION` | OpenRouter 估算费率，默认 0 表示未配置 | 否 |
 | `DEEPSEEK_MODEL_MODE` | `auto_safe` 自动安全选择或 `pinned` 固定模型 | 否 |
 | `DEEPSEEK_MODEL_PREFERENCE` | 已验证模型的优先顺序 | 否 |
 | `DEEPSEEK_MODEL_CACHE_SECONDS` | 官方模型目录缓存时间 | 否 |

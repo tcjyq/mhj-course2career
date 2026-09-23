@@ -9,7 +9,8 @@ from course2career.access_services import (
     QuotaExceededError,
     SystemStatusService,
 )
-from course2career.llm_provider import LLMUsage
+from course2career.config import Settings
+from course2career.llm_provider import LLMUsage, ProviderName
 from course2career.models import AnalysisReport
 from course2career.permissions import (
     PermissionDeniedError,
@@ -18,6 +19,7 @@ from course2career.permissions import (
     Role,
 )
 from course2career.product_repository import SQLiteProductRepository
+from course2career.provider_registry import get_provider_preset
 from course2career.user_repository import StoredUser
 
 
@@ -170,6 +172,41 @@ def test_developer_own_key_is_unlimited_but_user_is_denied(
 
     with pytest.raises(PermissionDeniedError):
         service.start_call(user, "user", "test-model")
+
+
+def test_new_provider_byok_usage_tracks_model_cost_without_system_quota(
+    repository: SQLiteProductRepository,
+) -> None:
+    _add_user(repository, "dev-1", Role.DEVELOPER)
+    developer = Principal(role=Role.DEVELOPER, plan=Plan.DEVELOPER, user_id="dev-1")
+    service = AIUsageService(repository)
+    settings = Settings(
+        bailian_input_cost_per_million=1.0,
+        bailian_output_cost_per_million=2.0,
+    )
+    usage_id = service.start_call(
+        developer, "user", "qwen-plus", provider=ProviderName.BAILIAN.value
+    )
+    input_rate, output_rate = get_provider_preset(ProviderName.BAILIAN).cost_rates(
+        settings
+    )
+    service.complete_call(
+        usage_id,
+        success=True,
+        usage=LLMUsage(input_tokens=200, output_tokens=100, model="qwen-plus"),
+        input_cost_per_million=input_rate,
+        output_cost_per_million=output_rate,
+    )
+
+    assert service.get_quota_status(developer, "system").used == 0
+    with repository._connect() as connection:
+        row = connection.execute(
+            "SELECT provider, key_mode, model, input_tokens, output_tokens, cost "
+            "FROM api_usage WHERE id = ?",
+            (usage_id,),
+        ).fetchone()
+    assert tuple(row)[:5] == ("bailian", "user", "qwen-plus", 200, 100)
+    assert row[5] == pytest.approx(0.0004)
 
 
 def test_analysis_history_is_saved_only_for_authenticated_owner(
