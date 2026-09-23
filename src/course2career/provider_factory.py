@@ -17,6 +17,7 @@ from course2career.model_catalog import (
 from course2career.native_providers import AnthropicMessagesProvider, GeminiProvider
 from course2career.permissions import Plan, Principal
 from course2career.provider_registry import ProviderProtocol, get_provider_preset
+from course2career.provider_verification import Verification, get_record
 
 
 class LLMProviderFactory:
@@ -95,12 +96,24 @@ class LLMProviderFactory:
             key_mode == "user"
             and preset.primary_protocol == ProviderProtocol.OPENAI_CHAT
         ):
+            verification = get_record(
+                provider,
+                endpoint_id or preset.selected_endpoint_id,
+                model or preset.default_model or "",
+            )
             return OpenAICompatibleChatProvider(
                 preset=preset,
                 api_key=api_key,
                 model=model or preset.default_model or "",
                 endpoint_id=endpoint_id,
                 timeout_seconds=self.settings.openai_timeout_seconds,
+                structured_strategy=(
+                    verification.schema_strategy
+                    if provider == ProviderName.OPENROUTER
+                    and verification is not None
+                    and verification.result == Verification.VERIFIED
+                    else None
+                ),
             )
         if (
             key_mode == "user"

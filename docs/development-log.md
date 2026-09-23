@@ -1,5 +1,13 @@
 # Course2Career 开发日志
 
+## 2026-09-23 C08-B2 真实 Provider 兼容性验证（本地，未发布）
+
+新增协议输出策略、Anthropic/Gemini/百炼小型 schema adapter、精确 Provider × 官方端点 × 模型验证记录、4 个固定合成 JD 和脱敏错误分类。连接测试最多达到 `SCHEMA_COMPATIBLE`，完整 fixture、usage、返回模型和原文 evidence 均通过才可标 `VERIFIED`；DeepSeek 历史 Auto-Safe 白名单不再直接显示为 B2 VERIFIED。百炼默认候选改为 `qwen3.8-flash`，OpenRouter 需模型 metadata 证明支持 strict schema。决策见 [ADR 004](decisions/004-provider-validation-evidence.md)，官方依据与真实记录见 [B2 验证报告](c08-provider-validation.md)。
+
+本次只检测环境变量存在性，不读取或输出凭证内容。OpenAI `gpt-5.6-luna` 与 Anthropic `claude-haiku-4-5-20251001` 各真实请求 1 次，均 HTTP 401／`AUTH_ERROR`；因此未执行后续 fixture，0 家 VERIFIED、0 家 CONNECTED、8 家无 Key PENDING。无 usage 回执，费用不可估算。原始错误、请求头、Key 和真实 JD 未写入文档或仓库；本地 JSON 与摘要位于 gitignored `outputs/c08-provider-validation/`。未推送、未部署、未改生产 Secrets。
+
+本地 Python 3.12 与 3.14 各 207 项 pytest 通过；Ruff lint、format、3.14 `pip check` 与 `git diff --check` 通过。此自动化结果只验证代码与 fake 编排，真实兼容性仍受可用凭证限制。C08-C 继续模型发现、能力、价格和上下文元数据。
+
 ## 2026-09-23 C08-B1 主流 Provider BYOK 基础（本地，未发布）
 
 新增十家官方受控预设和四类协议路由，保留旧 OpenAI Responses 与 DeepSeek Auto-Safe；Developer/Admin 统一卡片可加密保存、更新、删除 Key，配置端点 ID／模型 ID，分析页只列当前账户已配置 Provider。新增 Anthropic Messages、Gemini Native 适配器、合成 JD 连接测试契约和模型级验证状态。SQLite 将旧 2/4 值 Key 约束事务化扩到十值，保留原密文与 nonce，新增用户 Profile 和费用 `estimated/unknown`。官方来源见 [Provider 矩阵](c08-provider-matrix.md)，架构决定见 [ADR 003](decisions/003-protocol-based-byok-provider-presets.md)。本轮只使用 fake Key/响应，未做真实供应商调用、推送或部署；验证结果见本次交付报告。

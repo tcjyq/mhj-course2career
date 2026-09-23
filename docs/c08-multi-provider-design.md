@@ -1,6 +1,6 @@
 # C08 多供应商设计与阶段状态
 
-状态：C08-A 为历史基础；C08-B1 已在本地分支实现十家官方预设的 Developer/Admin BYOK 配置与协议适配，未发布，真实供应商调用待验证。官方端点证据见 [C08-B1 矩阵](c08-provider-matrix.md)。
+状态：C08-A 为历史基础；C08-B1 已在本地分支实现十家官方预设的 Developer/Admin BYOK 配置与协议适配。C08-B2 发起两次真实调用，OpenAI 与 Anthropic 均返回 401，尚无 VERIFIED，未发布。当前证据见 [官方矩阵](c08-provider-matrix.md)和 [B2 验证报告](c08-provider-validation.md)。
 
 ## 起点与现状审计
 
@@ -55,4 +55,8 @@ B1 的原生 HTTP 与 OpenAI SDK 请求均禁用 HTTP 重定向，避免官方�
 
 - 统一的合成 JD `test_provider_connection()` 会走真实提取与 `JobAnalysis` 校验，返回认证／请求／Schema／用量／耗时的脱敏结果；仅用户主动点击才可能产生供应商费用。B1 无真实 Key 的验证证据。
 - 静态 preset 的端点文档核对、fake 测试和页面配置成功都不等于真实模型 `verified`。新模型标记 `unverified`，实际价格缺失则显示“费用估算未配置”。
+
+### C08-B2 结果补记
+
+当前运行时状态以 `UNKNOWN/CONNECTED/SCHEMA_COMPATIBLE/VERIFIED/UNSUPPORTED` 为准，旧文档中的 `unverified` 指“尚无完整真实证据”。`qwen-plus` 是上表 C08-A 的历史候选；B2 默认候选为官方 strict JSON Schema 支持列表中的 `qwen3.8-flash`，尚未使用真实 Key 验证。Anthropic/Gemini 改为原生 schema 请求，DeepSeek 保留 JSON object，详见 [B2 报告](c08-provider-validation.md)。
 - C08-C 的通用模型发现、`/v1/models` 与价格／上下文元数据，C08-D 的 Custom Base URL 均未实现。本地提交不代表生产发布。

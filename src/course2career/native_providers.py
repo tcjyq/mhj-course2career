@@ -11,6 +11,7 @@ from course2career.llm_provider import LLMUsage, ProviderName, coerce_token_coun
 from course2career.llm_providers import ProviderError
 from course2career.models import JobAnalysis
 from course2career.provider_registry import ProviderPreset, ProviderProtocol
+from course2career.structured_output import AnthropicSchemaAdapter, GeminiSchemaAdapter
 
 PROMPT_PATH = Path(__file__).resolve().parents[2] / "prompts" / "extract_jd_skills.txt"
 NativeTransport = Callable[[str, dict[str, str], dict[str, Any], float], dict[str, Any]]
@@ -42,18 +43,14 @@ def _post_json(
 
 
 def _instructions() -> str:
-    schema = json.dumps(
-        JobAnalysis.model_json_schema(), ensure_ascii=False, separators=(",", ":")
-    )
     return (
         PROMPT_PATH.read_text(encoding="utf-8")
-        + "\n请只输出符合以下JSON Schema的对象，不要使用Markdown代码块。"
-        + schema
+        + "\n请按原文提取，evidence_text 必须是岗位描述中的原文片段。"
     )
 
 
 class AnthropicMessagesProvider:
-    """原生 /v1/messages；结构化输出采用提示词加本地严格校验。"""
+    """原生 /v1/messages + output_config.format；本地按原模型复核。"""
 
     def __init__(
         self,
@@ -64,6 +61,7 @@ class AnthropicMessagesProvider:
         endpoint_id: str | None = None,
         timeout_seconds: float = 30,
         transport: NativeTransport = _post_json,
+        max_output_tokens: int = 1500,
     ) -> None:
         if preset.primary_protocol != ProviderProtocol.ANTHROPIC_MESSAGES:
             raise ProviderError("模型供应商协议配置无效。")
@@ -73,6 +71,7 @@ class AnthropicMessagesProvider:
         self.model = model.strip()
         self.endpoint = preset.endpoint(endpoint_id or preset.selected_endpoint_id)
         self.timeout_seconds = timeout_seconds
+        self.max_output_tokens = max(int(max_output_tokens), 1)
         self.transport = transport
         self._api_key = api_key
         self._last_usage: LLMUsage | None = None
@@ -100,9 +99,15 @@ class AnthropicMessagesProvider:
                 },
                 {
                     "model": self.model,
-                    "max_tokens": 1500,
+                    "max_tokens": self.max_output_tokens,
                     "system": _instructions(),
                     "messages": [{"role": "user", "content": jd_text}],
+                    "output_config": {
+                        "format": {
+                            "type": "json_schema",
+                            "schema": AnthropicSchemaAdapter.job_analysis_schema(),
+                        }
+                    },
                 },
                 self.timeout_seconds,
             )
@@ -113,6 +118,8 @@ class AnthropicMessagesProvider:
                     output_tokens=coerce_token_count(usage.get("output_tokens")),
                     model=_model_name(response.get("model"), self.model),
                 )
+            if response.get("stop_reason") == "max_tokens":
+                raise ValueError("truncated structured output")
             blocks = response["content"]
             content = "".join(
                 block["text"]
@@ -123,12 +130,11 @@ class AnthropicMessagesProvider:
                 update={"source": "ai"}
             )
         except Exception as exc:
-            self._last_usage = None
             raise ProviderError("模型服务暂时不可用，请检查配置后重试。") from exc
 
 
 class GeminiProvider:
-    """原生 generateContent；JSON MIME 是请求策略，非模型已验证声明。"""
+    """原生 generateContent + responseJsonSchema；本地按原模型复核。"""
 
     def __init__(
         self,
@@ -139,6 +145,7 @@ class GeminiProvider:
         endpoint_id: str | None = None,
         timeout_seconds: float = 30,
         transport: NativeTransport = _post_json,
+        max_output_tokens: int = 1500,
     ) -> None:
         if preset.primary_protocol != ProviderProtocol.GEMINI_NATIVE:
             raise ProviderError("模型供应商协议配置无效。")
@@ -148,6 +155,7 @@ class GeminiProvider:
         self.model = model
         self.endpoint = preset.endpoint(endpoint_id or preset.selected_endpoint_id)
         self.timeout_seconds = timeout_seconds
+        self.max_output_tokens = max(int(max_output_tokens), 1)
         self.transport = transport
         self._api_key = api_key
         self._last_usage: LLMUsage | None = None
@@ -175,6 +183,8 @@ class GeminiProvider:
                     "contents": [{"role": "user", "parts": [{"text": jd_text}]}],
                     "generationConfig": {
                         "responseMimeType": "application/json",
+                        "responseJsonSchema": GeminiSchemaAdapter.job_analysis_schema(),
+                        "maxOutputTokens": self.max_output_tokens,
                     },
                 },
                 self.timeout_seconds,
@@ -186,6 +196,11 @@ class GeminiProvider:
                     output_tokens=coerce_token_count(usage.get("candidatesTokenCount")),
                     model=_model_name(response.get("modelVersion"), self.model),
                 )
+            if response["candidates"][0].get("finishReason") in {
+                "MAX_TOKENS",
+                "SAFETY",
+            }:
+                raise ValueError("incomplete structured output")
             parts = response["candidates"][0]["content"]["parts"]
             content = "".join(
                 part["text"]
@@ -196,7 +211,6 @@ class GeminiProvider:
                 update={"source": "ai"}
             )
         except Exception as exc:
-            self._last_usage = None
             raise ProviderError("模型服务暂时不可用，请检查配置后重试。") from exc
 
 

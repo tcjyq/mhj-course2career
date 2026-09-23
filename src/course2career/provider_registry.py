@@ -8,6 +8,7 @@ from types import MappingProxyType
 from course2career.config import Settings
 from course2career.llm_provider import ProviderName
 from course2career.model_catalog import DEEPSEEK_BASE_URL
+from course2career.structured_output import StructuredOutputStrategy
 
 
 class ProviderProtocol(StrEnum):
@@ -38,7 +39,7 @@ class ProviderPreset:
     auth_scheme: str
     default_model: str | None
     model_discovery_strategy: str
-    structured_output_strategy: str
+    structured_output_strategy: StructuredOutputStrategy
     reasoning_strategy: str
     usage_strategy: str
     capability_adapter_id: str | None
@@ -70,7 +71,14 @@ class ProviderPreset:
 
     @property
     def supports_structured_output(self) -> bool:
-        return self.structured_output_strategy == "json_object"
+        return self.structured_output_strategy == StructuredOutputStrategy.JSON_OBJECT
+
+    def strategy_for_model(self, model: str) -> StructuredOutputStrategy:
+        if self.provider_id == ProviderName.BAILIAN:
+            if model.startswith(("qwen3.8-flash", "qwen3.7-flash")):
+                return StructuredOutputStrategy.STRICT_JSON_SCHEMA
+            return StructuredOutputStrategy.PROMPT_JSON
+        return self.structured_output_strategy
 
     def endpoint(self, endpoint_id: str) -> str:
         try:
@@ -112,7 +120,7 @@ PROVIDER_PRESETS: Mapping[ProviderName, ProviderPreset] = MappingProxyType(
             "bearer",
             "gpt-5.6-luna",
             "later",
-            "responses_pydantic",
+            StructuredOutputStrategy.STRICT_JSON_SCHEMA,
             "model_specific",
             "responses_usage",
             None,
@@ -132,7 +140,7 @@ PROVIDER_PRESETS: Mapping[ProviderName, ProviderPreset] = MappingProxyType(
             "bearer",
             "deepseek-v4-flash",
             "auto_safe",
-            "json_object",
+            StructuredOutputStrategy.JSON_OBJECT,
             "disabled_by_default",
             "chat_usage",
             "deepseek_auto_safe",
@@ -150,12 +158,12 @@ PROVIDER_PRESETS: Mapping[ProviderName, ProviderPreset] = MappingProxyType(
             "cn-beijing",
             "https://help.aliyun.com/en/model-studio/get-api-key",
             "bearer",
-            "qwen-plus",
+            "qwen3.8-flash",
             "later",
-            "prompt_json",
+            StructuredOutputStrategy.STRICT_JSON_SCHEMA,
             "model_specific",
             "chat_usage",
-            None,
+            "bailian_qwen_strict",
             "configured_rates",
             "candidate",
             cost_setting_prefix="bailian",
@@ -170,7 +178,7 @@ PROVIDER_PRESETS: Mapping[ProviderName, ProviderPreset] = MappingProxyType(
             "bearer",
             None,
             "later",
-            "prompt_json",
+            StructuredOutputStrategy.PROMPT_JSON,
             "model_specific",
             "chat_usage",
             None,
@@ -188,7 +196,7 @@ PROVIDER_PRESETS: Mapping[ProviderName, ProviderPreset] = MappingProxyType(
             "bearer",
             None,
             "later",
-            "prompt_json",
+            StructuredOutputStrategy.PROMPT_JSON,
             "model_specific",
             "chat_usage",
             None,
@@ -205,7 +213,7 @@ PROVIDER_PRESETS: Mapping[ProviderName, ProviderPreset] = MappingProxyType(
             "bearer",
             None,
             "later",
-            "prompt_json",
+            StructuredOutputStrategy.PROMPT_JSON,
             "model_specific",
             "chat_usage",
             None,
@@ -222,7 +230,7 @@ PROVIDER_PRESETS: Mapping[ProviderName, ProviderPreset] = MappingProxyType(
             "bearer",
             None,
             "later",
-            "prompt_json",
+            StructuredOutputStrategy.PROMPT_JSON,
             "model_specific",
             "chat_usage",
             None,
@@ -239,7 +247,7 @@ PROVIDER_PRESETS: Mapping[ProviderName, ProviderPreset] = MappingProxyType(
             "bearer",
             "MiniMax-M3",
             "later",
-            "prompt_json",
+            StructuredOutputStrategy.PROMPT_JSON,
             "model_specific",
             "chat_usage",
             "minimax_text_only",
@@ -256,7 +264,7 @@ PROVIDER_PRESETS: Mapping[ProviderName, ProviderPreset] = MappingProxyType(
             "x-goog-api-key",
             None,
             "later",
-            "json_mime",
+            StructuredOutputStrategy.NATIVE_SCHEMA,
             "model_specific",
             "gemini_usage",
             None,
@@ -273,7 +281,7 @@ PROVIDER_PRESETS: Mapping[ProviderName, ProviderPreset] = MappingProxyType(
             "x-api-key",
             None,
             "later",
-            "prompt_json",
+            StructuredOutputStrategy.NATIVE_SCHEMA,
             "model_specific",
             "messages_usage",
             None,

@@ -63,6 +63,9 @@ def render_developer_page(
             profiles[preset.provider_id].model_id
             if preset.provider_id in profiles
             else preset.default_model or "",
+            profiles[preset.provider_id].endpoint_id
+            if preset.provider_id in profiles
+            else preset.selected_endpoint_id,
         ).verification
         == Verification.VERIFIED
         for preset in presets
@@ -143,11 +146,24 @@ def _render_provider_card(
         st.write("状态：已配置" if key_metadata is not None else "状态：未配置")
         if key_metadata is not None:
             st.write(f"API Key：••••{key_metadata.last_four}")
-        capability = model_capability(provider, selected_model)
+        capability = model_capability(provider, selected_model, selected_endpoint)
+        labels = {
+            Verification.UNKNOWN: "未验证",
+            Verification.CONNECTED: "已连接",
+            Verification.SCHEMA_COMPATIBLE: "Schema 兼容",
+            Verification.VERIFIED: "✓ Course2Career 已验证",
+            Verification.UNSUPPORTED: "当前模型不支持",
+        }
         st.caption(
-            f"模型：{selected_model or '待填写'} · "
-            f"验证：{capability.verification.value}"
+            f"模型：{selected_model or '待填写'} · {labels[capability.verification]}"
         )
+        last_connection = st.session_state.get(f"provider_connection_{name}")
+        if (
+            key_metadata is not None
+            and last_connection is not None
+            and last_connection[:2] == (selected_endpoint, selected_model)
+        ):
+            st.caption(last_connection[2])
         if preset.pricing_source_policy == "unknown":
             st.caption("费用估算未配置")
         st.link_button("获取官方 API Key / 文档", preset.api_key_help_url)
@@ -187,10 +203,23 @@ def _render_provider_card(
                 selected_model,
                 selected_endpoint,
             )
+            connection_label = (
+                "API 可连接 · Course2Career Schema 兼容"
+                if result.schema_ok
+                else "API 可连接 · Schema 未通过"
+                if result.request_ok
+                else "连接未通过"
+            )
+            st.session_state[f"provider_connection_{name}"] = (
+                selected_endpoint,
+                selected_model,
+                connection_label,
+            )
             if result.schema_ok:
                 st.success(
-                    f"连接测试通过：模型 {result.model}，耗时 {result.latency_ms} ms；"
-                    "这不等于正式模型验证。"
+                    f"{connection_label}：模型 {result.model}，"
+                    f"耗时 {result.latency_ms} ms。"
+                    "完整固定验证集通过后才标为 Course2Career 已验证。"
                 )
             else:
                 st.error(result.sanitized_error or "连接测试未通过。")

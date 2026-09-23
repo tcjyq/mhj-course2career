@@ -107,7 +107,7 @@ def test_registry_uses_configured_legacy_models_and_explicit_openrouter_model() 
         "deepseek-v4-pro"
     )
     assert get_provider_preset(ProviderName.BAILIAN).configured_model(settings) == (
-        "qwen-plus"
+        "qwen3.8-flash"
     )
     assert (
         get_provider_preset(ProviderName.OPENROUTER).configured_model(settings) is None
@@ -148,7 +148,10 @@ def test_compatible_adapter_parses_mock_response_and_usage(
     assert adapter.last_usage.output_tokens == 12
     assert adapter.last_usage.system_fingerprint == "fp-test"
     assert calls[0]["model"] == model
-    assert "response_format" not in calls[0]
+    if provider == ProviderName.BAILIAN:
+        assert calls[0]["response_format"]["json_schema"]["strict"] is True
+    else:
+        assert "response_format" not in calls[0]
     assert "extra_body" not in calls[0]
 
 

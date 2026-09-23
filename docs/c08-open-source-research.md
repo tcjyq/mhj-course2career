@@ -121,4 +121,4 @@ Tier 2：ModelScope、StepFun、xAI 和其他主流 Provider，仅在官方端�
 
 ## 后续落实：C08-B1
 
-以上“本轮”指独立提交的 C08-OSS 研究阶段。后续 C08-B1 已按该研究独立实现十家官方预设、四类协议路由、用户 Key/Profile 隔离及 fake 回归；没有移植第三方代码或资产。端点与认证以 [官方 Provider 矩阵](c08-provider-matrix.md) 为准，真实 Provider/模型验证仍待 C08-B2。历史研究中的“建议实施计划”保留为研究结论，不代表全部后续验证已完成。
+以上“本轮”指独立提交的 C08-OSS 研究阶段。后续 C08-B1 已按该研究独立实现十家官方预设、四类协议路由、用户 Key/Profile 隔离及 fake 回归；没有移植第三方代码或资产。C08-B2 已进行两次真实连接，均因 401 停止，没有模型通过固定验证集；[官方 Provider 矩阵](c08-provider-matrix.md)与 [B2 验证报告](c08-provider-validation.md)记录当前证据。历史研究中的“建议实施计划”保留为研究结论，不代表全部后续验证已完成。

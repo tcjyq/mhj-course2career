@@ -312,6 +312,7 @@ def test_native_messages_and_gemini_map_usage_and_sanitize_errors() -> None:
     assert observed[0][0] == "https://api.anthropic.com/v1/messages"
     assert observed[0][1]["x-api-key"] == "fake-secret"
     assert observed[0][2]["messages"] == [{"role": "user", "content": "合成 JD"}]
+    assert observed[0][2]["output_config"]["format"]["type"] == "json_schema"
     assert anthropic.last_usage is not None
     assert anthropic.last_usage.model == "claude-test-returned"
 
@@ -335,6 +336,7 @@ def test_native_messages_and_gemini_map_usage_and_sanitize_errors() -> None:
     assert gemini.extract_job_skills("合成 JD").job_title == "分析师"
     assert observed[1][0].endswith("/models/gemini-test:generateContent")
     assert observed[1][1] == {"x-goog-api-key": "fake-secret"}
+    assert "responseJsonSchema" in observed[1][2]["generationConfig"]
     assert gemini.last_usage is not None
     assert gemini.last_usage.output_tokens == 4
     assert gemini.last_usage.model == "gemini-test-returned"
@@ -357,7 +359,7 @@ def test_native_messages_and_gemini_map_usage_and_sanitize_errors() -> None:
 
 def test_model_capability_does_not_infer_all_models_from_provider() -> None:
     known = model_capability(ProviderName.DEEPSEEK, "deepseek-v4-flash")
-    assert known.verification == Verification.VERIFIED
+    assert known.verification == Verification.UNKNOWN
     assert known.structured_output == CapabilitySupport.SUPPORTED
     assert (
         model_capability(ProviderName.DEEPSEEK, "unapproved-model").verification
@@ -365,7 +367,7 @@ def test_model_capability_does_not_infer_all_models_from_provider() -> None:
     )
     assert (
         model_capability(ProviderName.GEMINI, "gemini-test").verification
-        == Verification.UNVERIFIED
+        == Verification.UNKNOWN
     )
 
 
@@ -497,6 +499,8 @@ render_developer_page(principal, keys, None)
     assert len([box for box in app.selectbox if box.label == "官方端点"]) == (
         10 if allowed else 0
     )
+    if allowed:
+        assert any("未验证" in str(item.value) for item in app.caption)
 
 
 def test_developer_card_add_update_delete_and_reload(tmp_path: Path) -> None:

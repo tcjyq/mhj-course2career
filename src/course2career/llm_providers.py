@@ -10,6 +10,10 @@ from course2career.model_catalog import (
 )
 from course2career.models import JobAnalysis
 from course2career.provider_registry import ProviderPreset, ProviderProtocol
+from course2career.structured_output import (
+    BailianSchemaAdapter,
+    StructuredOutputStrategy,
+)
 
 PROMPT_PATH = Path(__file__).resolve().parents[2] / "prompts" / "extract_jd_skills.txt"
 DEEPSEEK_MODELS = APPROVED_DEEPSEEK_MODELS
@@ -31,6 +35,8 @@ class OpenAICompatibleChatProvider:
         endpoint_id: str | None = None,
         timeout_seconds: float = 30,
         sdk_client: Any | None = None,
+        max_output_tokens: int = 1500,
+        structured_strategy: StructuredOutputStrategy | None = None,
     ) -> None:
         if not api_key or not model or not model.strip() or len(model) > 200:
             raise ProviderError("模型或开发者API Key配置无效。")
@@ -42,6 +48,8 @@ class OpenAICompatibleChatProvider:
             raise ProviderError(str(exc)) from exc
         self.preset = preset
         self.model = model.strip()
+        self.max_output_tokens = max(int(max_output_tokens), 1)
+        self.structured_strategy = structured_strategy
         self._last_usage: LLMUsage | None = None
         if sdk_client is None:
             try:
@@ -84,13 +92,30 @@ class OpenAICompatibleChatProvider:
                 {"role": "system", "content": instructions},
                 {"role": "user", "content": jd_text},
             ],
-            "max_tokens": 1500,
+            "max_tokens": self.max_output_tokens,
             "stream": False,
         }
-        if self.preset.supports_structured_output:
+        strategy = self.structured_strategy or self.preset.strategy_for_model(
+            self.model
+        )
+        if strategy == StructuredOutputStrategy.JSON_OBJECT:
             kwargs["response_format"] = {"type": "json_object"}
+        elif strategy == StructuredOutputStrategy.STRICT_JSON_SCHEMA:
+            kwargs["response_format"] = {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "job_analysis",
+                    "strict": True,
+                    "schema": BailianSchemaAdapter.job_analysis_schema(),
+                },
+            }
         if self.preset.capability_adapter_id == "minimax_text_only":
             kwargs["extra_body"] = {"reasoning_split": True}
+        elif (
+            self.preset.provider_id == ProviderName.OPENROUTER
+            and strategy == StructuredOutputStrategy.STRICT_JSON_SCHEMA
+        ):
+            kwargs["extra_body"] = {"provider": {"require_parameters": True}}
         try:
             response = self.client.chat.completions.create(**kwargs)
             usage = getattr(response, "usage", None)
@@ -113,7 +138,6 @@ class OpenAICompatibleChatProvider:
                 update={"source": "ai"}
             )
         except Exception as exc:
-            self._last_usage = None
             raise ProviderError("模型服务暂时不可用，请检查配置后重试。") from exc
 
 

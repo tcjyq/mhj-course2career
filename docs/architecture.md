@@ -59,6 +59,9 @@ flowchart LR
 | `provider_profile.py` | 当前用户的官方端点 ID、模型 ID 偏好与授权；密钥仍由 APIKeyService 管理 |
 | `model_capability.py` | 模型级验证状态与能力边界，未知模型不自动视为 verified |
 | `provider_connection.py` | 主动合成 JD 提取的脱敏连接测试契约 |
+| `structured_output.py` | 协议级输出策略与 Anthropic/Gemini/百炼 schema 子集 adapter |
+| `provider_verification.py`、`provider_validation.py` | gitignored 本机验证记录、模型级状态与固定合成 JD 编排；默认不发网络请求 |
+| `provider_error_classification.py` | 仅依据异常类型与 HTTP 状态返回脱敏错误分类 |
 | `key_encryption.py` | AES-256-GCM密钥加解密 |
 | `api_key_service.py` | 开发者密钥权限、加密和元数据管理 |
 | `course_skill_mapper.py` | 课程关键词规则与技能证据生成 |
@@ -95,7 +98,7 @@ flowchart LR
 - `data/skill_transfer_rules.json`只提供有限迁移证据，不能替代直接项目或实习证据。
 - 最终结果由50分基线和逐项加减分组成，解释账本必须与总分对账。
 - 外部异常在客户端边界转换为不含敏感细节的业务错误。
-- DeepSeek 模型目录属于不可信外部输入，模型 ID 和所有者均需校验；自动选择仅接受已验证白名单交集。
+- DeepSeek 模型目录属于不可信外部输入，模型 ID 和所有者均需校验；自动选择仅接受历史兼容白名单交集，白名单不代表 B2 当前真实验证状态。
 - 模型目录按 Key 的 SHA-256 指纹隔离内存缓存，缓存中不保存 Key；404 模型缺失只允许一次备用模型调用。
 - `api_usage.model` 在调用完成时回写供应商实际返回模型，避免目录选择、回退与成本记录不一致。
 - 权限层位于模型调用和历史保存外层，不进入领域分析服务。
@@ -103,6 +106,7 @@ flowchart LR
 - 管理员Dashboard只读取聚合指标和脱敏用户字段，不读取密码哈希或API Key密文。
 - 开发者API Key以AES-256-GCM密文持久化，主密钥只来自环境变量。
 - C08-B1 以四类协议路由十家官方预设；OpenAI Responses 和 DeepSeek Auto-Safe 原路径保留，百炼/OpenRouter/SiliconFlow/Moonshot/Zhipu/MiniMax 复用 Chat 适配器，Anthropic/Gemini 用原生协议。所有新增预设只支持用户 Key。SQLite 旧 Key 约束事务化扩到十家，并新增独立 Profile 和费用状态，密文与关联数据不变；详细边界见 [C08 设计](c08-multi-provider-design.md)与[官方矩阵](c08-provider-matrix.md)。
+- C08-B2 将候选输出策略与真实验证状态分开：连接测试不升级 VERIFIED；忽略文件中的记录按 Provider × 端点 ID × 精确模型读取。Anthropic 原生 `output_config.format`、Gemini `responseJsonSchema` 与 Qwen strict Chat 请求由小型 schema adapter 支持，原始 JobAnalysis 仍作本地校验。OpenRouter 只有精确模型 metadata 证明支持且完整验证通过时才使用 strict schema。此次两次真实连接均 401，现无 VERIFIED；见 [B2 报告](c08-provider-validation.md)与 [ADR 004](decisions/004-provider-validation-evidence.md)。
 - 开发者密钥表单通过提交回调完成加密保存；回调结束前删除明文状态并递增表单版本，使前端创建全新的空密码组件，重跑后的页面只读取脱敏元数据。
 - 页面使用`st.navigation`按角色动态展示入口，页面隐藏不替代服务端权限判断。
 - 页面内容运行在可清空占位容器中；检测到路由变化时先清空旧容器并执行一次受控重跑，规避 Streamlit 页面切换时的内容残留。

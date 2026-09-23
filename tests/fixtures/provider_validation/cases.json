@@ -1,0 +1,26 @@
+[
+  {
+    "id": "case_01_simple",
+    "jd": "合成岗位：数据分析实习生。任职要求：熟悉 SQL，能编写查询语句。",
+    "must_include": ["SQL"],
+    "must_exclude": []
+  },
+  {
+    "id": "case_02_multiple",
+    "jd": "合成岗位：产品数据助理。任职要求：掌握 Python、SQL 和需求分析。",
+    "must_include": ["Python", "SQL", "需求分析"],
+    "must_exclude": []
+  },
+  {
+    "id": "case_03_optional",
+    "jd": "合成岗位：报表助理。任职要求：熟悉 Excel；了解 Power BI 者优先。",
+    "must_include": ["Excel"],
+    "must_exclude": []
+  },
+  {
+    "id": "case_04_negative_quote",
+    "jd": "合成岗位：数据运营助理。要求使用 Python 清洗数据，不要求 Java。请从原文定位依据。",
+    "must_include": ["Python"],
+    "must_exclude": ["Java"]
+  }
+]
