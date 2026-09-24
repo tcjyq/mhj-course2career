@@ -212,7 +212,7 @@ course2career/
 
 登录用户完成分析后，报告会以账号归属的快照保存。刷新、重新登录或再次进入“个人分析”后，可在“最近分析”中选择并重新打开历史报告。相同时间、岗位和分数的记录仍会按唯一报告 ID 分别保留。v2.1 上线前生成的报告会以“旧版技能匹配报告”原样展示，不会伪装成五维岗位适配度。课程 Excel、完整 JD 与表单编辑内容不会被自动回填，以减少长期保存的个人和招聘数据。
 
-当前线上演示仍使用 SQLite。Streamlit Community Cloud 的临时磁盘不保证长期保存 SQLite 文件；C08-D0 本地分支已加入 PostgreSQL 生产路径，但尚未推送或部署。正式 BYOK 上线必须配置持久数据库和长期加密主密钥，完成独立 PostgreSQL 集成、备份恢复及大陆 Provider 真实验证。见 [C08-D0 持久化说明](docs/c08-production-persistence.md)。
+当前线上演示仍使用 SQLite。Streamlit Community Cloud 的临时磁盘不保证长期保存 SQLite 文件；C08-D0 分支已加入 PostgreSQL 生产路径，但尚未部署。正式 BYOK 上线必须配置持久数据库和长期加密主密钥，完成 PostgreSQL CI、独立远程库与备份恢复演练，以及大陆 Provider 真实验证。见 [持久化说明](docs/c08-production-persistence.md)和[备份恢复操作说明](docs/c08-backup-restore-runbook.md)。
 
 ## License
 

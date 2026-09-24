@@ -4,6 +4,7 @@ import os
 import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import pytest
 from streamlit.testing.v1 import AppTest
@@ -111,6 +112,8 @@ def test_postgres_persists_all_user_assets_and_migrates_synthetic_sqlite(tmp_pat
     url = os.getenv("C08_TEST_DATABASE_URL")
     if not url:
         pytest.skip("需要独立的 C08_TEST_DATABASE_URL 测试实例")
+    if urlsplit(url).hostname not in {"localhost", "127.0.0.1", "::1"}:
+        pytest.skip("此清空测试仅允许 CI 本机 PostgreSQL")
     repo = PostgresProductRepository(url, allow_insecure_local_test=True)
     with repo._connect() as connection:
         connection.execute(
@@ -190,10 +193,25 @@ def test_postgres_persists_all_user_assets_and_migrates_synthetic_sqlite(tmp_pat
         ProviderName.DEEPSEEK,
         "synthetic-deepseek-key",
     )
+    fixture_enabled = AuthService(source).refresh_principal(synthetic)
+    ProviderProfileService(source).save(
+        fixture_enabled, ProviderName.DEEPSEEK, "global", "deepseek-flash"
+    )
+    source.add_analysis(synthetic.user_id, AnalysisReport(overall_score=81))
+    fixture_call = AIUsageService(source).start_call(
+        fixture_enabled, "user", "deepseek-flash", provider="deepseek"
+    )
+    AIUsageService(source).complete_call(
+        fixture_call,
+        success=True,
+        usage=LLMUsage(input_tokens=8, output_tokens=4, model="deepseek-flash"),
+    )
     counts = copy_sqlite_to_postgres(
         source.database_path, url, allow_insecure_local_test=True
     )
     assert counts["users"] == counts["user_api_keys"] == 1
+    assert counts["user_provider_profiles"] == counts["analysis_records"] == 1
+    assert counts["api_usage"] == 1
     migrated = PostgresProductRepository(url, allow_insecure_local_test=True)
     assert migrated.find_by_id(synthetic.user_id) is not None
     assert (

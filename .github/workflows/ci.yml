@@ -60,3 +60,14 @@ jobs:
         run: python -m pip install -r requirements-dev.txt
       - name: PostgreSQL integration
         run: pytest -m postgres -q
+      - name: Backup and restore synthetic database
+        run: |
+          container_id="$(docker ps --filter ancestor=postgres:17 --format '{{.ID}}' | head -n 1)"
+          test -n "$container_id"
+          docker exec -e PGPASSWORD=synthetic-ci-only "$container_id" pg_dump -U postgres -d course2career --format=custom --file=/tmp/c08.dump
+          docker exec -e PGPASSWORD=synthetic-ci-only "$container_id" createdb -U postgres course2career_restore
+          docker exec -e PGPASSWORD=synthetic-ci-only "$container_id" pg_restore -U postgres -d course2career_restore --exit-on-error /tmp/c08.dump
+      - name: Verify restored assets and decryption
+        env:
+          C08_TEST_RESTORE_DATABASE_URL: postgresql://postgres:synthetic-ci-only@localhost:5432/course2career_restore?sslmode=disable
+        run: pytest -m postgres_restore -q

@@ -1,5 +1,11 @@
 # Course2Career 开发日志
 
+## 2026-09-24 C08-D1 持久化证明与大陆供应商验证
+
+在 D0 的 PostgreSQL 合成集成测试后增加 CI 容器内 `pg_dump`→空库 `pg_restore`，核对持久表、schema 版本和恢复后密文解密；增加独立远程测试库脚本与[备份恢复操作说明](c08-backup-restore-runbook.md)。本地补测生产库不可达／TLS 不合格时无 SQLite 回退、错误主密钥安全失败，以及 Streamlit 根级 Secrets 与环境变量配置路径一致。CI、远程库和恢复演练的实际结果以运行记录为准，未运行的环节保持 PENDING。
+
+本机未提供 `C2C_TEST_DATABASE_URL`，DeepSeek、百炼、SiliconFlow 凭证也不可用；未运行独立远程 PostgreSQL 或真实大陆模型调用。`PERSISTENCE_READY=no`、`PROVIDER_VALIDATED=no`、`RELEASE_READY=no`。D1 feature 分支与 Draft PR 只用于 CI，不能合入或部署。
+
 ## 2026-09-24 C08-C 大陆优先官方模型目录（本地，未发布）
 
 新增十家受控预设的目录策略：DeepSeek、百炼、SiliconFlow、MiniMax、OpenRouter、OpenAI、Anthropic、Gemini 动态读取官方模型 API，Kimi/GLM 暂用注明来源日期的短目录。官方可用性/能力/价格与 B2 真实验证分层；DeepSeek 当前 `deepseek-flash` 为默认候选，旧 `deepseek-v4-flash` 只作为兼容别名提示用户主动迁移。百炼按区域/Workspace 查询，MiniMax 区分国内与国际端点。缓存按用户、端点、Workspace 和 Key 版本隔离，支持 TTL、手动刷新与失败旧目录；B3 关闭即拒绝读取。Provider Hub 大陆优先，国际折叠；分析页按模型级证据排序并提示未知/未验证。文档与来源见 [模型目录](c08-model-discovery.md)、[官方矩阵](c08-provider-matrix.md)、[ADR 006](decisions/006-model-catalog-provenance-and-scope.md)。

@@ -1,6 +1,6 @@
-# C08-D0 生产持久化与发布门槛
+# C08-D0/D1 生产持久化与发布门槛
 
-日期：2026-09-24。基线：C08-C `c669b74fc09293b137a1a35a9e0d777d4cbda9b7`。此分支尚未推送或部署。
+日期：2026-09-24。基线：C08-C `c669b74fc09293b137a1a35a9e0d777d4cbda9b7`；D0 `607f93a0815f825be0c80cc62ac45d0644e072e5`。D1 仅验证 feature 分支；没有合入或部署。
 
 ## SQLite 完整清单
 
@@ -33,6 +33,6 @@
 
 ## 验证与发布状态
 
-本地 SQLite 全套测试及 PostgreSQL 独立 CI job 使用合成账户、Key、报告和用量。CI 使用仅限 localhost 的无 TLS 测试连接；生产 URL 强制 TLS。PostgreSQL job 覆盖建库、幂等重连、注册登录、BYOK 关闭/重开、密文解密、Profile、报告、额度/用量、跨用户隔离及合成迁移。CI 未实际运行前不得声称 PostgreSQL 已通过。真实生产备份恢复亦需单独演练。
+本地 SQLite 全套测试及 PostgreSQL 独立 CI job 使用合成账户、Key、报告和用量。CI 使用仅限 localhost 的无 TLS 测试连接；生产 URL 强制 TLS。PostgreSQL job 覆盖建库、幂等重连、注册登录、BYOK 关闭/重开、密文解密、Profile、报告、额度/用量、跨用户隔离及合成迁移。D1 还增加容器内备份、空库恢复、行数与主密钥验证。CI 结果应以 Draft PR 的真实日志为准；本地脚本或测试通过不等于 CI 通过。独立远程 PostgreSQL 的合成数据与恢复演练见[操作说明](c08-backup-restore-runbook.md)，未执行时保持 PENDING。
 
-状态条件：`ARCHITECTURE_READY` 要求设计与受控端点；`PERSISTENCE_READY` 要求 PostgreSQL 独立集成和备份恢复证据；`PROVIDER_VALIDATED` 要求至少 DeepSeek 与百炼通过 B2 固定合成集；`RELEASE_READY` 要求前三项及发布审查通过。当前无大陆模型 VERIFIED；不得进入生产 PR、push 或部署。
+状态条件：`ARCHITECTURE_READY` 要求设计与受控端点；`PERSISTENCE_READY` 要求 PostgreSQL CI、独立远程测试、备份恢复、恢复后解密及生产 fail-closed 全部通过；`PROVIDER_VALIDATED` 要求至少 DeepSeek 与百炼各有一个精确模型通过 B2 固定合成集；`RELEASE_READY` 要求前三项及 D2 发布审查通过。当前无大陆模型 VERIFIED。D1 Draft PR 仅用于 CI，不允许合入或部署。

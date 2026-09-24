@@ -75,7 +75,7 @@ Streamlit Community Cloud 本地 SQLite 仅适合作品集 Demo / 临时状态�
 
 C08-B1 本地代码首次启动会在事务中把 `user_api_keys.provider` 的旧 2/4 值约束扩展到十值，原样复制密文、nonce、时间戳和用户归属；同时建立 `user_provider_profiles` 并给用量表增加 `cost_status`，旧费用状态保守记为 `unknown`。迁移可重复执行且失败会回滚。**尚未在生产数据库执行**；部署前需对生产数据做备份、恢复演练与迁移审查。所有用户 Key 继续使用原 AES-GCM 关联数据，必须保留原加密主密钥。B1 不增加供应商生产 Secret，也不开放 Custom Base URL。
 
-C08-D0 本地分支已加入 PostgreSQL 持久路径与合成数据迁移。公开演示目前仍使用旧 SQLite；代码未推送或部署，不能据此认为线上数据已迁移。[持久化设计与数据分类](c08-production-persistence.md)。
+C08-D0 分支已加入 PostgreSQL 持久路径与合成数据迁移；D1 的 Draft PR 只用于 CI。公开演示目前仍使用旧 SQLite；即使 feature 分支通过 CI，也不能据此认为线上数据已迁移。[持久化设计与数据分类](c08-production-persistence.md)。
 
 ### 生产运行时与发布门槛
 
@@ -114,8 +114,10 @@ Streamlit Community Cloud 中应将应用 Sharing 设为 **Public**。不要把�
 6. 公开页面提供隐私说明和第三方模型数据传输提示。
 7. 检查管理员页能够刷新模型目录，且未知模型不会进入 Auto-Safe 选择结果。
 
-## C08-D0 生产 PostgreSQL 准备
+## C08-D0/D1 生产 PostgreSQL 准备
 
 正式启用 BYOK 前，在 Community Cloud 根级 Secrets 中配置 `COURSE2CAREER_ENV="production"`、`DATABASE_URL="postgresql://USER:PASSWORD@HOST/DB?sslmode=verify-full"` 与长期保存的 `COURSE2CAREER_KEY_ENCRYPTION_KEY`。示例仅为占位值；实际凭证不能进入仓库、截图、日志或聊天。数据库证书应由托管方 CA 验证；`sslmode=require` 仅加密传输，`verify-full` 同时核对服务端主机名。生产模式缺 URL、TLS 配置不合格或连接失败时应用停止，不回退本地 SQLite。`.env` 和 `.streamlit/secrets.toml` 已忽略。
 
-生产数据库必须启用自动备份、限定权限、监控连接及恢复演练。主密钥与数据库备份分开保存，重部署不能更换；丢失主密钥将无法读取旧密文。迁移现有 Demo 数据前先决定是否保留、制作经授权的只读快照并核对表行数；不默认覆盖，也不使用真实线上 Key 做开发测试。独立 PostgreSQL CI 及大陆 Provider B2 真实验证未完成前，C08-D0 仍不是可发布版本。
+生产数据库必须启用定期自动备份、限定权限、监控连接及恢复演练。主密钥与数据库备份分开保存，重部署不能更换；恢复需要数据库备份与原主密钥两项资产，缺少任意一项均无法恢复旧 BYOK Key。迁移现有 Demo 数据前先决定是否保留、制作经授权的只读快照并核对表行数；不默认覆盖，也不使用真实线上 Key 做开发测试。D1 的[备份恢复操作说明](c08-backup-restore-runbook.md)只用于独立合成测试库。PostgreSQL CI、远程库及大陆 Provider B2 真实验证全部达到门槛前，不得合入或发布。
+
+生产部署的 `COURSE2CAREER_ENV`、`DATABASE_URL`、`COURSE2CAREER_KEY_ENCRYPTION_KEY`，以及启用系统 AI 时使用的 `DEEPSEEK_API_KEY`，应只放入 Streamlit Community Cloud **App Settings → Secrets** 的根级配置，或等价的 OS 环境变量。应用使用同一组环境变量读取路径。不得把实际值写入仓库。D1 的 feature 分支推送只允许在确认现有 Streamlit 应用仍绑定 `main` 后进行；Draft PR 不能合入，部署需另行审查。
