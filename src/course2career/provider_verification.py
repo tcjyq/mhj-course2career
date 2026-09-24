@@ -16,6 +16,7 @@ DEFAULT_RECORD_PATH = (
     / "c08-provider-validation"
     / "records.json"
 )
+CERTIFIED_RECORD_PATH = Path(__file__).with_name("verified_models.json")
 
 
 class Verification(StrEnum):
@@ -120,7 +121,7 @@ def get_record(
     provider: ProviderName,
     endpoint_id: str,
     model: str,
-    path: Path = DEFAULT_RECORD_PATH,
+    path: Path = CERTIFIED_RECORD_PATH,
 ) -> VerificationRecord | None:
     return load_records(path).get(_record_key(provider, endpoint_id, model))
 

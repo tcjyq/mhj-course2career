@@ -33,6 +33,8 @@ class Settings:
     openrouter_output_cost_per_million: float = 0.0
     openai_timeout_seconds: float = 30.0
     database_path: str = "instance/course2career.db"
+    database_url: str | None = field(default=None, repr=False)
+    production_mode: bool = False
     key_encryption_key: str | None = field(default=None, repr=False)
     admin_username: str | None = None
     admin_password: str | None = field(default=None, repr=False)
@@ -103,6 +105,8 @@ def load_settings() -> Settings:
         database_path=os.getenv(
             "COURSE2CAREER_DATABASE_PATH", "instance/course2career.db"
         ),
+        database_url=os.getenv("DATABASE_URL") or None,
+        production_mode=os.getenv("COURSE2CAREER_ENV", "local").lower() == "production",
         key_encryption_key=os.getenv("COURSE2CAREER_KEY_ENCRYPTION_KEY") or None,
         admin_username=os.getenv("ADMIN_USERNAME") or None,
         admin_password=os.getenv("ADMIN_PASSWORD") or None,

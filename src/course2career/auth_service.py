@@ -3,6 +3,8 @@ import sqlite3
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
+import psycopg
+
 from course2career.password_security import (
     hash_password,
     is_supported_password_hash,
@@ -65,7 +67,7 @@ class AuthService:
         )
         try:
             self.repository.add(user)
-        except sqlite3.IntegrityError as exc:
+        except (sqlite3.IntegrityError, psycopg.IntegrityError) as exc:
             raise RegistrationError("该用户名已存在。") from exc
         return _to_principal(user)
 
@@ -181,7 +183,7 @@ class AuthService:
         )
         try:
             self.repository.add(user)
-        except sqlite3.IntegrityError as exc:
+        except (sqlite3.IntegrityError, psycopg.IntegrityError) as exc:
             existing_user = self.repository.find_by_normalized_username(
                 normalized_username
             )

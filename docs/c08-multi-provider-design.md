@@ -60,3 +60,7 @@ B1 的原生 HTTP 与 OpenAI SDK 请求均禁用 HTTP 重定向，避免官方�
 
 当前运行时状态以 `UNKNOWN/CONNECTED/SCHEMA_COMPATIBLE/VERIFIED/UNSUPPORTED` 为准，旧文档中的 `unverified` 指“尚无完整真实证据”。`qwen-plus` 是上表 C08-A 的历史候选；B2 默认候选为官方 strict JSON Schema 支持列表中的 `qwen3.8-flash`，尚未使用真实 Key 验证。Anthropic/Gemini 改为原生 schema 请求，DeepSeek 保留 JSON object，详见 [B2 报告](c08-provider-validation.md)。
 - C08-C 的通用模型发现、官方能力与价格目录已在本地实现；C08-D 的 Custom Base URL 尚未实现。本地提交不代表生产发布。[C08-C 细节](c08-model-discovery.md)。
+
+### C08-D0 生产存储边界
+
+开发者预设、官方端点和现有 Repository 契约不变；生产存储改由标准 PostgreSQL 支撑，所有用户资产一起持久化。运行时缓存与连接测试不是生产模型认证。没有持久数据库时界面安全停止，不能暗示 Key 保存成功。[迁移与发布条件](c08-production-persistence.md)。

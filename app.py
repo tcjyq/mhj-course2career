@@ -16,6 +16,10 @@ from course2career.auth_service import (
 )
 from course2career.byok_mode import BYOKModeService
 from course2career.config import load_settings
+from course2career.database_backend import (
+    DatabaseConfigurationError,
+    DatabaseUnavailableError,
+)
 from course2career.key_encryption import (
     APIKeyCipher,
     KeyEncryptionConfigurationError,
@@ -24,6 +28,7 @@ from course2career.membership_service import MembershipService
 from course2career.model_catalog import DeepSeekModelCatalog
 from course2career.model_discovery import ModelCatalogService
 from course2career.permissions import Plan, Principal, Role
+from course2career.postgres_repository import PostgresProductRepository
 from course2career.product_repository import SQLiteProductRepository
 from course2career.provider_factory import LLMProviderFactory
 from course2career.provider_profile import ProviderProfileService
@@ -47,7 +52,15 @@ apply_product_styles()
 def get_repository(
     database_path: str,
     schema_revision: int,
+    database_url: str | None = None,
+    production_mode: bool = False,
 ) -> SQLiteProductRepository:
+    if production_mode:
+        if not database_url:
+            raise DatabaseConfigurationError("生产模式缺少持久数据库。")
+        return PostgresProductRepository(database_url)
+    if database_url:
+        raise DatabaseConfigurationError("本地模式不能使用生产 DATABASE_URL。")
     return SQLiteProductRepository(database_path)
 
 
@@ -65,7 +78,16 @@ def get_deepseek_model_catalog(
 
 
 settings = load_settings()
-repository = get_repository(settings.database_path, schema_revision=6)
+try:
+    repository = get_repository(
+        settings.database_path,
+        schema_revision=7,
+        database_url=getattr(settings, "database_url", None),
+        production_mode=getattr(settings, "production_mode", False),
+    )
+except Exception:
+    st.error("开发者模式暂时不可用：持久数据库连接或配置失败。")
+    st.stop()
 auth_service = AuthService(repository)
 admin_username = getattr(settings, "admin_username", None)
 admin_password = getattr(settings, "admin_password", None)
@@ -134,6 +156,9 @@ if principal.role != Role.GUEST:
             st.session_state.pop(state_key, None)
         st.warning("登录状态已失效，请重新登录。")
         st.rerun()
+    except DatabaseUnavailableError:
+        st.error("开发者模式暂时不可用：持久数据库连接失败。")
+        st.stop()
 role_labels = {
     Role.GUEST: "游客",
     Role.USER: "普通用户",
@@ -251,4 +276,8 @@ if previous_page_path is not None and previous_page_path != current_page_path:
     st.rerun()
 st.session_state._active_page_path = current_page_path
 with page_slot.container():
-    selected_page.run()
+    try:
+        selected_page.run()
+    except DatabaseUnavailableError:
+        st.error("开发者模式暂时不可用：持久数据库连接失败。")
+        st.stop()

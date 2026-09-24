@@ -46,3 +46,9 @@
 其他四家 Chat 预设本轮没有对应环境凭证，无法核实账号可用的精确模型、返回模型、usage 或价目，保持 PENDING。错误日志只记录分类与 HTTP 状态；401 的原始消息、URL、请求头和凭证不进入报告。若获得可用凭证，应在本地环境设置变量后按相同 fixture 重跑；不要把完整 Key 发送到聊天或提交到仓库。
 
 价格估算只在拿到 usage 且精确模型匹配时启用：[OpenAI Luna 价格](https://developers.openai.com/api/docs/models/gpt-5.6-luna) 和 [Anthropic 价格](https://platform.claude.com/docs/en/about-claude/pricing) 是脚本中两项静态参考，实际账单、缓存折扣、税费及区域价格仍以供应商为准。C08-C 已在本地另建官方模型目录与能力/价格展示，**没有**补跑 B2 真实模型调用；本表的 B2 结果不变。[C08-C 目录说明](c08-model-discovery.md)。
+
+## C08-D0 发布前复核
+
+本地 `outputs/c08-provider-validation/records.json` 仍是忽略版本控制的运行证据。生产模型认证只读取受控版本文件 `src/course2career/verified_models.json`，当前为空；连接测试和目录查询均不能写入该认证文件。持久化改造后再对 DeepSeek、百炼及可用的 SiliconFlow Key 执行 B2 固定合成集。本轮没有发现可依法使用的本地大陆 Provider Key，结果保持 PENDING，`VERIFIED` 数量为 0。
+
+[Kimi 官方模型列表](https://platform.kimi.com/docs/models) 已明确列出 `kimi-k3`、`kimi-k2.7-code`、`kimi-k2.6` 的精确 ID；[MiniMax 官方 /v1/models 示例](https://platform.minimax.io/docs/api-reference/models/openai/list-models) 列 `MiniMax-M3`。智谱官方页面本次请求超时，静态 `glm-5.1` 仍为未真实验证的候选，发布前需拿官方可用 ID 或授权账号目录再次核对。[C08-D0 持久化说明](c08-production-persistence.md)。

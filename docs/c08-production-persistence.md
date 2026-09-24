@@ -1,0 +1,38 @@
+# C08-D0 生产持久化与发布门槛
+
+日期：2026-09-24。基线：C08-C `c669b74fc09293b137a1a35a9e0d777d4cbda9b7`。此分支尚未推送或部署。
+
+## SQLite 完整清单
+
+| 表或状态 | 分类 | 理由 |
+|---|---|
+| `users` | DURABLE | ID、角色、套餐、密码哈希、会话版本及停用状态 |
+| `login_attempts` | DURABLE | 登录节流跨进程生效；可按保留期清理 |
+| `api_usage` | DURABLE | 用量、额度、费用与预留状态 |
+| `analysis_records` | DURABLE | 用户保存的完整分析快照 |
+| `user_api_keys` | DURABLE | AES-256-GCM 密文、nonce、归属与最后四位 |
+| `user_provider_profiles` | DURABLE | Provider、端点、模型和业务空间偏好 |
+| `user_byok_settings` | DURABLE | 自助开发者模式开关与停用后的授权 |
+| `schema_migrations` | DURABLE | schema 版本与升级审计 |
+| `ModelCatalogService._cache`、DeepSeek 模型缓存 | CACHE | 仅无密钥目录数据；丢失后重新查询或显示静态候选，不可产生 VERIFIED |
+| Streamlit `session_state`、临时连接测试 | EPHEMERAL | 仅当前会话；每次敏感操作仍查持久状态 |
+| `outputs/c08-provider-validation/records.json` | EPHEMERAL（本地证据） | 忽略版本控制，不可作为生产认证 |
+| `src/course2career/verified_models.json` | 受控版本证据 | 生产 VERIFIED 的唯一项目认证来源；当前为空 |
+
+## 生产配置与安全
+
+本地默认 `COURSE2CAREER_DATABASE_PATH=instance/course2career.db`。生产必须设置 `COURSE2CAREER_ENV=production` 和持久 PostgreSQL `DATABASE_URL`，例如使用占位值的 `postgresql://USER:PASSWORD@HOST/DB?sslmode=verify-full`。Community Cloud 的根级 Secrets 可映射环境变量；`.env` 与 `.streamlit/secrets.toml` 已被 Git 忽略。生产没有 `DATABASE_URL` 或数据库不可达时应用停止并显示“开发者模式暂时不可用”；不会切回 SQLite。生产不能使用测试专用的本地无 TLS 连接开关。
+
+`COURSE2CAREER_KEY_ENCRYPTION_KEY` 是 32 字节 Base64 AES-GCM 主密钥的**长期 Secret**，必须在重启、重部署和数据库恢复后保持一致，与数据库备份分开存放。更换它会使旧密文不能解密；程序不会自行生成替代主密钥。未配置时 BYOK Key 功能不可用。数据库只存密文、nonce 和后四位；不记录明文、连接 URL、错误原文或完整模型请求。生产应采用最小权限账户、托管数据库备份及定期恢复演练，并对数据库可用性和备份失败告警。
+
+## Migration contract
+
+`schema_migrations` 的 1 是用户/登录基础 schema，2 是 C08 完整产品 schema。旧 C01—C07、C08-A/B/C SQLite 无版本表时依序升级；执行失败不写成功版本，已存在的表继续由 `CREATE IF NOT EXISTS` 和旧约束兼容逻辑处理。新 PostgreSQL 在同一事务中创建全部表和版本记录；未来变更必须新增顺序版本，不能改写已有版本。数据库版本高于代码或出现未知 PostgreSQL 版本时拒绝启动。SQLite 旧表约束重建仍用事务，保留密文与关联数据。
+
+`python scripts/migrate_sqlite_to_postgres.py <已审查的备份路径> --acknowledge-source-data` 可从只读 SQLite 快照复制全部 7 张 DURABLE 业务表到**空** PostgreSQL。工具先在 D 盘临时副本升级旧 schema，再按固定列清单保留 ID、时间、密文和 nonce；目标插入在单笔事务中，非空目标直接拒绝。迁移前后需独立备份、核对行数、用同一主密钥做合成或授权的解密验证。当前线上 Demo 数据是否需要迁移尚未确定，不从线上自动拉取真实 Key，也不默认丢弃。
+
+## 验证与发布状态
+
+本地 SQLite 全套测试及 PostgreSQL 独立 CI job 使用合成账户、Key、报告和用量。CI 使用仅限 localhost 的无 TLS 测试连接；生产 URL 强制 TLS。PostgreSQL job 覆盖建库、幂等重连、注册登录、BYOK 关闭/重开、密文解密、Profile、报告、额度/用量、跨用户隔离及合成迁移。CI 未实际运行前不得声称 PostgreSQL 已通过。真实生产备份恢复亦需单独演练。
+
+状态条件：`ARCHITECTURE_READY` 要求设计与受控端点；`PERSISTENCE_READY` 要求 PostgreSQL 独立集成和备份恢复证据；`PROVIDER_VALIDATED` 要求至少 DeepSeek 与百炼通过 B2 固定合成集；`RELEASE_READY` 要求前三项及发布审查通过。当前无大陆模型 VERIFIED；不得进入生产 PR、push 或部署。

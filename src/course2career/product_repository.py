@@ -1,6 +1,7 @@
 import json
 import re
 import sqlite3
+from contextlib import nullcontext
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -84,6 +85,9 @@ class SQLiteProductRepository(SQLiteUserRepository):
 
     def __init__(self, database_path: str | Path) -> None:
         super().__init__(database_path)
+        from course2career.database_migrations import migrate_sqlite
+
+        migrate_sqlite(self, target=2)
 
     def reserve_ai_call(
         self,
@@ -501,12 +505,17 @@ class SQLiteProductRepository(SQLiteUserRepository):
             connection.close()
         return StoredBYOKMode(user_id, enabled, updated_at)
 
-    def _initialize_schema(self) -> None:
-        super()._initialize_schema()
-        with self._connect() as connection:
-            connection.executescript(
+    def _initialize_schema(self, migration_connection=None) -> None:
+        from course2career.database_migrations import execute_sqlite_statements
+
+        with (
+            nullcontext(migration_connection)
+            if migration_connection
+            else self._connect() as connection
+        ):
+            execute_sqlite_statements(
+                connection,
                 """
-                BEGIN IMMEDIATE;
                 CREATE TABLE IF NOT EXISTS api_usage (
                     id TEXT PRIMARY KEY,
                     user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
@@ -574,7 +583,7 @@ class SQLiteProductRepository(SQLiteUserRepository):
                         CHECK (byok_enabled IN (0, 1)),
                     updated_at TEXT NOT NULL
                 );
-                """
+                """,
             )
             try:
                 columns = {
@@ -599,7 +608,6 @@ class SQLiteProductRepository(SQLiteUserRepository):
                         "ADD COLUMN workspace_id TEXT"
                     )
                 self._extend_api_key_provider_constraint(connection)
-                connection.commit()
             except Exception:
                 connection.rollback()
                 raise
