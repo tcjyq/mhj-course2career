@@ -48,9 +48,10 @@ AI 只提取 JD 技能；原文引用核对、映射、评分、门槛与学习�
 - 支持游客、普通用户、开发者和管理员权限。
 - 支持 AI 日额度、历史分析记录和轻量管理员 Dashboard。
 - 开发者 API Key 使用 AES-256-GCM 加密后保存。
-- C08-B1 在本地分支提供 OpenAI、DeepSeek、百炼、OpenRouter、SiliconFlow、Moonshot、智谱、MiniMax、Gemini、Anthropic 十家受控官方预设，按四类协议适配；分析页仅列已配置 Key 和模型的 Provider。免费套餐系统 AI 仍固定 DeepSeek。新增模型的真实兼容性与价格尚未验证，不能视为生产可用；C08-C 做模型发现，C08-D 才讨论自定义端点。[设计与边界](docs/c08-multi-provider-design.md) · [官方端点矩阵](docs/c08-provider-matrix.md) · [开源架构研究](docs/c08-open-source-research.md)。
+- C08-B1 在本地分支提供十家受控官方预设，按四类协议适配；免费套餐系统 AI 仍固定 DeepSeek。[设计与边界](docs/c08-multi-provider-design.md) · [开源架构研究](docs/c08-open-source-research.md)。
 - C08-B3 在本地分支允许普通登录用户免费启用开发者模式并管理自己的加密 API Key。启用或关闭不改变 Free/Pro 套餐及系统 AI 日额度；关闭后停止新的 BYOK 使用，已保存的 Key 保留，可重新开启。历史 Developer/Admin 权限继续可用。会员页的 Free/Pro 升级仍只是演示，线上状态以部署版本为准。
 - C08-B2 增加模型级真实验证记录、固定合成 JD 套件及原生 schema adapter。当前仅 OpenAI 与 Anthropic 环境变量存在，分别一次真实请求均返回 401；十家均未达到 VERIFIED。连接成功、Schema 兼容、完整验证在页面中分开显示；失败不会删除 Key。[真实验证报告](docs/c08-provider-validation.md)。
+- C08-C 在本地分支提供大陆六家优先、国际四家可选的官方模型目录：DeepSeek、百炼、SiliconFlow、MiniMax 等动态发现，Kimi/GLM 有日期的官方静态候选；能力、价格来源和 B2 真实验证分开展示。缓存按用户、端点、Workspace 和 Key 版本隔离，刷新失败保留过期目录；关闭开发者模式即禁止读取和刷新。当前仍无 VERIFIED；目录价格不等于实际账单。`deepseek-v4-flash` 作为兼容旧名提示，用户 Profile 不会自动迁移。[目录说明](docs/c08-model-discovery.md) · [官方来源矩阵](docs/c08-provider-matrix.md)。C08-D 才讨论自定义端点。
 - 开发者 API Key 提交后立即清空输入框与对应会话状态，页面只保留末四位元数据。
 - 页面切换采用隔离渲染，避免首页或上一页内容残留到当前页面。
 
@@ -114,7 +115,7 @@ Copy-Item .env.example .env
 | `OPENAI_MODEL` | OpenAI 模型名称 | 否 |
 | `DEEPSEEK_API_KEY` | 平台 DeepSeek 调用 | 仅 DeepSeek 系统模式 |
 | `DEEPSEEK_MODEL` | DeepSeek 模型名称 | 否 |
-| `BAILIAN_REGION` | 百炼受控端点区域（北京/新加坡/美国/香港），C08-A 页面尚未开放 | 否 |
+| `BAILIAN_REGION` | 百炼受控端点区域（北京/新加坡/美国/香港）；开发者页面可单独选择 | 否 |
 | `BAILIAN_BASE_URL` | 可覆盖为注册表列出的官方百炼区域端点；拒绝任意 URL | 否 |
 | `BAILIAN_INPUT_COST_PER_MILLION` / `BAILIAN_OUTPUT_COST_PER_MILLION` | 百炼估算费率，默认 0 表示未配置 | 否 |
 | `OPENROUTER_INPUT_COST_PER_MILLION` / `OPENROUTER_OUTPUT_COST_PER_MILLION` | OpenRouter 估算费率，默认 0 表示未配置 | 否 |

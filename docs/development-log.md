@@ -1,5 +1,11 @@
 # Course2Career 开发日志
 
+## 2026-09-24 C08-C 大陆优先官方模型目录（本地，未发布）
+
+新增十家受控预设的目录策略：DeepSeek、百炼、SiliconFlow、MiniMax、OpenRouter、OpenAI、Anthropic、Gemini 动态读取官方模型 API，Kimi/GLM 暂用注明来源日期的短目录。官方可用性/能力/价格与 B2 真实验证分层；DeepSeek 当前 `deepseek-flash` 为默认候选，旧 `deepseek-v4-flash` 只作为兼容别名提示用户主动迁移。百炼按区域/Workspace 查询，MiniMax 区分国内与国际端点。缓存按用户、端点、Workspace 和 Key 版本隔离，支持 TTL、手动刷新与失败旧目录；B3 关闭即拒绝读取。Provider Hub 大陆优先，国际折叠；分析页按模型级证据排序并提示未知/未验证。文档与来源见 [模型目录](c08-model-discovery.md)、[官方矩阵](c08-provider-matrix.md)、[ADR 006](decisions/006-model-catalog-provenance-and-scope.md)。
+
+本地 Python 3.12/3.14 各 224 项离线测试通过；Ruff、格式、3.14 `pip check` 通过。隔离 Streamlit 浏览器用假账号/Key 验证 Free 用户开关、Kimi 目录选模与刷新、配置恢复、国际折叠、分析页全部已发现模型和未验证警告；390px `scrollWidth=390`，控制台 0 错误/警告。没有合法大陆 Key，本轮真实 discovery 和 B2 模型调用均为 0；所有真实兼容性仍待验证。
+
 ## 2026-09-23 C08-B3 开发者模式自助启用（本地，未发布）
 
 普通注册用户可免费开启或关闭独立的 BYOK capability，不改变 Role、Plan 和平台系统 AI 额度。新 `user_byok_settings` 表持久化用户 ID、开关和更新时间；Admin 与历史 Developer Role/Plan 兼容。Key、Profile 与用户 Key 调用在服务层读取最新状态，关闭后拒绝新操作但保留 AES-256-GCM 密文。会员页把 Free/Pro 套餐演示与免费开发者模式分开，开发者页提供介绍、启用、Provider Hub 和关闭入口。决策见 [ADR 005](decisions/005-self-service-byok-capability.md)。

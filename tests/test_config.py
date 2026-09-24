@@ -94,7 +94,7 @@ def test_load_settings_falls_back_from_invalid_model_management_options(
 
     assert settings.deepseek_model_mode == "pinned"
     assert settings.deepseek_model_preference == (
-        "deepseek-v4-flash",
+        "deepseek-flash",
         "deepseek-v4-pro",
     )
     assert settings.deepseek_model_cache_seconds == 1800

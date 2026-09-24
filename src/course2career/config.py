@@ -11,10 +11,10 @@ class Settings:
     openai_api_key: str | None = field(default=None, repr=False)
     openai_model: str = "gpt-5.6-luna"
     deepseek_api_key: str | None = field(default=None, repr=False)
-    deepseek_model: str = "deepseek-v4-flash"
+    deepseek_model: str = "deepseek-flash"
     deepseek_model_mode: str = "auto_safe"
     deepseek_model_preference: tuple[str, ...] = (
-        "deepseek-v4-flash",
+        "deepseek-flash",
         "deepseek-v4-pro",
     )
     deepseek_model_cache_seconds: int = 1800
@@ -54,13 +54,13 @@ def load_settings() -> Settings:
         model_mode = "pinned"
     preference = _csv_env(
         "DEEPSEEK_MODEL_PREFERENCE",
-        ("deepseek-v4-flash", "deepseek-v4-pro"),
+        ("deepseek-flash", "deepseek-v4-pro"),
     )
     return Settings(
         openai_api_key=os.getenv("OPENAI_API_KEY") or None,
         openai_model=os.getenv("OPENAI_MODEL", "gpt-5.6-luna"),
         deepseek_api_key=os.getenv("DEEPSEEK_API_KEY") or None,
-        deepseek_model=os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash"),
+        deepseek_model=os.getenv("DEEPSEEK_MODEL", "deepseek-flash"),
         deepseek_model_mode=model_mode,
         deepseek_model_preference=preference,
         deepseek_model_cache_seconds=_positive_int_env(

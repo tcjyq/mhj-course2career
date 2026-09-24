@@ -30,16 +30,16 @@ def test_registry_has_ten_stable_ids_and_labels() -> None:
     assert get_provider_preset("bailian").display_name == "阿里云百炼"
     assert get_provider_preset("openrouter").display_name == "OpenRouter"
     assert [preset.provider_id for preset in ui_provider_presets()] == [
-        ProviderName.OPENAI,
         ProviderName.DEEPSEEK,
         ProviderName.BAILIAN,
-        ProviderName.OPENROUTER,
         ProviderName.SILICONFLOW,
         ProviderName.MOONSHOT,
         ProviderName.ZHIPU,
         ProviderName.MINIMAX,
-        ProviderName.GEMINI,
+        ProviderName.OPENAI,
         ProviderName.ANTHROPIC,
+        ProviderName.GEMINI,
+        ProviderName.OPENROUTER,
     ]
 
 

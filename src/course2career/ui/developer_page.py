@@ -7,7 +7,14 @@ import streamlit as st
 from course2career.api_key_service import APIKeyMetadata, APIKeyService
 from course2career.byok_mode import BYOKModeService, is_legacy_byok_principal
 from course2career.llm_provider import ProviderName
-from course2career.model_capability import Verification, model_capability
+from course2career.model_capability import (
+    CapabilitySupport,
+    LifecycleStatus,
+    Verification,
+    model_capability,
+)
+from course2career.model_catalog import APPROVED_DEEPSEEK_MODELS
+from course2career.model_discovery import CatalogError, ModelCatalogService
 from course2career.permissions import (
     Permission,
     PermissionDeniedError,
@@ -18,8 +25,16 @@ from course2career.permissions import (
 from course2career.product_repository import StoredProviderProfile
 from course2career.provider_connection import test_provider_connection
 from course2career.provider_factory import LLMProviderFactory
-from course2career.provider_profile import ProviderProfileService
-from course2career.provider_registry import ProviderPreset, ui_provider_presets
+from course2career.provider_profile import (
+    WORKSPACE_ID_PATTERN,
+    ProviderProfileService,
+)
+from course2career.provider_registry import (
+    MAINLAND_PROVIDERS,
+    DiscoveryStrategy,
+    ProviderPreset,
+    ui_provider_presets,
+)
 from course2career.ui.byok_mode_controls import render_byok_mode_controls
 
 
@@ -30,6 +45,7 @@ def render_developer_page(
     profile_service: ProviderProfileService | None = None,
     provider_factory: LLMProviderFactory | None = None,
     byok_mode_service: BYOKModeService | None = None,
+    catalog_service: ModelCatalogService | None = None,
 ) -> None:
     active = (
         principal.role != Role.GUEST
@@ -102,18 +118,32 @@ def render_developer_page(
         model_key: str,
         secret_key: str,
         version: int,
+        catalog_choice_key: str,
+        workspace_key: str | None,
     ) -> None:
         endpoint_id = st.session_state[endpoint_key]
-        model_id = st.session_state[model_key]
+        catalog_choice = st.session_state.get(catalog_choice_key, "手动输入")
+        model_id = (
+            catalog_choice
+            if catalog_choice != "手动输入"
+            else st.session_state[model_key]
+        )
+        workspace_id = st.session_state.get(workspace_key) if workspace_key else None
         new_key = st.session_state.get(secret_key, "")
         feedback_key = f"provider_feedback_{provider.value}"
         try:
             profile_service.validate_selection(provider, endpoint_id, model_id)
+            if workspace_id and not WORKSPACE_ID_PATTERN.fullmatch(
+                workspace_id.strip()
+            ):
+                raise ValueError("业务空间 ID 格式无效。")
             if not new_key and provider not in keys:
                 raise ValueError("请先填写该供应商的 API Key。")
             if new_key:
                 api_key_service.save_key(principal, provider, new_key)
-            profile_service.save(principal, provider, endpoint_id, model_id)
+            profile_service.save(
+                principal, provider, endpoint_id, model_id, workspace_id
+            )
             st.session_state[feedback_key] = "配置已保存；模型仍须真实验证。"
         except (PermissionDeniedError, ValueError) as exc:
             st.session_state[feedback_key] = str(exc)
@@ -121,16 +151,25 @@ def render_developer_page(
             st.session_state.pop(secret_key, None)
             st.session_state[f"provider_form_version_{provider.value}"] = version + 1
 
-    for preset in presets:
-        _render_provider_card(
-            preset,
-            principal,
-            keys.get(preset.provider_id),
-            profiles.get(preset.provider_id),
-            api_key_service,
-            profile_service,
-            provider_factory,
-            save_provider,
+    def render_group(group: tuple[ProviderPreset, ...]) -> None:
+        for preset in group:
+            _render_provider_card(
+                preset,
+                principal,
+                keys.get(preset.provider_id),
+                profiles.get(preset.provider_id),
+                api_key_service,
+                profile_service,
+                provider_factory,
+                catalog_service,
+                save_provider,
+            )
+
+    st.markdown("## 大陆主流 Provider")
+    render_group(tuple(p for p in presets if p.provider_id in MAINLAND_PROVIDERS))
+    with st.expander("国际 / 可选 Provider"):
+        render_group(
+            tuple(p for p in presets if p.provider_id not in MAINLAND_PROVIDERS)
         )
 
     with st.expander("安全与费用说明"):
@@ -147,7 +186,8 @@ def _render_provider_card(
     api_key_service: APIKeyService,
     profile_service: ProviderProfileService,
     provider_factory: LLMProviderFactory | None,
-    save_provider: Callable[[ProviderName, str, str, str, int], None],
+    catalog_service: ModelCatalogService | None,
+    save_provider: Callable[[ProviderName, str, str, str, int, str, str | None], None],
 ) -> None:
     provider = preset.provider_id
     name = provider.value
@@ -157,17 +197,50 @@ def _render_provider_card(
     selected_model = (
         profile.model_id if profile is not None else preset.default_model or ""
     )
+    workspace_id = profile.workspace_id if profile is not None else None
+    snapshot = None
+    if catalog_service is not None:
+        try:
+            if (
+                preset.model_discovery_strategy
+                == DiscoveryStrategy.STATIC_OFFICIAL_CATALOG
+            ):
+                snapshot = catalog_service.discover_models(
+                    principal, provider, selected_endpoint, workspace_id=workspace_id
+                )
+            else:
+                snapshot = catalog_service.peek(
+                    principal, provider, selected_endpoint, workspace_id=workspace_id
+                )
+        except (CatalogError, PermissionDeniedError):
+            pass
     version = int(st.session_state.get(f"provider_form_version_{name}", 0))
     endpoint_key = f"provider_endpoint_{name}_{version}"
     model_key = f"provider_model_{name}_{version}"
     secret_key = f"provider_secret_{name}_{version}"
+    workspace_key = (
+        f"provider_workspace_{name}_{version}"
+        if provider == ProviderName.BAILIAN
+        else None
+    )
+    catalog_choice_key = f"provider_catalog_choice_{name}_{version}"
     with st.container(border=True):
         st.markdown(f"### {preset.display_name}")
         st.caption(f"协议：{preset.primary_protocol.value} · 官方端点")
         st.write("状态：已配置" if key_metadata is not None else "状态：未配置")
         if key_metadata is not None:
             st.write(f"API Key：••••{key_metadata.last_four}")
-        capability = model_capability(provider, selected_model, selected_endpoint)
+        capability = (
+            catalog_service.selected_model(
+                principal,
+                provider,
+                selected_endpoint,
+                selected_model,
+                workspace_id=workspace_id,
+            )
+            if catalog_service is not None
+            else model_capability(provider, selected_model, selected_endpoint)
+        )
         labels = {
             Verification.UNKNOWN: "未验证",
             Verification.CONNECTED: "已连接",
@@ -178,6 +251,45 @@ def _render_provider_card(
         st.caption(
             f"模型：{selected_model or '待填写'} · {labels[capability.verification]}"
         )
+        if capability.lifecycle_status == LifecycleStatus.COMPATIBILITY_ALIAS:
+            st.warning(
+                f"{selected_model} 是兼容旧名称，建议主动选择 "
+                f"{capability.replacement_model} 并保存。"
+            )
+        elif capability.lifecycle_status == LifecycleStatus.RETIRED:
+            st.warning("该模型已下线，请在目录中选择当前模型后保存。")
+        if snapshot is not None:
+            stale_label = "（过期缓存）" if snapshot.stale else ""
+            st.caption(
+                f"官方目录：{len(snapshot.models)} 个模型{stale_label} · "
+                f"上次成功：{snapshot.last_success_at}"
+            )
+            if snapshot.warning:
+                st.info(snapshot.warning)
+        else:
+            st.caption("官方目录：尚未刷新；模型能力与价格未知。")
+        official_structured = {
+            CapabilitySupport.SUPPORTED: "官方支持",
+            CapabilitySupport.UNSUPPORTED: "官方不支持",
+            CapabilitySupport.UNKNOWN: "未知",
+        }[capability.structured_output]
+        st.caption(
+            f"Structured Output：{official_structured} · "
+            f"Course2Career：{labels[capability.verification]}"
+        )
+        if capability.context_window:
+            st.caption(f"上下文：{capability.context_window:,} tokens")
+        if capability.input_price is not None and capability.output_price is not None:
+            symbol = {"CNY": "¥", "USD": "$"}.get(capability.currency, "")
+            st.caption(
+                f"费用：{symbol}{capability.input_price:g} 输入 / "
+                f"{symbol}{capability.output_price:g} 输出，"
+                f"每百万 tokens（{capability.currency or '币种未核实'}）。"
+            )
+            if capability.pricing.note:
+                st.caption(capability.pricing.note)
+        else:
+            st.caption("费用估算未配置；未知不代表免费。")
         last_connection = st.session_state.get(f"provider_connection_{name}")
         if (
             key_metadata is not None
@@ -185,9 +297,30 @@ def _render_provider_card(
             and last_connection[:2] == (selected_endpoint, selected_model)
         ):
             st.caption(last_connection[2])
-        if preset.pricing_source_policy == "unknown":
-            st.caption("费用估算未配置")
         st.link_button("获取官方 API Key / 文档", preset.api_key_help_url)
+        if capability.source_url:
+            st.link_button("官方模型来源", capability.source_url)
+        if st.button(
+            "刷新模型",
+            key=f"refresh_models_{name}",
+            disabled=catalog_service is None
+            or (
+                key_metadata is None
+                and preset.model_discovery_strategy
+                != DiscoveryStrategy.STATIC_OFFICIAL_CATALOG
+            ),
+        ):
+            try:
+                catalog_service.discover_models(
+                    principal,
+                    provider,
+                    selected_endpoint,
+                    workspace_id=workspace_id,
+                    force_refresh=True,
+                )
+                st.rerun()
+            except CatalogError as exc:
+                st.warning(str(exc))
         feedback = st.session_state.pop(f"provider_feedback_{name}", None)
         if feedback:
             st.info(feedback)
@@ -198,7 +331,38 @@ def _render_provider_card(
                 index=preset.allowed_endpoint_ids.index(selected_endpoint),
                 key=endpoint_key,
             )
+            if len(preset.allowed_endpoint_ids) > 1:
+                st.caption("切换区域后先保存配置，再刷新对应区域的目录。")
+            choices = ["手动输入"]
+            if snapshot is not None:
+                choices.extend(
+                    item.model_id
+                    for item in snapshot.models
+                    if item.lifecycle_status != LifecycleStatus.RETIRED
+                    and item.verification != Verification.UNSUPPORTED
+                    and item.text_generation != CapabilitySupport.UNSUPPORTED
+                    and (
+                        provider != ProviderName.DEEPSEEK
+                        or item.model_id in APPROVED_DEEPSEEK_MODELS
+                    )
+                )
+            if len(choices) > 1:
+                st.selectbox(
+                    "目录模型（可选）",
+                    choices,
+                    index=choices.index(selected_model)
+                    if selected_model in choices
+                    else 0,
+                    key=catalog_choice_key,
+                )
             st.text_input("模型 ID", value=selected_model, key=model_key)
+            if workspace_key is not None:
+                st.text_input(
+                    "百炼业务空间 ID（北京/美国目录需要）",
+                    value=workspace_id or "",
+                    key=workspace_key,
+                )
+                st.caption("修改业务空间 ID 后先保存配置，再刷新目录。")
             st.text_input(
                 "API Key（更新时填写新 Key）",
                 type="password",
@@ -208,7 +372,15 @@ def _render_provider_card(
             st.form_submit_button(
                 "保存配置",
                 on_click=save_provider,
-                args=(provider, endpoint_key, model_key, secret_key, version),
+                args=(
+                    provider,
+                    endpoint_key,
+                    model_key,
+                    secret_key,
+                    version,
+                    catalog_choice_key,
+                    workspace_key,
+                ),
             )
         if st.button(
             "测试连接（使用个人 Key，可能产生费用）",

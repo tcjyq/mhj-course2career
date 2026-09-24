@@ -7,7 +7,9 @@ from datetime import UTC, datetime
 from typing import Any
 
 DEEPSEEK_BASE_URL = "https://api.deepseek.com"
-APPROVED_DEEPSEEK_MODELS = frozenset({"deepseek-v4-flash", "deepseek-v4-pro"})
+APPROVED_DEEPSEEK_MODELS = frozenset(
+    {"deepseek-flash", "deepseek-v4-pro", "deepseek-v4-flash"}
+)
 MODEL_ID_PATTERN = re.compile(r"^deepseek-[a-z0-9][a-z0-9-]{0,63}$")
 
 

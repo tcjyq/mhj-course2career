@@ -148,7 +148,7 @@ class DeepSeekProvider:
         self,
         *,
         api_key: str,
-        model: str = "deepseek-v4-flash",
+        model: str = "deepseek-flash",
         fallback_models: tuple[str, ...] = (),
         max_output_tokens: int = 1500,
         timeout_seconds: float = 30,

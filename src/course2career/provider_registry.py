@@ -18,6 +18,19 @@ class ProviderProtocol(StrEnum):
     GEMINI_NATIVE = "gemini_native"
 
 
+class DiscoveryStrategy(StrEnum):
+    DEEPSEEK_MODELS = "deepseek_models"
+    BAILIAN_MODELS = "bailian_models"
+    SILICONFLOW_MODELS = "siliconflow_models"
+    OPENAI_MODELS = "openai_models"
+    OPENROUTER_MODELS = "openrouter_models"
+    ANTHROPIC_MODELS = "anthropic_models"
+    GEMINI_MODELS = "gemini_models"
+    MINIMAX_MODELS = "minimax_models"
+    STATIC_OFFICIAL_CATALOG = "static_official_catalog"
+    NONE = "none"
+
+
 BAILIAN_BASE_URLS = MappingProxyType(
     {
         "cn-beijing": "https://dashscope.aliyuncs.com/compatible-mode/v1",
@@ -38,7 +51,7 @@ class ProviderPreset:
     api_key_help_url: str
     auth_scheme: str
     default_model: str | None
-    model_discovery_strategy: str
+    model_discovery_strategy: DiscoveryStrategy
     structured_output_strategy: StructuredOutputStrategy
     reasoning_strategy: str
     usage_strategy: str
@@ -67,7 +80,7 @@ class ProviderPreset:
 
     @property
     def supports_model_discovery(self) -> bool:
-        return self.model_discovery_strategy == "auto_safe"
+        return self.model_discovery_strategy != DiscoveryStrategy.NONE
 
     @property
     def supports_structured_output(self) -> bool:
@@ -119,7 +132,7 @@ PROVIDER_PRESETS: Mapping[ProviderName, ProviderPreset] = MappingProxyType(
             "https://platform.openai.com/api-keys",
             "bearer",
             "gpt-5.6-luna",
-            "later",
+            DiscoveryStrategy.OPENAI_MODELS,
             StructuredOutputStrategy.STRICT_JSON_SCHEMA,
             "model_specific",
             "responses_usage",
@@ -138,8 +151,8 @@ PROVIDER_PRESETS: Mapping[ProviderName, ProviderPreset] = MappingProxyType(
             "global",
             "https://platform.deepseek.com/api_keys",
             "bearer",
-            "deepseek-v4-flash",
-            "auto_safe",
+            "deepseek-flash",
+            DiscoveryStrategy.DEEPSEEK_MODELS,
             StructuredOutputStrategy.JSON_OBJECT,
             "disabled_by_default",
             "chat_usage",
@@ -159,7 +172,7 @@ PROVIDER_PRESETS: Mapping[ProviderName, ProviderPreset] = MappingProxyType(
             "https://help.aliyun.com/en/model-studio/get-api-key",
             "bearer",
             "qwen3.8-flash",
-            "later",
+            DiscoveryStrategy.BAILIAN_MODELS,
             StructuredOutputStrategy.STRICT_JSON_SCHEMA,
             "model_specific",
             "chat_usage",
@@ -177,7 +190,7 @@ PROVIDER_PRESETS: Mapping[ProviderName, ProviderPreset] = MappingProxyType(
             "https://openrouter.ai/settings/keys",
             "bearer",
             None,
-            "later",
+            DiscoveryStrategy.OPENROUTER_MODELS,
             StructuredOutputStrategy.PROMPT_JSON,
             "model_specific",
             "chat_usage",
@@ -195,7 +208,7 @@ PROVIDER_PRESETS: Mapping[ProviderName, ProviderPreset] = MappingProxyType(
             "https://docs.siliconflow.cn/docs/userguide/quickstart",
             "bearer",
             None,
-            "later",
+            DiscoveryStrategy.SILICONFLOW_MODELS,
             StructuredOutputStrategy.PROMPT_JSON,
             "model_specific",
             "chat_usage",
@@ -212,7 +225,7 @@ PROVIDER_PRESETS: Mapping[ProviderName, ProviderPreset] = MappingProxyType(
             "https://platform.kimi.com/docs/api/chat",
             "bearer",
             None,
-            "later",
+            DiscoveryStrategy.STATIC_OFFICIAL_CATALOG,
             StructuredOutputStrategy.PROMPT_JSON,
             "model_specific",
             "chat_usage",
@@ -229,7 +242,7 @@ PROVIDER_PRESETS: Mapping[ProviderName, ProviderPreset] = MappingProxyType(
             "https://docs.bigmodel.cn/cn/guide/develop/http/introduction",
             "bearer",
             None,
-            "later",
+            DiscoveryStrategy.STATIC_OFFICIAL_CATALOG,
             StructuredOutputStrategy.PROMPT_JSON,
             "model_specific",
             "chat_usage",
@@ -241,12 +254,14 @@ PROVIDER_PRESETS: Mapping[ProviderName, ProviderPreset] = MappingProxyType(
             ProviderName.MINIMAX,
             "MiniMax",
             ProviderProtocol.OPENAI_CHAT,
-            _endpoints(global_="https://api.minimax.io/v1"),
-            "global",
+            _endpoints(
+                cn="https://api.minimaxi.com/v1", global_="https://api.minimax.io/v1"
+            ),
+            "cn",
             "https://platform.minimax.io/docs/api-reference/text-openai-api",
             "bearer",
             "MiniMax-M3",
-            "later",
+            DiscoveryStrategy.MINIMAX_MODELS,
             StructuredOutputStrategy.PROMPT_JSON,
             "model_specific",
             "chat_usage",
@@ -263,7 +278,7 @@ PROVIDER_PRESETS: Mapping[ProviderName, ProviderPreset] = MappingProxyType(
             "https://ai.google.dev/gemini-api/docs/api-key",
             "x-goog-api-key",
             None,
-            "later",
+            DiscoveryStrategy.GEMINI_MODELS,
             StructuredOutputStrategy.NATIVE_SCHEMA,
             "model_specific",
             "gemini_usage",
@@ -280,7 +295,7 @@ PROVIDER_PRESETS: Mapping[ProviderName, ProviderPreset] = MappingProxyType(
             "https://console.anthropic.com/settings/keys",
             "x-api-key",
             None,
-            "later",
+            DiscoveryStrategy.ANTHROPIC_MODELS,
             StructuredOutputStrategy.NATIVE_SCHEMA,
             "model_specific",
             "messages_usage",
@@ -318,4 +333,28 @@ def get_provider_preset(
 
 def ui_provider_presets() -> tuple[ProviderPreset, ...]:
     """所有 Developer/Admin 可配置的官方预设；能否分析另看 Key 与模型。"""
-    return tuple(PROVIDER_PRESETS.values())
+    order = (
+        ProviderName.DEEPSEEK,
+        ProviderName.BAILIAN,
+        ProviderName.SILICONFLOW,
+        ProviderName.MOONSHOT,
+        ProviderName.ZHIPU,
+        ProviderName.MINIMAX,
+        ProviderName.OPENAI,
+        ProviderName.ANTHROPIC,
+        ProviderName.GEMINI,
+        ProviderName.OPENROUTER,
+    )
+    return tuple(PROVIDER_PRESETS[provider] for provider in order)
+
+
+MAINLAND_PROVIDERS = frozenset(
+    {
+        ProviderName.DEEPSEEK,
+        ProviderName.BAILIAN,
+        ProviderName.SILICONFLOW,
+        ProviderName.MOONSHOT,
+        ProviderName.ZHIPU,
+        ProviderName.MINIMAX,
+    }
+)

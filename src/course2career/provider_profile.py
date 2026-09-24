@@ -14,6 +14,7 @@ from course2career.product_repository import (
 from course2career.provider_registry import get_provider_preset
 
 MODEL_ID_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:/+-]{0,199}\Z")
+WORKSPACE_ID_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9-]{0,63}\Z")
 
 
 class ProviderProfileService:
@@ -40,11 +41,18 @@ class ProviderProfileService:
         provider: ProviderName,
         endpoint_id: str,
         model_id: str,
+        workspace_id: str | None = None,
     ) -> StoredProviderProfile:
         require_current_byok_access(principal, self.repository)
         if principal.user_id is None:
             raise PermissionError("登录后才能管理 Provider。")
         cleaned_model = self.validate_selection(provider, endpoint_id, model_id)
+        cleaned_workspace = workspace_id.strip() if workspace_id else None
+        if cleaned_workspace and (
+            provider != ProviderName.BAILIAN
+            or not WORKSPACE_ID_PATTERN.fullmatch(cleaned_workspace)
+        ):
+            raise ValueError("业务空间 ID 格式无效。")
         existing = self.repository.get_provider_profile(
             principal.user_id, provider.value
         )
@@ -56,6 +64,7 @@ class ProviderProfileService:
             model_id=cleaned_model,
             created_time=existing.created_time if existing is not None else now,
             updated_time=now,
+            workspace_id=cleaned_workspace,
         )
         self.repository.upsert_provider_profile(profile)
         return profile

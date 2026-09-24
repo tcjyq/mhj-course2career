@@ -1,6 +1,6 @@
 # C08 多供应商设计与阶段状态
 
-状态：C08-A 为历史基础；C08-B1 已在本地分支实现十家官方预设的 BYOK 配置与协议适配。C08-B2 发起两次真实调用，OpenAI 与 Anthropic 均返回 401，尚无 VERIFIED。C08-B3 已在本地增加普通用户免费自助启用 BYOK 的独立 capability，保留历史 Developer/Admin 权限；未发布。当前证据见 [官方矩阵](c08-provider-matrix.md)、[B2 验证报告](c08-provider-validation.md)和 [ADR 005](decisions/005-self-service-byok-capability.md)。
+状态：C08-A 为历史基础；C08-B1 已在本地分支实现十家官方预设的 BYOK 配置与协议适配。C08-B2 发起两次真实调用，OpenAI 与 Anthropic 均返回 401，尚无 VERIFIED。C08-B3 已在本地增加普通用户免费自助启用 BYOK 的独立 capability。C08-C 已在本地加入大陆优先的官方模型目录、能力和价格来源；未发布。当前证据见 [官方矩阵](c08-provider-matrix.md)、[模型目录](c08-model-discovery.md)、[B2 验证报告](c08-provider-validation.md)和 [ADR 005](decisions/005-self-service-byok-capability.md)。
 
 ## 起点与现状审计
 
@@ -33,7 +33,7 @@
 
 共享 Chat 适配器由预设注入受控 Base URL 和模型；B1 仅按官方文档为 MiniMax 加入 `reasoning_split` 小型适配。DeepSeek 禁用 thinking 的 `extra_body` 留在原有适配器中，避免改变已发布请求格式。Anthropic 与 Gemini 走各自原生 REST 适配器；响应必须通过 `JobAnalysis` 校验。真实模型输出尚未验证。
 
-百炼默认北京公共兼容端点；`BAILIAN_REGION` 只从北京、新加坡、美国弗吉尼亚和香港四个固定区域端点中选择，`BAILIAN_BASE_URL` 仅可覆盖为这四个精确地址，密钥区域必须匹配。workspace 专属域名尚未开放。OpenRouter 使用官方 `https://openrouter.ai/api/v1`，不主动启用自动回退。十家端点、区域、认证和文档来源统一见 [官方 Provider 矩阵](c08-provider-matrix.md)。
+百炼默认北京公共兼容端点；`BAILIAN_REGION` 只从北京、新加坡、美国弗吉尼亚和香港四个固定区域端点中选择，`BAILIAN_BASE_URL` 仅可覆盖为这四个精确地址，密钥区域必须匹配。C08-C 目录查询在北京/美国使用经过格式校验的 Workspace 专属官方域名。OpenRouter 使用官方 `https://openrouter.ai/api/v1`，不主动启用自动回退。十家端点、区域、认证和文档来源统一见 [官方 Provider 矩阵](c08-provider-matrix.md)。
 
 ## 免费路径、BYOK 和兼容
 
@@ -59,4 +59,4 @@ B1 的原生 HTTP 与 OpenAI SDK 请求均禁用 HTTP 重定向，避免官方�
 ### C08-B2 结果补记
 
 当前运行时状态以 `UNKNOWN/CONNECTED/SCHEMA_COMPATIBLE/VERIFIED/UNSUPPORTED` 为准，旧文档中的 `unverified` 指“尚无完整真实证据”。`qwen-plus` 是上表 C08-A 的历史候选；B2 默认候选为官方 strict JSON Schema 支持列表中的 `qwen3.8-flash`，尚未使用真实 Key 验证。Anthropic/Gemini 改为原生 schema 请求，DeepSeek 保留 JSON object，详见 [B2 报告](c08-provider-validation.md)。
-- C08-C 的通用模型发现、`/v1/models` 与价格／上下文元数据，C08-D 的 Custom Base URL 均未实现。本地提交不代表生产发布。
+- C08-C 的通用模型发现、官方能力与价格目录已在本地实现；C08-D 的 Custom Base URL 尚未实现。本地提交不代表生产发布。[C08-C 细节](c08-model-discovery.md)。

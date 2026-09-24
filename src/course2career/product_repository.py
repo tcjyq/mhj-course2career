@@ -50,6 +50,7 @@ class StoredProviderProfile:
     model_id: str
     created_time: str
     updated_time: str
+    workspace_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -409,12 +410,13 @@ class SQLiteProductRepository(SQLiteUserRepository):
                 """
                 INSERT INTO user_provider_profiles (
                     user_id, provider, endpoint_id, model_id,
-                    created_time, updated_time
-                ) VALUES (?, ?, ?, ?, ?, ?)
+                    created_time, updated_time, workspace_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(user_id, provider) DO UPDATE SET
                     endpoint_id = excluded.endpoint_id,
                     model_id = excluded.model_id,
-                    updated_time = excluded.updated_time
+                    updated_time = excluded.updated_time,
+                    workspace_id = excluded.workspace_id
                 """,
                 (
                     profile.user_id,
@@ -423,6 +425,7 @@ class SQLiteProductRepository(SQLiteUserRepository):
                     profile.model_id,
                     profile.created_time,
                     profile.updated_time,
+                    profile.workspace_id,
                 ),
             )
 
@@ -561,6 +564,7 @@ class SQLiteProductRepository(SQLiteUserRepository):
                     model_id TEXT NOT NULL,
                     created_time TEXT NOT NULL,
                     updated_time TEXT NOT NULL,
+                    workspace_id TEXT,
                     PRIMARY KEY (user_id, provider)
                 );
 
@@ -582,6 +586,17 @@ class SQLiteProductRepository(SQLiteUserRepository):
                         "ALTER TABLE api_usage ADD COLUMN cost_status TEXT "
                         "NOT NULL DEFAULT 'unknown' "
                         "CHECK (cost_status IN ('estimated', 'unknown'))"
+                    )
+                profile_columns = {
+                    row["name"]
+                    for row in connection.execute(
+                        "PRAGMA table_info(user_provider_profiles)"
+                    )
+                }
+                if "workspace_id" not in profile_columns:
+                    connection.execute(
+                        "ALTER TABLE user_provider_profiles "
+                        "ADD COLUMN workspace_id TEXT"
                     )
                 self._extend_api_key_provider_constraint(connection)
                 connection.commit()

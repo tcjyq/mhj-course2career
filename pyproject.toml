@@ -11,6 +11,7 @@ requires-python = ">=3.11"
 license = "MIT"
 dependencies = [
     "cryptography>=49,<50",
+    "httpx>=0.28,<1",
     "openai>=2.46,<3",
     "openpyxl>=3.1,<4",
     "pandas>=3,<4",

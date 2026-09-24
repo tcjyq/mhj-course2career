@@ -78,7 +78,7 @@ class LLMProviderFactory:
                     preference=getattr(
                         self.settings,
                         "deepseek_model_preference",
-                        ("deepseek-v4-flash", "deepseek-v4-pro"),
+                        ("deepseek-flash", "deepseek-v4-pro"),
                     ),
                 )
             except ModelDiscoveryError as exc:

@@ -22,6 +22,7 @@ from course2career.key_encryption import (
 )
 from course2career.membership_service import MembershipService
 from course2career.model_catalog import DeepSeekModelCatalog
+from course2career.model_discovery import ModelCatalogService
 from course2career.permissions import Plan, Principal, Role
 from course2career.product_repository import SQLiteProductRepository
 from course2career.provider_factory import LLMProviderFactory
@@ -64,7 +65,7 @@ def get_deepseek_model_catalog(
 
 
 settings = load_settings()
-repository = get_repository(settings.database_path, schema_revision=5)
+repository = get_repository(settings.database_path, schema_revision=6)
 auth_service = AuthService(repository)
 admin_username = getattr(settings, "admin_username", None)
 admin_password = getattr(settings, "admin_password", None)
@@ -99,6 +100,12 @@ if settings.key_encryption_key:
         )
     except KeyEncryptionConfigurationError as exc:
         key_configuration_error = str(exc)
+catalog_service = None
+if api_key_service is not None:
+    if "model_catalog_service" not in st.session_state:
+        st.session_state.model_catalog_service = ModelCatalogService(api_key_service)
+    catalog_service = st.session_state.model_catalog_service
+    catalog_service.api_keys = api_key_service
 model_catalog = get_deepseek_model_catalog(
     settings.openai_timeout_seconds,
     getattr(settings, "deepseek_model_cache_seconds", 1800),
@@ -180,6 +187,7 @@ analysis_page = st.Page(
         api_key_service,
         st.session_state.guest_session_id,
         profile_service,
+        catalog_service,
     ),
     title="个人分析",
     url_path="analysis",
@@ -206,6 +214,7 @@ developer_page = st.Page(
         profile_service,
         provider_factory,
         byok_mode_service,
+        catalog_service,
     ),
     title="我的 AI Provider",
     url_path="developer",

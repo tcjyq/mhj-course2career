@@ -45,4 +45,4 @@
 
 其他四家 Chat 预设本轮没有对应环境凭证，无法核实账号可用的精确模型、返回模型、usage 或价目，保持 PENDING。错误日志只记录分类与 HTTP 状态；401 的原始消息、URL、请求头和凭证不进入报告。若获得可用凭证，应在本地环境设置变量后按相同 fixture 重跑；不要把完整 Key 发送到聊天或提交到仓库。
 
-价格估算只在拿到 usage 且精确模型匹配时启用：[OpenAI Luna 价格](https://developers.openai.com/api/docs/models/gpt-5.6-luna) 和 [Anthropic 价格](https://platform.claude.com/docs/en/about-claude/pricing) 是脚本中两项静态参考，实际账单、缓存折扣、税费及区域价格仍以供应商为准。C08-C 再做动态模型发现、能力、价格和上下文元数据。
+价格估算只在拿到 usage 且精确模型匹配时启用：[OpenAI Luna 价格](https://developers.openai.com/api/docs/models/gpt-5.6-luna) 和 [Anthropic 价格](https://platform.claude.com/docs/en/about-claude/pricing) 是脚本中两项静态参考，实际账单、缓存折扣、税费及区域价格仍以供应商为准。C08-C 已在本地另建官方模型目录与能力/价格展示，**没有**补跑 B2 真实模型调用；本表的 B2 结果不变。[C08-C 目录说明](c08-model-discovery.md)。

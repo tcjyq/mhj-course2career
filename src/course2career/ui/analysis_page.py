@@ -34,7 +34,8 @@ from course2career.jd_analyzer import (
 from course2career.llm_client import LLMClientError
 from course2career.llm_provider import ProviderName
 from course2career.llm_providers import ProviderError
-from course2career.model_capability import Verification, model_capability
+from course2career.model_capability import ModelStatus, Verification, model_capability
+from course2career.model_discovery import ModelCatalogService
 from course2career.models import AnalysisReport, JobAnalysis, JobSkill
 from course2career.permissions import (
     Permission,
@@ -46,7 +47,11 @@ from course2career.permissions import (
 )
 from course2career.provider_factory import LLMProviderFactory
 from course2career.provider_profile import ProviderProfileService
-from course2career.provider_registry import get_provider_preset, ui_provider_presets
+from course2career.provider_registry import (
+    MAINLAND_PROVIDERS,
+    get_provider_preset,
+    ui_provider_presets,
+)
 from course2career.report_exporter import (
     export_adaptability_markdown,
     export_markdown,
@@ -64,6 +69,7 @@ def render_analysis_page(
     api_key_service: APIKeyService | None,
     guest_session_id: str,
     profile_service: ProviderProfileService | None = None,
+    catalog_service: ModelCatalogService | None = None,
 ) -> None:
     st.title("个人分析")
     st.caption("课程、个人经历、岗位要求、五维适配度和能力路线集中在一个流程中。")
@@ -161,7 +167,7 @@ def render_analysis_page(
         if system_providers:
             analysis_modes.append("系统AI")
         byok_providers = configured_byok_providers(
-            principal, api_key_service, profile_service
+            principal, api_key_service, profile_service, catalog_service
         )
         if byok_providers:
             analysis_modes.append("开发者API Key")
@@ -182,6 +188,7 @@ def render_analysis_page(
             settings
         )
         selected_endpoint_id: str | None = None
+        profile = None
         if analysis_mode != "本地规则":
             provider_options = (
                 system_providers if analysis_mode == "系统AI" else list(byok_providers)
@@ -199,6 +206,33 @@ def render_analysis_page(
                 if profile is not None:
                     selected_model = profile.model_id
                     selected_endpoint_id = profile.endpoint_id
+            if analysis_mode == "开发者API Key" and catalog_service is not None:
+                snapshot = catalog_service.peek(
+                    principal,
+                    selected_provider,
+                    selected_endpoint_id
+                    or get_provider_preset(selected_provider).selected_endpoint_id,
+                    workspace_id=profile.workspace_id if profile is not None else None,
+                )
+                if snapshot is not None:
+                    with st.expander("查看该供应商全部已发现模型"):
+                        if snapshot.stale:
+                            st.caption("目录缓存已过期，可到 Provider Hub 手动刷新。")
+                        st.dataframe(
+                            [
+                                {
+                                    "模型 ID": item.model_id,
+                                    "状态": item.status.value,
+                                    "上下文": item.context_window,
+                                    "输入价/百万 tokens": item.input_price,
+                                    "输出价/百万 tokens": item.output_price,
+                                    "币种": item.currency,
+                                }
+                                for item in snapshot.models
+                            ],
+                            width="stretch",
+                            hide_index=True,
+                        )
             if selected_provider == ProviderName.DEEPSEEK:
                 if getattr(settings, "deepseek_model_mode", "pinned") == "auto_safe":
                     preference = " → ".join(
@@ -214,11 +248,33 @@ def render_analysis_page(
             else:
                 st.caption(f"当前模型：{selected_model}")
             if analysis_mode == "开发者API Key" and selected_model:
-                if (
-                    model_capability(selected_provider, selected_model).verification
-                    != Verification.VERIFIED
-                ):
-                    st.caption("未验证模型：预设可配置不代表真实提取已通过。")
+                capability = (
+                    catalog_service.selected_model(
+                        principal,
+                        selected_provider,
+                        selected_endpoint_id
+                        or get_provider_preset(selected_provider).selected_endpoint_id,
+                        selected_model,
+                        workspace_id=profile.workspace_id
+                        if profile is not None
+                        else None,
+                    )
+                    if catalog_service is not None
+                    else model_capability(
+                        selected_provider, selected_model, selected_endpoint_id
+                    )
+                )
+                if capability.verification != Verification.VERIFIED:
+                    if capability.status == ModelStatus.UNKNOWN:
+                        st.warning(
+                            "该模型尚无可用的官方目录或真实验证记录；"
+                            "请核对模型 ID 和能力后使用。"
+                        )
+                    else:
+                        st.warning(
+                            "该模型尚未通过 Course2Career 真实验证；"
+                            "可继续尝试，结果需自行核对。"
+                        )
 
         if st.button("提取岗位技能", type="primary"):
             usage_id = None
@@ -710,6 +766,7 @@ def configured_byok_providers(
     principal: Principal,
     api_key_service: APIKeyService | None,
     profile_service: ProviderProfileService | None,
+    catalog_service: ModelCatalogService | None = None,
 ) -> tuple[ProviderName, ...]:
     if api_key_service is None:
         return ()
@@ -726,13 +783,36 @@ def configured_byok_providers(
         )
     except PermissionDeniedError:
         return ()
-    return tuple(
-        preset.provider_id
-        for preset in ui_provider_presets()
-        if preset.provider_id in saved
-        and (
-            profiles[preset.provider_id].model_id
-            if preset.provider_id in profiles
-            else preset.default_model
+    ranked: list[tuple[int, int, ProviderName]] = []
+    for order, preset in enumerate(ui_provider_presets()):
+        provider = preset.provider_id
+        if provider not in saved:
+            continue
+        profile = profiles.get(provider)
+        model = profile.model_id if profile is not None else preset.default_model
+        if not model:
+            continue
+        endpoint = (
+            profile.endpoint_id if profile is not None else preset.selected_endpoint_id
         )
-    )
+        capability = (
+            catalog_service.selected_model(
+                principal,
+                provider,
+                endpoint,
+                model,
+                workspace_id=profile.workspace_id if profile is not None else None,
+            )
+            if catalog_service is not None
+            else model_capability(provider, model, endpoint)
+        )
+        if capability.status in {ModelStatus.UNSUPPORTED, ModelStatus.RETIRED}:
+            continue
+        group = 0 if provider in MAINLAND_PROVIDERS else 1
+        status_rank = {
+            ModelStatus.VERIFIED: 0,
+            ModelStatus.CAPABILITY_ELIGIBLE: 1,
+            ModelStatus.UNVERIFIED: 2,
+        }.get(capability.status, 3)
+        ranked.append((group * 10 + status_rank, order, provider))
+    return tuple(item[2] for item in sorted(ranked))

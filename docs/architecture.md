@@ -54,6 +54,7 @@ flowchart LR
 | `llm_providers.py` | DeepSeek 专用路径与六家共享 OpenAI Chat 适配器 |
 | `native_providers.py` | Anthropic Messages、Gemini Native 协议适配器 |
 | `model_catalog.py` | DeepSeek官方模型发现、缓存、白名单选择与安全回退策略 |
+| `model_discovery.py` | C08-C 受控官方模型目录适配、能力/价格归一、用户与端点隔离缓存、过期回退 |
 | `provider_factory.py` | 根据供应商和系统/用户密钥模式创建客户端 |
 | `provider_registry.py` | 十家不可变官方预设、区域端点 ID、协议和能力策略；不存用户 Key 或动态模型目录 |
 | `provider_profile.py` | 当前用户的官方端点 ID、模型 ID 偏好与授权；密钥仍由 APIKeyService 管理 |
@@ -110,6 +111,7 @@ flowchart LR
 - 开发者API Key以AES-256-GCM密文持久化，主密钥只来自环境变量。
 - C08-B1 以四类协议路由十家官方预设；OpenAI Responses 和 DeepSeek Auto-Safe 原路径保留，百炼/OpenRouter/SiliconFlow/Moonshot/Zhipu/MiniMax 复用 Chat 适配器，Anthropic/Gemini 用原生协议。所有新增预设只支持用户 Key。SQLite 旧 Key 约束事务化扩到十家，并新增独立 Profile 和费用状态，密文与关联数据不变；详细边界见 [C08 设计](c08-multi-provider-design.md)与[官方矩阵](c08-provider-matrix.md)。
 - C08-B2 将候选输出策略与真实验证状态分开：连接测试不升级 VERIFIED；忽略文件中的记录按 Provider × 端点 ID × 精确模型读取。Anthropic 原生 `output_config.format`、Gemini `responseJsonSchema` 与 Qwen strict Chat 请求由小型 schema adapter 支持，原始 JobAnalysis 仍作本地校验。OpenRouter 只有精确模型 metadata 证明支持且完整验证通过时才使用 strict schema。此次两次真实连接均 401，现无 VERIFIED；见 [B2 报告](c08-provider-validation.md)与 [ADR 004](decisions/004-provider-validation-evidence.md)。
+- C08-C `ProviderPreset.model_discovery_strategy` 选择动态模型 API 或有来源日期的短静态目录。`ModelCatalogService` 合并官方可用性、能力、价格与独立 B2 记录，拒绝把官方结构化输出升为 `VERIFIED`。内存缓存键含用户、Provider、官方端点、Workspace、Key 更新时间；每次访问复核 B3 开关。DeepSeek 生产 Auto-Safe 目录与开发者候选目录职责不同；旧别名仅提示迁移。[目录说明](c08-model-discovery.md) · [ADR 006](decisions/006-model-catalog-provenance-and-scope.md)。
 - 开发者密钥表单通过提交回调完成加密保存；回调结束前删除明文状态并递增表单版本，使前端创建全新的空密码组件，重跑后的页面只读取脱敏元数据。
 - 页面使用`st.navigation`按角色动态展示入口，页面隐藏不替代服务端权限判断。
 - 页面内容运行在可清空占位容器中；检测到路由变化时先清空旧容器并执行一次受控重跑，规避 Streamlit 页面切换时的内容残留。

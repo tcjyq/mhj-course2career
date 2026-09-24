@@ -24,7 +24,8 @@
 - 未提取到技能时阻止分析并给出可读提示。
 - 用户可编辑或排除技能，至少保留一项后才能生成报告。
 - DeepSeek 默认采用 Auto-Safe：仅从官方目录中“当前可用且已通过应用验证”的模型选择。
-- C08-B1 本地实现十家主流官方 Provider Preset + Developer/Admin BYOK：OpenAI、DeepSeek、百炼、OpenRouter、SiliconFlow、Moonshot/Kimi、Zhipu/GLM、MiniMax、Google Gemini、Anthropic Claude；按 OpenAI Responses、OpenAI Chat Completions、Anthropic Messages、Gemini API 四类协议复用适配器。免费套餐系统 AI 只提供 DeepSeek；分析页只显示已配置 Key 且有模型 ID 的用户 Provider。用户 Key 使用 AES-256-GCM，BYOK 不消耗平台 system quota，端点只取受控官方 ID。新增模型仅有 fake 契约测试，真实兼容性待验证；价格未知不显示为免费。C08-C 才实现通用模型发现与能力/价格元数据；C08-D 才开放经 SSRF 防护的自定义 Provider。
+- C08-B1 本地实现十家主流官方 Provider Preset + Developer/Admin BYOK：OpenAI、DeepSeek、百炼、OpenRouter、SiliconFlow、Moonshot/Kimi、Zhipu/GLM、MiniMax、Google Gemini、Anthropic Claude；按 OpenAI Responses、OpenAI Chat Completions、Anthropic Messages、Gemini API 四类协议复用适配器。免费套餐系统 AI 只提供 DeepSeek；分析页只显示已配置 Key 且有模型 ID 的用户 Provider。用户 Key 使用 AES-256-GCM，BYOK 不消耗平台 system quota，端点只取受控官方 ID。新增模型仅有 fake 契约测试，真实兼容性待验证；价格未知不显示为免费。C08-D 才开放经 SSRF 防护的自定义 Provider。
+- C08-C 官方模型目录优先显示大陆六家，国际四家折叠；动态 API 和短静态官方目录均记录来源与核对日期。官方 Structured Output、目录可用性和 Course2Career 真实验证分层，UNKNOWN 不当作 0 元或不支持。缓存按用户/端点/Workspace/Key 版本隔离，支持 TTL、手动刷新与失败旧目录；B3 关闭时禁止使用缓存。DeepSeek 旧名只提示主动迁移，不自动修改 Profile。[模型发现规范](c08-model-discovery.md)。
 - C08-B2 将 `UNKNOWN`、`CONNECTED`、`SCHEMA_COMPATIBLE`、`VERIFIED`、`UNSUPPORTED` 限定为 Provider × 官方端点 × 精确模型状态。只有完整固定合成 JD 集、原文证据、usage 和返回模型均通过才能标 VERIFIED；单次连接测试最多标 Schema 兼容。Anthropic/Gemini 使用原生 schema 请求，百炼仅指定 Qwen 模型用 strict schema，DeepSeek 是 JSON object 加本地校验。当前真实请求仅 OpenAI 与 Anthropic，各一次 401，均未验证；详见 [B2 报告](c08-provider-validation.md)。
 - 官方目录不可用时允许使用有效旧缓存或固定回退模型；未知模型不得自动上线。
 - 主模型返回模型不存在错误时，最多尝试一个已验证备用模型；限流、鉴权和服务错误不得触发跨模型重试。

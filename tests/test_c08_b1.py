@@ -80,7 +80,7 @@ def test_ten_presets_map_to_four_protocols_and_fixed_endpoints() -> None:
         with pytest.raises(ValueError, match="官方端点"):
             preset.endpoint("http://127.0.0.1/private")
     assert get_provider_preset(ProviderName.DEEPSEEK).supports_model_discovery
-    assert not get_provider_preset(ProviderName.GEMINI).supports_model_discovery
+    assert get_provider_preset(ProviderName.GEMINI).supports_model_discovery
 
 
 def test_profile_is_user_scoped_and_contains_no_secret(tmp_path: Path) -> None:
@@ -360,10 +360,10 @@ def test_native_messages_and_gemini_map_usage_and_sanitize_errors() -> None:
 def test_model_capability_does_not_infer_all_models_from_provider() -> None:
     known = model_capability(ProviderName.DEEPSEEK, "deepseek-v4-flash")
     assert known.verification == Verification.UNKNOWN
-    assert known.structured_output == CapabilitySupport.SUPPORTED
+    assert known.structured_output == CapabilitySupport.UNKNOWN
     assert (
         model_capability(ProviderName.DEEPSEEK, "unapproved-model").verification
-        == Verification.UNSUPPORTED
+        == Verification.UNKNOWN
     )
     assert (
         model_capability(ProviderName.GEMINI, "gemini-test").verification
