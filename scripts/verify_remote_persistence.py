@@ -1,7 +1,7 @@
-"""Synthetic proof on two empty remote PostgreSQL test databases.
+"""Synthetic proof on two isolated remote PostgreSQL test databases.
 
 Credentials are read from local environment and never printed or passed as
-command-line arguments. This script refuses databases containing user tables.
+command-line arguments. Restore accepts only an empty or verified synthetic target.
 """
 
 import argparse
@@ -51,6 +51,35 @@ def _empty_database(url: str) -> None:
         raise RuntimeError("测试库已有表；必须使用全新空库，未修改任何现有数据。")
 
 
+def _safe_restore_target(url: str, expected: dict[str, int]) -> None:
+    with DatabaseBackend(url=url).connect() as connection:
+        rows = connection.execute(
+            "SELECT schemaname, tablename FROM pg_catalog.pg_tables "
+            "WHERE schemaname NOT IN ('pg_catalog', 'information_schema') "
+            "AND schemaname NOT LIKE 'pg_toast%' "
+            "AND schemaname NOT LIKE 'pg_temp_%'"
+        ).fetchall()
+        tables = {(row["schemaname"], row["tablename"]) for row in rows}
+        if not tables:
+            return
+        if tables != {("public", table) for table in TABLES}:
+            raise RuntimeError(
+                "Restore target has unexpected tables; refusing cleanup."
+            )
+        counts = {
+            table: int(
+                connection.execute(f"SELECT COUNT(*) FROM public.{table}").fetchone()[0]
+            )
+            for table in TABLES
+        }
+        synthetic_user = connection.execute(
+            "SELECT COUNT(*) FROM public.users WHERE username = %s",
+            (SYNTHETIC_USERNAME,),
+        ).fetchone()[0]
+    if counts != expected or synthetic_user != 1:
+        raise RuntimeError("Restore target has unexpected data; refusing cleanup.")
+
+
 def _counts(repo: PostgresProductRepository) -> dict[str, int]:
     with repo._connect() as connection:
         return {
@@ -59,6 +88,18 @@ def _counts(repo: PostgresProductRepository) -> dict[str, int]:
             )
             for table in TABLES
         }
+
+
+class _PublicSchemaBackend(DatabaseBackend):
+    def connect(self):
+        connection = super().connect()
+        connection.execute("SET search_path TO public")
+        return connection
+
+
+class _RestoredRepository(PostgresProductRepository):
+    def __init__(self, url: str) -> None:
+        self.backend = _PublicSchemaBackend(url=url)
 
 
 def _client_environment(url: str) -> dict[str, str]:
@@ -153,7 +194,6 @@ def backup_restore(
         restore_info.get(k) for k in identity
     ):
         raise RuntimeError("源库与恢复目标不能相同。")
-    _empty_database(restore_url)
     for binary in ("pg_dump", "pg_restore"):
         if not shutil.which(binary):
             raise RuntimeError("本机缺少 pg_dump 或 pg_restore。")
@@ -171,6 +211,7 @@ def backup_restore(
         "schema_migrations": 2,
     }:
         raise RuntimeError("源库不符合纯合成数据行数；拒绝备份。")
+    _safe_restore_target(restore_url, expected)
     temp_root = Path("D:/codex_study/_tmp") if os.name == "nt" else Path.cwd()
     temp_root.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=temp_root) as temp_dir:
@@ -191,16 +232,19 @@ def backup_restore(
         _run_client(
             [
                 "pg_restore",
+                "--clean",
+                "--if-exists",
                 "--no-owner",
                 "--no-acl",
                 "--exit-on-error",
+                "--single-transaction",
                 "--dbname",
                 restore_info["dbname"],
                 str(backup_path),
             ],
             _client_environment(restore_url),
         )
-    restored = PostgresProductRepository(restore_url)
+    restored = _RestoredRepository(restore_url)
     assert _counts(restored) == expected
     _verify_key(restored, cipher)
     return expected

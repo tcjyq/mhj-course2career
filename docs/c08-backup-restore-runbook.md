@@ -10,13 +10,13 @@
 
 ## 本地配置与安全边界
 
-在本机受保护的环境中设置 `C2C_TEST_DATABASE_URL`、`C2C_TEST_RESTORE_DATABASE_URL` 和 `COURSE2CAREER_KEY_ENCRYPTION_KEY`。两个 URL 必须指向**不同的全新空白 PostgreSQL 测试数据库**，使用标准 PostgreSQL URL 与 TLS；不要把值贴到聊天、命令行参数或 Git。安装与服务器兼容的 `pg_dump`、`pg_restore`。脚本在写入前检查库中无用户表；若已存在表会拒绝。测试库权限需允许建表和恢复。演练产生的本地临时备份在脚本结束时删除。
+在本机受保护的环境中设置 `C2C_TEST_DATABASE_URL`、`C2C_TEST_RESTORE_DATABASE_URL` 和 `COURSE2CAREER_KEY_ENCRYPTION_KEY`。两个 URL 必须指向**不同的专用 PostgreSQL 合成测试数据库**，使用标准 PostgreSQL URL 与 TLS；不要把值贴到聊天、命令行参数或 Git。源库首次写入前必须为空；恢复目标可为空，或仅包含完整且行数符合预期的合成演练数据。其他已有表、部分数据或非合成用户一律拒绝清理。测试库权限需允许建表和恢复。演练产生的本地临时备份在脚本结束时删除。
 
 ```powershell
 .venv\Scripts\python.exe scripts/verify_remote_persistence.py
 ```
 
-脚本先在源库迁移 schema，写入合成用户、BYOK 模式、加密假 Key、ProviderProfile、分析及用量，重新连接并核对密文；随后 `pg_dump`、`pg_restore` 到空目标库，再重新连接核对所有业务表与 `schema_migrations` 行数、正确密钥可解密、错误密钥安全失败且密文未变。可用 `--seed-only` 与 `--restore-only` 分两次执行；后者会验证已存在的合成源数据，目标仍必须为空。脚本输出只有状态和行数；错误信息不输出连接信息。
+脚本先在源库迁移 schema，写入合成用户、BYOK 模式、加密假 Key、ProviderProfile、分析及用量，重新连接并核对密文；随后 `pg_dump`、`pg_restore` 到安全的目标库，再重新连接核对所有业务表与 `schema_migrations` 行数、正确密钥可解密、错误密钥安全失败且密文未变。恢复使用 `--clean --if-exists --single-transaction` 清理归档涉及对象，失败时不留下半恢复数据；恢复后的校验连接仅在会话内设置 `search_path`，不改数据库默认配置。可用 `--seed-only` 与 `--restore-only` 分两次执行；后者验证已存在的合成源数据，不重新写入源库。脚本输出只有状态和行数；错误信息不输出连接信息。
 
 演练记录应保存日期、数据库供应商、客户端和服务器版本、行数、备份和恢复结果、解密结果及操作者；不记录 URL、主机、用户名、密码或 Key。远程演练未实际运行时，状态必须为 PENDING，不能以 CI 容器演练代替。
 

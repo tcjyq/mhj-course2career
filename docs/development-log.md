@@ -1,5 +1,9 @@
 # Course2Career 开发日志
 
+## 2026-09-25 C08-D1 远程恢复诊断
+
+独立远程恢复目标已有 8 张表和完整合成行数；新归档不含 `public` schema 条目，原恢复命令在首张已存在表处报冲突。目标默认 search path 不包含 `public`，因此恢复后校验改为仅会话内设置该路径。恢复脚本仅允许空目标或完整且符合预期的合成演练目标，使用 `--clean --if-exists --single-transaction` 原子恢复。远程 restore-only 已核对行数、正确密钥解密与错误密钥安全失败；不代表生产部署或供应商验证。
+
 ## 2026-09-24 C08-D1 持久化证明与大陆供应商验证
 
 在 D0 的 PostgreSQL 合成集成测试后增加 CI 容器内 `pg_dump`→空库 `pg_restore`，核对持久表、schema 版本和恢复后密文解密；增加独立远程测试库脚本与[备份恢复操作说明](c08-backup-restore-runbook.md)。本地补测生产库不可达／TLS 不合格时无 SQLite 回退、错误主密钥安全失败，以及 Streamlit 根级 Secrets 与环境变量配置路径一致。CI、远程库和恢复演练的实际结果以运行记录为准，未运行的环节保持 PENDING。
