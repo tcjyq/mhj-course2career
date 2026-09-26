@@ -212,7 +212,7 @@ course2career/
 
 登录用户完成分析后，报告会以账号归属的快照保存。刷新、重新登录或再次进入“个人分析”后，可在“最近分析”中选择并重新打开历史报告。相同时间、岗位和分数的记录仍会按唯一报告 ID 分别保留。v2.1 上线前生成的报告会以“旧版技能匹配报告”原样展示，不会伪装成五维岗位适配度。课程 Excel、完整 JD 与表单编辑内容不会被自动回填，以减少长期保存的个人和招聘数据。
 
-当前线上演示仍使用 SQLite，其状态定义为 **disposable demo state**。C08 发布将从全新、独立的 production PostgreSQL 开始；旧 Demo 账号、历史和临时 Key 不迁移，也不做自动迁移或在线切换。PostgreSQL CI、独立远程合成库、备份恢复演练和上述两款精确模型验证已有 D1 证据。用户已确认独立生产 Neon 项目及数据库、长期加密主密钥和 Streamlit 根级 Secrets 配置完成；本轮未读取 Secret 值或执行生产运行时验收。PR #2 保持 Draft，`RELEASE_READY=no`。见[候选报告](docs/c08-d2-release-candidate.md)、[持久化说明](docs/c08-production-persistence.md)和[备份恢复操作说明](docs/c08-backup-restore-runbook.md)。
+旧线上 SQLite 为 **disposable demo state**；C08 生产使用独立 PostgreSQL，旧 Demo 账号、历史和临时 Key 不迁移。登录后的 7 天持久会话由服务端数据库保存 token 哈希，浏览器只持有随机 cookie；刷新或重新打开页面可恢复登录，登出、密码变更与账号停用会使旧会话失效。Streamlit 的 JavaScript cookie 组件不能设置真正的 `HttpOnly`；详情见[持久化说明](docs/c08-production-persistence.md)。此 hotfix 尚待 CI 与线上 smoke test，`RELEASE_READY=no`。
 
 ## License
 

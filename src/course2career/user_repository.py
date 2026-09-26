@@ -21,6 +21,17 @@ class StoredUser:
     status: str = "active"
 
 
+@dataclass(frozen=True)
+class StoredAuthSession:
+    id: str
+    user_id: str
+    token_hash: str
+    session_version: int
+    created_time: str
+    expires_time: str
+    revoked_time: str | None = None
+
+
 class SQLiteUserRepository:
     """SQLite 用户仓储；查询全部使用参数化语句。"""
 
@@ -159,6 +170,41 @@ class SQLiteUserRepository:
                 (role.value, plan.value, user_id),
             )
         return cursor.rowcount == 1
+
+    def add_auth_session(self, session: StoredAuthSession) -> None:
+        with self._connect() as connection:
+            connection.execute(
+                "INSERT INTO auth_sessions (id, user_id, token_hash, "
+                "session_version, created_time, expires_time, revoked_time) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (
+                    session.id,
+                    session.user_id,
+                    session.token_hash,
+                    session.session_version,
+                    session.created_time,
+                    session.expires_time,
+                    session.revoked_time,
+                ),
+            )
+
+    def find_auth_session(self, token_hash: str) -> StoredAuthSession | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT id, user_id, token_hash, session_version, "
+                "created_time, expires_time, revoked_time "
+                "FROM auth_sessions WHERE token_hash = ?",
+                (token_hash,),
+            ).fetchone()
+        return StoredAuthSession(**dict(row)) if row is not None else None
+
+    def revoke_auth_session(self, token_hash: str, revoked_time: str) -> None:
+        with self._connect() as connection:
+            connection.execute(
+                "UPDATE auth_sessions SET revoked_time = ? "
+                "WHERE token_hash = ? AND revoked_time IS NULL",
+                (revoked_time, token_hash),
+            )
 
     def _connect(self) -> sqlite3.Connection:
         return self.backend.connect()

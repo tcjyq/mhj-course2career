@@ -208,7 +208,7 @@ def test_pg_dump_restore_keeps_assets_and_encryption_boundary() -> None:
         pytest.skip("需要两份独立的合成 PostgreSQL 测试库")
     source = PostgresProductRepository(source_url, allow_insecure_local_test=True)
     restored = PostgresProductRepository(restore_url, allow_insecure_local_test=True)
-    assert schema_version(source.backend) == schema_version(restored.backend) == 2
+    assert schema_version(source.backend) == schema_version(restored.backend) == 3
     with source._connect() as left, restored._connect() as right:
         source_counts = {
             table: left.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]

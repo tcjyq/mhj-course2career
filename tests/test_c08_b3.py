@@ -152,7 +152,7 @@ def test_migration_idempotent_and_failed_update_rolls_back(tmp_path: Path) -> No
     user = _user(repository, "owner")
     with sqlite3.connect(path) as connection:
         connection.execute("DROP TABLE user_byok_settings")
-        connection.execute("DELETE FROM schema_migrations WHERE version = 2")
+        connection.execute("DELETE FROM schema_migrations WHERE version >= 2")
     migrated = SQLiteProductRepository(path)
     assert migrated.get_byok_mode("owner") is None
     modes = BYOKModeService(migrated)

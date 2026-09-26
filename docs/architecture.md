@@ -1,5 +1,9 @@
 # 系统架构
 
+## C08 持久登录补充
+
+`app.py` 在新 Streamlit WebSocket 会话中读取浏览器 opaque cookie，经 `AuthService` 查询 `auth_sessions.token_hash`，核对到期/撤销/`session_version`，再用 `users` 实时恢复 Principal；已有 `session_state.principal` 继续按原逻辑刷新。SQLite 和 PostgreSQL 均执行 schema 3 的新增表迁移。登录后待下一次完整渲染写 cookie，避免 Streamlit 立即 rerun 丢弃组件命令；登出先撤销服务端会话，再删除 cookie。生产 cookie 使用 Secure、SameSite Strict、path `/`；组件 JavaScript 写入无法提供 HttpOnly，详见[持久化说明](c08-production-persistence.md)。
+
 ## 1. 架构选择
 
 项目使用单体Streamlit与`src`布局。`app.py`负责产品外壳、会话身份和动态导航，`ui/`页面负责输入与展示；领域模块负责校验、证据映射、岗位适配度、硬门槛和导出；权限与仓储层负责用户、额度和历史。当前线上 Demo 使用 SQLite；C08-D0 本地分支已加入 PostgreSQL 生产仓储，尚未部署。B2 显式验证脚本将解析/结构异常与解析后的固定业务断言失败分开归类；成功解析的固定题目（包括通过和断言失败）写逐题脱敏诊断到 `outputs/c08-provider-validation/fixture_diagnostics.json`，受控认证仍只来自完整通过的模型级记录。

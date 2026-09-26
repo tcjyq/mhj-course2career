@@ -87,7 +87,7 @@ class SQLiteProductRepository(SQLiteUserRepository):
         super().__init__(database_path)
         from course2career.database_migrations import migrate_sqlite
 
-        migrate_sqlite(self, target=2)
+        migrate_sqlite(self)
 
     def reserve_ai_call(
         self,

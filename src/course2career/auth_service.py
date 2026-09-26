@@ -1,4 +1,6 @@
+import hashlib
 import re
+import secrets
 import sqlite3
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
@@ -11,7 +13,11 @@ from course2career.password_security import (
     verify_password,
 )
 from course2career.permissions import Plan, Principal, Role
-from course2career.user_repository import SQLiteUserRepository, StoredUser
+from course2career.user_repository import (
+    SQLiteUserRepository,
+    StoredAuthSession,
+    StoredUser,
+)
 
 USERNAME_PATTERN = re.compile(r"^[\w-]{3,32}$", flags=re.UNICODE)
 
@@ -41,6 +47,7 @@ class AuthService:
 
     MAX_FAILED_LOGINS = 5
     LOGIN_WINDOW = timedelta(minutes=15)
+    SESSION_LIFETIME = timedelta(days=7)
 
     def __init__(self, repository: SQLiteUserRepository) -> None:
         self.repository = repository
@@ -120,6 +127,50 @@ class AuthService:
         ):
             raise InvalidSessionError("登录状态已失效，请重新登录。")
         return _to_principal(user, byok_enabled=self._byok_enabled(user.id))
+
+    def create_session(
+        self, principal: Principal, *, now: datetime | None = None
+    ) -> str:
+        current = self.refresh_principal(principal)
+        issued_at = now or datetime.now(UTC)
+        token = secrets.token_urlsafe(32)
+        self.repository.add_auth_session(
+            StoredAuthSession(
+                id=str(uuid4()),
+                user_id=current.user_id,
+                token_hash=_token_hash(token),
+                session_version=current.session_version,
+                created_time=issued_at.isoformat(),
+                expires_time=(issued_at + self.SESSION_LIFETIME).isoformat(),
+            )
+        )
+        return token
+
+    def restore_session(
+        self, token: str | None, *, now: datetime | None = None
+    ) -> Principal | None:
+        if not _valid_token(token):
+            return None
+        session = self.repository.find_auth_session(_token_hash(token))
+        if session is None or session.revoked_time is not None:
+            return None
+        if datetime.fromisoformat(session.expires_time) <= (now or datetime.now(UTC)):
+            return None
+        try:
+            return self.refresh_principal(
+                Principal(
+                    user_id=session.user_id,
+                    session_version=session.session_version,
+                )
+            )
+        except InvalidSessionError:
+            return None
+
+    def revoke_session(self, token: str | None) -> None:
+        if _valid_token(token):
+            self.repository.revoke_auth_session(
+                _token_hash(token), datetime.now(UTC).isoformat()
+            )
 
     def _byok_enabled(self, user_id: str) -> bool:
         get_mode = getattr(self.repository, "get_byok_mode", None)
@@ -229,3 +280,11 @@ def _to_principal(user: StoredUser, *, byok_enabled: bool = False) -> Principal:
         session_version=getattr(user, "session_version", 1),
         byok_enabled=byok_enabled,
     )
+
+
+def _valid_token(token: str | None) -> bool:
+    return isinstance(token, str) and bool(re.fullmatch(r"[A-Za-z0-9_-]{43}", token))
+
+
+def _token_hash(token: str) -> str:
+    return hashlib.sha256(token.encode("ascii")).hexdigest()

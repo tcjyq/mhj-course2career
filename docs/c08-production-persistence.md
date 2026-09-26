@@ -8,6 +8,7 @@
 |---|---|
 | `users` | DURABLE | ID、角色、套餐、密码哈希、会话版本及停用状态 |
 | `login_attempts` | DURABLE | 登录节流跨进程生效；可按保留期清理 |
+| `auth_sessions` | DURABLE | 仅保存随机登录 token 的 SHA-256 哈希、到期时间、撤销时间和会话版本；浏览器持有原始 token |
 | `api_usage` | DURABLE | 用量、额度、费用与预留状态 |
 | `analysis_records` | DURABLE | 用户保存的完整分析快照 |
 | `user_api_keys` | DURABLE | AES-256-GCM 密文、nonce、归属与最后四位 |
@@ -27,7 +28,9 @@
 
 ## Migration contract
 
-`schema_migrations` 的 1 是用户/登录基础 schema，2 是 C08 完整产品 schema。旧 C01—C07、C08-A/B/C SQLite 无版本表时依序升级；执行失败不写成功版本，已存在的表继续由 `CREATE IF NOT EXISTS` 和旧约束兼容逻辑处理。新 PostgreSQL 在同一事务中创建全部表和版本记录；未来变更必须新增顺序版本，不能改写已有版本。数据库版本高于代码或出现未知 PostgreSQL 版本时拒绝启动。SQLite 旧表约束重建仍用事务，保留密文与关联数据。
+`schema_migrations` 的 1 是用户/登录基础 schema，2 是 C08 完整产品 schema，3 是仅新增 `auth_sessions` 表与索引的持久登录迁移。旧 C01—C07、C08-A/B/C SQLite 无版本表时依序升级；执行失败不写成功版本，已存在的表继续由 `CREATE IF NOT EXISTS` 和旧约束兼容逻辑处理。PostgreSQL 2→3 在同一事务中追加表和版本记录，不修改现有用户、Key 或报告；新 PostgreSQL 在同一事务中创建全部表和版本记录。数据库版本高于代码或出现未知 PostgreSQL 版本时拒绝启动。SQLite 旧表约束重建仍用事务，保留密文与关联数据。
+
+持久登录使用 32 字节 CSPRNG 生成的 7 天随机 opaque token；数据库只存 SHA-256 哈希。恢复时查未撤销、未过期的会话，再从 `users` 实时读取账户状态、Role、Plan、BYOK 开关并核对 `session_version`。登出撤销服务端会话并删除浏览器 cookie；密码或会话版本变化、用户停用或删除会使旧 token 失效。Cookie 设置 `Secure`（生产）、`SameSite=Strict`、`path=/` 和明确到期时间，不放入 URL。Streamlit 组件由 JavaScript 写 cookie，平台无法提供真正的 `HttpOnly`；因此不在 cookie 中放用户资料或密钥，并依靠高熵、短期、服务端撤销降低风险。共享浏览器和 XSS 仍是此架构的剩余风险。
 
 `python scripts/migrate_sqlite_to_postgres.py <已审查的备份路径> --acknowledge-source-data` 是操作员显式运行的离线工具，可从只读 SQLite 快照复制全部 7 张 DURABLE 业务表到**空** PostgreSQL；它不在应用启动时执行。C08 的生产决策已经明确：当前 Streamlit Community Cloud SQLite 为 **disposable demo state**，旧 Demo 账号、历史和临时 Key 不迁移；正式版本从全新 production PostgreSQL 开始，不做生产 SQLite 自动迁移或在线切换。该工具只保留供独立合成测试和将来另行授权的离线数据任务使用。
 

@@ -141,7 +141,7 @@ def test_existing_sqlite_key_table_upgrades_without_changing_ciphertext(
     )
     with sqlite3.connect(database_path) as connection:
         connection.execute("DROP TABLE user_api_keys")
-        connection.execute("DELETE FROM schema_migrations WHERE version = 2")
+        connection.execute("DELETE FROM schema_migrations WHERE version >= 2")
         connection.execute(
             """
             CREATE TABLE user_api_keys (

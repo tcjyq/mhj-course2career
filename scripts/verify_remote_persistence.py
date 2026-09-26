@@ -29,6 +29,7 @@ from course2career.provider_profile import ProviderProfileService
 TABLES = (
     "users",
     "login_attempts",
+    "auth_sessions",
     "api_usage",
     "analysis_records",
     "user_api_keys",
@@ -180,7 +181,7 @@ def seed_and_verify(url: str, cipher: APIKeyCipher) -> dict[str, int]:
     reopened = PostgresProductRepository(url)
     _verify_key(reopened, cipher)
     assert reopened.list_analyses(principal.user_id)
-    assert schema_version(reopened.backend) == 2
+    assert schema_version(reopened.backend) == 3
     return _counts(reopened)
 
 
@@ -203,12 +204,13 @@ def backup_restore(
     if expected != {
         "users": 1,
         "login_attempts": 0,
+        "auth_sessions": 0,
         "api_usage": 1,
         "analysis_records": 1,
         "user_api_keys": 1,
         "user_provider_profiles": 1,
         "user_byok_settings": 1,
-        "schema_migrations": 2,
+        "schema_migrations": 3,
     }:
         raise RuntimeError("源库不符合纯合成数据行数；拒绝备份。")
     _safe_restore_target(restore_url, expected)

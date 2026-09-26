@@ -12,6 +12,7 @@ license = "MIT"
 dependencies = [
     "certifi>=2025.11.12",
     "cryptography>=49,<50",
+    "extra-streamlit-components==0.1.81",
     "httpx>=0.28,<1",
     "openai>=2.46,<3",
     "openpyxl>=3.1,<4",

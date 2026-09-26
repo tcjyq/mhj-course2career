@@ -2,7 +2,25 @@
 
 from course2career.database_backend import DatabaseBackend
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
+
+AUTH_SESSIONS_DDL = (
+    """CREATE TABLE IF NOT EXISTS auth_sessions (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        token_hash TEXT NOT NULL UNIQUE,
+        session_version INTEGER NOT NULL,
+        created_time TEXT NOT NULL,
+        expires_time TEXT NOT NULL,
+        revoked_time TEXT
+    )""",
+    "CREATE INDEX IF NOT EXISTS idx_auth_sessions_user_id ON auth_sessions(user_id)",
+)
+
+
+def _migrate_sqlite_auth_sessions(repository, connection) -> None:
+    for sql in AUTH_SESSIONS_DDL:
+        connection.execute(sql)
 
 
 def migrate_sqlite(repository, *, target: int = SCHEMA_VERSION) -> None:
@@ -25,6 +43,7 @@ def migrate_sqlite(repository, *, target: int = SCHEMA_VERSION) -> None:
         steps = {
             1: SQLiteUserRepository._initialize_schema,
             2: SQLiteProductRepository._initialize_schema,
+            3: _migrate_sqlite_auth_sessions,
         }
         for version in range(current + 1, target + 1):
             steps[version](repository, connection)
@@ -123,6 +142,11 @@ def migrate_postgres(backend: DatabaseBackend) -> None:
             for sql in POSTGRES_DDL:
                 connection.execute(sql)
             connection.execute("INSERT INTO schema_migrations(version) VALUES (1), (2)")
+            current = 2
+        if current == 2:
+            for sql in AUTH_SESSIONS_DDL:
+                connection.execute(sql)
+            connection.execute("INSERT INTO schema_migrations(version) VALUES (3)")
         elif current < SCHEMA_VERSION:
             raise RuntimeError("不支持未知 PostgreSQL schema 升级路径。")
 

@@ -50,7 +50,7 @@ def expected_counts():
         "user_api_keys": 1,
         "user_provider_profiles": 1,
         "user_byok_settings": 1,
-        "schema_migrations": 2,
+        "schema_migrations": 3,
     }
 
 

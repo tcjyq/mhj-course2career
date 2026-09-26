@@ -1,5 +1,9 @@
 # Course2Career 开发日志
 
+## 2026-09-27 C08 生产登录持久化 hotfix
+
+生产 smoke test 确认 `st.session_state` 在浏览器重载后清空。新增 schema 3 `auth_sessions`、7 天随机 token 的服务端哈希/撤销及浏览器受限 cookie，恢复身份时实时检查用户、会话版本、角色、套餐与开发者模式。本地隔离浏览器已验证刷新、新标签页、登出和 390px；上线与 CI 结果以提交后状态为准。未改生产 Secrets、生产数据库或真实 Provider。
+
 ## 2026-09-26 C08-D1 精确 Provider 认证与证据门槛
 
 在无 VPN 环境生成的本机 `records.json`、仅记录最后一次 DeepSeek 运行的 `summary.md` 及 `fixture_diagnostics.json` 已交叉核对：Bailian `cn-beijing` / `qwen3.8-flash`、DeepSeek `global` / `deepseek-flash` 均为 VERIFIED、4/4 固定样例、usage 可用、5 次请求尝试、返回模型与请求一致且 `error_code` 为 null。每款模型的 4 条逐题诊断均通过；将这两条脱敏 `VerificationRecord` 精确写入受控认证文件，未加入其他模型或提交本地证据。没有在本轮重发真实 Provider 请求。

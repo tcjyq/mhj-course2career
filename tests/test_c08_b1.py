@@ -159,7 +159,7 @@ def test_key_schema_migration_preserves_rows_and_repeated_startup(
     ddl_ids = ", ".join(f"'{item}'" for item in legacy_ids)
     with sqlite3.connect(path) as connection:
         connection.execute("DROP TABLE user_api_keys")
-        connection.execute("DELETE FROM schema_migrations WHERE version = 2")
+        connection.execute("DELETE FROM schema_migrations WHERE version >= 2")
         connection.execute(
             "CREATE TABLE user_api_keys ("
             "user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, "
@@ -203,7 +203,7 @@ def test_failed_key_schema_migration_rolls_back_old_table(tmp_path: Path) -> Non
     _principal(repository, "alice")
     with sqlite3.connect(path) as connection:
         connection.execute("DROP TABLE user_api_keys")
-        connection.execute("DELETE FROM schema_migrations WHERE version = 2")
+        connection.execute("DELETE FROM schema_migrations WHERE version >= 2")
         connection.execute(
             "CREATE TABLE user_api_keys ("
             "user_id TEXT NOT NULL, "

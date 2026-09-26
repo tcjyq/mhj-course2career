@@ -35,6 +35,12 @@ from course2career.provider_factory import LLMProviderFactory
 from course2career.provider_profile import ProviderProfileService
 from course2career.ui.analysis_page import render_analysis_page
 from course2career.ui.auth_page import render_auth_page
+from course2career.ui.browser_auth import (
+    clear_token,
+    cookie_manager,
+    read_token,
+    set_token,
+)
 from course2career.ui.developer_page import render_developer_page
 from course2career.ui.home_page import render_home_page
 from course2career.ui.membership_page import render_membership_page
@@ -138,8 +144,37 @@ model_catalog = get_deepseek_model_catalog(
 provider_factory = LLMProviderFactory(settings, api_key_service)
 provider_factory.model_catalog = model_catalog
 
+auth_cookie_manager = cookie_manager()
+pending_auth_cookie = st.session_state.pop("pending_auth_cookie", None)
+pending_cookie_clear = st.session_state.pop("pending_cookie_clear", False)
+if pending_auth_cookie:
+    set_token(
+        auth_cookie_manager,
+        pending_auth_cookie,
+        production=settings.production_mode,
+    )
+if pending_cookie_clear:
+    clear_token(auth_cookie_manager)
 if "principal" not in st.session_state:
-    st.session_state.principal = Principal()
+    browser_token = None
+    if not pending_cookie_clear:
+        try:
+            browser_token = read_token(auth_cookie_manager)
+        except Exception:
+            pass
+    if browser_token:
+        try:
+            restored = auth_service.restore_session(browser_token)
+        except DatabaseUnavailableError:
+            st.error("开发者模式暂时不可用：持久数据库连接失败。")
+            st.stop()
+        if restored is None:
+            clear_token(auth_cookie_manager)
+        else:
+            st.session_state.auth_session_token = browser_token
+        st.session_state.principal = restored or Principal()
+    else:
+        st.session_state.principal = Principal()
 if "guest_session_id" not in st.session_state:
     st.session_state.guest_session_id = str(uuid4())
 
@@ -149,8 +184,11 @@ if principal.role != Role.GUEST:
         principal = auth_service.refresh_principal(principal)
         st.session_state.principal = principal
     except InvalidSessionError:
+        auth_service.revoke_session(st.session_state.get("auth_session_token"))
+        st.session_state.pending_cookie_clear = True
         for state_key in (
             "principal",
+            "auth_session_token",
             "job_analysis",
             "analysis_report",
             "legacy_analysis_report",
@@ -184,8 +222,11 @@ with st.sidebar:
     if principal.role == Role.GUEST:
         st.caption("可直接体验个人分析，登录后保存记录。")
     elif st.button("退出登录", width="stretch"):
+        auth_service.revoke_session(st.session_state.get("auth_session_token"))
+        st.session_state.pending_cookie_clear = True
         for state_key in (
             "principal",
+            "auth_session_token",
             "job_analysis",
             "analysis_report",
             "legacy_analysis_report",
@@ -200,7 +241,11 @@ home_page = st.Page(
     default=True,
 )
 login_page = st.Page(
-    lambda: render_auth_page(principal, auth_service),
+    lambda: render_auth_page(
+        principal,
+        auth_service,
+        auth_cookie_manager,
+    ),
     title="登录",
     url_path="login",
 )
