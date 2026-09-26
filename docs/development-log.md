@@ -1,8 +1,20 @@
 # Course2Career 开发日志
 
+## 2026-09-26 C08-D1 精确 Provider 认证与证据门槛
+
+在无 VPN 环境生成的本机 `records.json`、仅记录最后一次 DeepSeek 运行的 `summary.md` 及 `fixture_diagnostics.json` 已交叉核对：Bailian `cn-beijing` / `qwen3.8-flash`、DeepSeek `global` / `deepseek-flash` 均为 VERIFIED、4/4 固定样例、usage 可用、5 次请求尝试、返回模型与请求一致且 `error_code` 为 null。每款模型的 4 条逐题诊断均通过；将这两条脱敏 `VerificationRecord` 精确写入受控认证文件，未加入其他模型或提交本地证据。没有在本轮重发真实 Provider 请求。
+
+远程 PostgreSQL PASS、备份恢复 PASS 和恢复后解密 PASS 依据此前独立合成远程演练记录；本轮未连接远端。Draft PR 先前提交的 PostgreSQL 3.12/3.14 CI 集成、备份恢复及解密 job 已核验成功，新认证提交仍需 CI 全绿。当前 `ARCHITECTURE_READY=yes`、`POSTGRES_CI_READY=yes`、`REMOTE_POSTGRES_READY=yes`、`BACKUP_RESTORE_READY=yes`、`PERSISTENCE_READY=yes`、`PROVIDER_VALIDATED=yes`；尚未进行 C08-D2 Release Gate，`RELEASE_READY=no`。不 merge、不部署、不改生产 Secrets 或数据库。
+
 ## 2026-09-26 C08-D1 B2 逐题诊断（本地，未调用百炼）
 
 无 VPN 既有记录显示 `bailian` / `cn-beijing` / `qwen3.8-flash` 连接达 `SCHEMA_COMPATIBLE`，4 个固定样例仅过 1 个、在 `case_02_multiple` 停止；旧记录没有可判定根因的逐题细节。本轮保持 strict JSON Schema、原文 evidence、固定 fixtures 和无重试门槛不变，增加仅本机忽略目录内的逐题脱敏诊断；解析成功后的技能/证据业务断言失败使用 `FIXTURE_ASSERTION_FAILED`，不再误称 Schema 不兼容。新诊断在用户关闭 VPN 后显式运行脚本时才生成；原始记录和受控认证文件不变。离线全套回归 249 通过、2 跳过（独立 PostgreSQL 测试库未配置），Ruff lint、format 与 `git diff --check` 均通过。PR #2 保持 Draft，不 merge、不 deploy。
+
+## 2026-09-26 C08-D1 百炼真实验证续测
+
+本机现有 `BAILIAN_API_KEY`、`BAILIAN_WORKSPACE_ID` 与 `DEEPSEEK_API_KEY`（仅检查存在性）。查询北京 Workspace 官方目录中的精确候选 `qwen3.8-flash` 时，DNS 与 TCP 443 可达，但 TLS 握手 EOF；北京通用 DashScope 端点在 Python 和 Windows curl 上同样无法完成握手，而本机访问阿里云官网及 DeepSeek 域名的 TLS 成功。未收到目录 HTTP 响应，不能核对 Key 地域、Workspace、模型可见性或授权；收费推理请求 0 次、固定合成集执行 0 次，usage 和费用未知。百炼仍为 `PENDING`，`PROVIDER_VALIDATED=no`；待北京端点 TLS 可用后继续，不能改用其他区域端点。
+
+定向回归 32 项通过：`tests/test_c08_b2.py`、`tests/test_c08_c.py`、`tests/test_provider_registry.py`（pytest 临时目录放在 D 盘）。首次测试因默认 C 盘 pytest 临时目录权限不足出现 11 项 setup 错误，改用可写目录后通过。未执行全套回归、提交或部署。
 
 ## 2026-09-25 C08-D1 远程恢复诊断
 

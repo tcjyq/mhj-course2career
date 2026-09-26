@@ -25,10 +25,12 @@ from course2career.provider_validation import (
     validate_provider,
 )
 from course2career.provider_verification import (
+    CERTIFIED_RECORD_PATH,
     ProviderErrorCode,
     Verification,
     VerificationRecord,
     get_record,
+    load_records,
     now_utc,
     save_record,
 )
@@ -369,6 +371,28 @@ def test_verification_record_scopes_endpoint_and_model(tmp_path: Path) -> None:
         replace(record, fixture_passed=1)
     with pytest.raises(ValueError, match="VERIFIED"):
         replace(record, returned_model="another-model")
+
+
+def test_certified_mainland_records_bind_exact_models_and_endpoints() -> None:
+    records = load_records(CERTIFIED_RECORD_PATH)
+    expected = {
+        (ProviderName.BAILIAN, "cn-beijing", "qwen3.8-flash"),
+        (ProviderName.DEEPSEEK, "global", "deepseek-flash"),
+    }
+    assert {
+        (record.provider, record.endpoint_id, record.model)
+        for record in records.values()
+    } == expected
+    for provider, endpoint_id, model in expected:
+        record = get_record(provider, endpoint_id, model)
+        assert record is not None
+        assert record.result == Verification.VERIFIED
+        assert record.fixture_count == record.fixture_passed == 4
+        assert record.usage_available and record.external_calls == 5
+        assert record.returned_model == model and record.error_code is None
+        assert get_record(provider, "other-region", model) is None
+        assert get_record(provider, endpoint_id, "other-model") is None
+    assert get_record(ProviderName.SILICONFLOW, "cn", "qwen3.8-flash") is None
 
 
 def test_one_connection_never_counts_as_verified() -> None:

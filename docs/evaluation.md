@@ -25,7 +25,7 @@
 
 - 单元测试使用模拟响应，不产生 API 成本。
 - C08-B1 十家预设均通过受控映射、fake SDK/transport、加密 Key、页面和仓储回归；这些测试不证明真实模型兼容性。每个拟投入生产的 Provider/模型组合还须用持有人自己的 Key 验证合成 JD → 提取 → `JobAnalysis`、实际模型回写、Token、错误脱敏及价格来源。费用未知必须保持 `unknown`，不能当作 0 元。
-- C08-B2 固定 4 个合成 JD，逐个核对技能命中、否定项、`evidence_text` 原文、JobAnalysis、实际模型、usage 与脱敏错误；只有完整通过才是 `VERIFIED`。离线测试分别覆盖缺 Python、SQL、需求分析，误提 Java，非原文 evidence 和正确结果，并校验逐题诊断不写 JD、凭证或模型原始响应。2026-09-26 百炼连接已达 Schema 兼容但仅通过 1/4；先前 OpenAI 与 Anthropic 请求均 HTTP 401。业务断言失败不等于 JSON Schema 不兼容；离线 mock 测试也不证明模型真实可用。[真实证据与限制](c08-provider-validation.md)。
+- C08-B2 固定 4 个合成 JD，逐个核对技能命中、否定项、`evidence_text` 原文、JobAnalysis、实际模型、usage 与脱敏错误；只有完整通过才是 `VERIFIED`。离线测试分别覆盖缺 Python、SQL、需求分析，误提 Java，非原文 evidence 和正确结果，并校验逐题诊断不写 JD、凭证或模型原始响应。2026-09-26 Bailian `cn-beijing` / `qwen3.8-flash` 和 DeepSeek `global` / `deepseek-flash` 均有 4/4 真实固定集、usage、返回模型匹配且错误为空的精确认证；之前百炼 1/4、OpenAI/Anthropic 401 仅属历史运行。业务断言失败不等于 JSON Schema 不兼容；离线 mock 测试也不证明其他模型真实可用。[真实证据与限制](c08-provider-validation.md)。
 - C08-B3 权限回归覆盖普通 Free/Pro 自助开启后额度不变、游客拒绝、Admin 与历史 Developer Role/Plan、关闭后旧会话的 Key/Profile/用户 Key 调用拒绝、跨用户隔离、重开后密文不变，以及 SQLite 重复初始化和失败回滚。浏览器使用隔离假 Key 验证注册、登录、刷新、开关与 390px 布局；不发真实供应商请求。
 - C08-C 离线测试需覆盖十家策略与大陆顺序、DeepSeek 旧名及价格合并、百炼分页/区域/Workspace、SiliconFlow chat 过滤、MiniMax 双端点、OpenRouter USD、未知价格、缓存 TTL/失败旧目录/跨用户与 Key 轮换、B3 关闭及重开、无效元数据和 401 脱敏。假响应通过不代表真实兼容；模型级 `VERIFIED` 仍以 B2 完整固定集为准。浏览器需复核注册 Free 用户开关、目录选择、国际折叠、390px 整体宽度及无真实凭证暴露。[目录与剩余证据](c08-model-discovery.md)。
 - Prompt 或模型变更时，对固定黄金样例离线重跑并记录模型名、日期和指标。
@@ -92,4 +92,4 @@ GitHub 模型监测发现的新模型不视为通过评测。只有完成上述�
 
 ## C08-D0 发布评估
 
-SQLite 单元回归与 PostgreSQL 服务容器集成分别记录；前者通过不推断后者可用。独立集成覆盖新库、重新连接、用户及 BYOK 资产、用量/额度、跨用户隔离和合成 SQLite 迁移。真实大陆 Provider 必须在持久化基础上使用 B2 合成固定集取得 exact model、usage、返回模型和证据定位；仅 `/v1/models` 或连接测试成功不计 VERIFIED。CI、备份恢复和实际 Provider 结果未取得前，发布门槛保持关闭。
+SQLite 单元回归与 PostgreSQL 服务容器集成分别记录；前者通过不推断后者可用。独立集成覆盖新库、重新连接、用户及 BYOK 资产、用量/额度、跨用户隔离和合成 SQLite 迁移。真实大陆 Provider 必须在持久化基础上使用 B2 合成固定集取得 exact model、usage、返回模型和证据定位；仅 `/v1/models` 或连接测试成功不计 VERIFIED。D1 所需 PostgreSQL CI、独立远程合成演练、备份恢复与两款精确模型验证已有证据；在 C08-D2 Release Gate 完成前发布门槛仍关闭。

@@ -84,7 +84,7 @@ def test_mainland_order_and_discovery_strategies() -> None:
     )
 
 
-def test_deepseek_mapping_alias_and_official_not_verified(setup) -> None:
+def test_deepseek_mapping_alias_and_exact_model_verified(setup) -> None:
     _, keys, _, add_user = setup
     user = add_user("owner")
     keys.save_key(user, ProviderName.DEEPSEEK, "fake-deepseek-key")
@@ -119,8 +119,8 @@ def test_deepseek_mapping_alias_and_official_not_verified(setup) -> None:
     )
     assert flash.context_window == 1_000_000
     assert flash.structured_output == CapabilitySupport.SUPPORTED
-    assert flash.verification == Verification.UNKNOWN
-    assert flash.status == ModelStatus.CAPABILITY_ELIGIBLE
+    assert flash.verification == Verification.VERIFIED
+    assert flash.status == ModelStatus.VERIFIED
     assert flash.input_price == 1.0 and flash.output_price == 4.0
     assert flash.cached_input_price == 0.02 and flash.currency == "CNY"
     assert flash.pricing_source and flash.capability_source

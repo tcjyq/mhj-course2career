@@ -17,11 +17,11 @@
 | `ModelCatalogService._cache`、DeepSeek 模型缓存 | CACHE | 仅无密钥目录数据；丢失后重新查询或显示静态候选，不可产生 VERIFIED |
 | Streamlit `session_state`、临时连接测试 | EPHEMERAL | 仅当前会话；每次敏感操作仍查持久状态 |
 | `outputs/c08-provider-validation/records.json` | EPHEMERAL（本地证据） | 忽略版本控制，不可作为生产认证 |
-| `src/course2career/verified_models.json` | 受控版本证据 | 生产 VERIFIED 的唯一项目认证来源；当前为空 |
+| `src/course2career/verified_models.json` | 受控版本证据 | 生产 VERIFIED 的唯一项目认证来源；现只包含 Bailian `cn-beijing` / `qwen3.8-flash` 和 DeepSeek `global` / `deepseek-flash` 两个精确记录 |
 
 ## 生产配置与安全
 
-本地默认 `COURSE2CAREER_DATABASE_PATH=instance/course2career.db`。生产必须设置 `COURSE2CAREER_ENV=production` 和持久 PostgreSQL `DATABASE_URL`，例如使用占位值的 `postgresql://USER:PASSWORD@HOST/DB?sslmode=verify-full`。Community Cloud 的根级 Secrets 可映射环境变量；`.env` 与 `.streamlit/secrets.toml` 已被 Git 忽略。生产没有 `DATABASE_URL` 或数据库不可达时应用停止并显示“开发者模式暂时不可用”；不会切回 SQLite。生产不能使用测试专用的本地无 TLS 连接开关。
+本地默认 `COURSE2CAREER_DATABASE_PATH=instance/course2career.db`。生产必须设置 `COURSE2CAREER_ENV=production` 和持久 PostgreSQL `DATABASE_URL`。Community Cloud 的根级 Secrets 可映射环境变量；`.env` 与 `.streamlit/secrets.toml` 已被 Git 忽略。生产没有 `DATABASE_URL` 或数据库不可达时应用停止并显示“开发者模式暂时不可用”；不会切回 SQLite。生产不能使用测试专用的本地无 TLS 连接开关。
 
 `COURSE2CAREER_KEY_ENCRYPTION_KEY` 是 32 字节 Base64 AES-GCM 主密钥的**长期 Secret**，必须在重启、重部署和数据库恢复后保持一致，与数据库备份分开存放。更换它会使旧密文不能解密；程序不会自行生成替代主密钥。未配置时 BYOK Key 功能不可用。数据库只存密文、nonce 和后四位；不记录明文、连接 URL、错误原文或完整模型请求。生产应采用最小权限账户、托管数据库备份及定期恢复演练，并对数据库可用性和备份失败告警。
 
@@ -33,6 +33,16 @@
 
 ## 验证与发布状态
 
-本地 SQLite 全套测试及 PostgreSQL 独立 CI job 使用合成账户、Key、报告和用量。CI 使用仅限 localhost 的无 TLS 测试连接；生产 URL 强制 TLS。PostgreSQL job 覆盖建库、幂等重连、注册登录、BYOK 关闭/重开、密文解密、Profile、报告、额度/用量、跨用户隔离及合成迁移。D1 还增加容器内备份、空库恢复、行数与主密钥验证。CI 结果应以 Draft PR 的真实日志为准；本地脚本或测试通过不等于 CI 通过。独立远程 PostgreSQL 的合成数据与恢复演练见[操作说明](c08-backup-restore-runbook.md)，未执行时保持 PENDING。
+本地 SQLite 全套测试及 PostgreSQL 独立 CI job 使用合成账户、假 Key、报告和用量。CI 使用仅限 localhost 的无 TLS 测试连接；生产 URL 强制 TLS。PostgreSQL job 覆盖建库、幂等重连、注册登录、BYOK 关闭/重开、密文解密、Profile、报告、额度/用量、跨用户隔离及合成迁移。D1 还增加容器内备份、空库恢复、行数与主密钥验证。2026-09-26 已核对 Draft PR 上一次提交的 PostgreSQL 3.12/3.14 CI job 均成功，备份恢复及恢复后解密步骤成功；最终认证提交还须等待自身 CI 全绿。独立远程 PostgreSQL 合成演练的完成状态来自此前[开发日志](development-log.md)中的远程 restore-only 行数、正确密钥解密和错误密钥拒绝记录；本轮未重新连接远程数据库，远程 PASS 不等于生产恢复。操作边界见[演练说明](c08-backup-restore-runbook.md)。
 
-状态条件：`ARCHITECTURE_READY` 要求设计与受控端点；`PERSISTENCE_READY` 要求 PostgreSQL CI、独立远程测试、备份恢复、恢复后解密及生产 fail-closed 全部通过；`PROVIDER_VALIDATED` 要求至少 DeepSeek 与百炼各有一个精确模型通过 B2 固定合成集；`RELEASE_READY` 要求前三项及 D2 发布审查通过。当前无大陆模型 VERIFIED。D1 Draft PR 仅用于 CI，不允许合入或部署。
+状态条件：`ARCHITECTURE_READY` 要求设计与受控端点；`PERSISTENCE_READY` 要求 PostgreSQL CI、独立远程测试、备份恢复、恢复后解密及生产 fail-closed 全部通过；`PROVIDER_VALIDATED` 要求至少 DeepSeek 与百炼各有一个精确模型通过 B2 固定合成集；`RELEASE_READY` 要求前三项及 D2 发布审查通过。2026-09-26 本地已精确认证 Bailian `qwen3.8-flash` 和 DeepSeek `deepseek-flash`，但 D2 尚未执行；Draft PR 仅用于 CI，不允许合入或部署。
+
+| D1 状态 | 当前值 | 依据与边界 |
+|---|---|---|
+| `ARCHITECTURE_READY` | yes | D0 架构与受控端点保持不变 |
+| `POSTGRES_CI_READY` | yes | Draft PR 的 PostgreSQL 3.12/3.14 合成集成、备份恢复与解密 job 已通过；认证提交自身 CI 单独复核 |
+| `REMOTE_POSTGRES_READY` | yes | 先前独立远程合成演练记录；本轮不连接或修改远端 |
+| `BACKUP_RESTORE_READY` | yes | CI 容器演练及先前独立远程恢复；恢复后正确密钥解密、错误密钥安全失败均有记录 |
+| `PERSISTENCE_READY` | yes | 上述证据和 fail-closed 离线回归满足 D1 门槛；不代表生产迁移已执行 |
+| `PROVIDER_VALIDATED` | yes | 两条精确模型认证均满足 4/4 固定集、usage、返回模型及零错误 |
+| `RELEASE_READY` | no | 尚未执行 C08-D2 Release Gate；不合并、不部署、不改生产 Secrets 或数据库 |

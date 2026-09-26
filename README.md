@@ -50,8 +50,8 @@ AI 只提取 JD 技能；原文引用核对、映射、评分、门槛与学习�
 - 开发者 API Key 使用 AES-256-GCM 加密后保存。
 - C08-B1 在本地分支提供十家受控官方预设，按四类协议适配；免费套餐系统 AI 仍固定 DeepSeek。[设计与边界](docs/c08-multi-provider-design.md) · [开源架构研究](docs/c08-open-source-research.md)。
 - C08-B3 在本地分支允许普通登录用户免费启用开发者模式并管理自己的加密 API Key。启用或关闭不改变 Free/Pro 套餐及系统 AI 日额度；关闭后停止新的 BYOK 使用，已保存的 Key 保留，可重新开启。历史 Developer/Admin 权限继续可用。会员页的 Free/Pro 升级仍只是演示，线上状态以部署版本为准。
-- C08-B2 增加模型级真实验证记录、固定合成 JD 套件及原生 schema adapter。2026-09-26 本机百炼 `cn-beijing` / `qwen3.8-flash` 达到 `SCHEMA_COMPATIBLE`，但仅通过 1/4 个固定样例，尚未 VERIFIED；OpenAI 与 Anthropic 的既有请求均为 401。后续显式运行验证脚本会将逐题技能缺失、误提和证据原文问题写入 gitignored 脱敏诊断文件，不记录 JD 或原始响应。连接成功、Schema 兼容、完整验证在页面中分开显示；失败不会删除 Key。[真实验证报告](docs/c08-provider-validation.md)。
-- C08-C 在本地分支提供大陆六家优先、国际四家可选的官方模型目录：DeepSeek、百炼、SiliconFlow、MiniMax 等动态发现，Kimi/GLM 有日期的官方静态候选；能力、价格来源和 B2 真实验证分开展示。缓存按用户、端点、Workspace 和 Key 版本隔离，刷新失败保留过期目录；关闭开发者模式即禁止读取和刷新。当前仍无 VERIFIED；目录价格不等于实际账单。`deepseek-v4-flash` 作为兼容旧名提示，用户 Profile 不会自动迁移。[目录说明](docs/c08-model-discovery.md) · [官方来源矩阵](docs/c08-provider-matrix.md)。C08-D 才讨论自定义端点。
+- C08-B2 增加模型级真实验证记录、固定合成 JD 套件及原生 schema adapter。2026-09-26 本机完成 Bailian `cn-beijing` / `qwen3.8-flash` 与 DeepSeek `global` / `deepseek-flash` 的精确模型验证：两者均为 4/4、usage 可用、返回模型一致且无错误，受控认证文件只包含这两个模型。OpenAI 与 Anthropic 的历史请求均为 401，不能推广认证到其他模型或整家 Provider。逐题脱敏诊断留在 gitignored 目录；本轮只更新 feature 分支，未发布，D2 Release Gate 尚未进行。[真实验证报告](docs/c08-provider-validation.md)。
+- C08-C 在本地分支提供大陆六家优先、国际四家可选的官方模型目录：DeepSeek、百炼、SiliconFlow、MiniMax 等动态发现，Kimi/GLM 有日期的官方静态候选；能力、价格来源和 B2 真实验证分开展示。缓存按用户、端点、Workspace 和 Key 版本隔离，刷新失败保留过期目录；关闭开发者模式即禁止读取和刷新。仅上述两条精确模型记录已 VERIFIED；目录价格不等于实际账单。`deepseek-v4-flash` 作为兼容旧名提示，用户 Profile 不会自动迁移。[目录说明](docs/c08-model-discovery.md) · [官方来源矩阵](docs/c08-provider-matrix.md)。C08-D 才讨论自定义端点。
 - 开发者 API Key 提交后立即清空输入框与对应会话状态，页面只保留末四位元数据。
 - 页面切换采用隔离渲染，避免首页或上一页内容残留到当前页面。
 
