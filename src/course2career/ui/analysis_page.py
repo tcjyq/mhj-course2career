@@ -34,6 +34,8 @@ from course2career.jd_analyzer import (
 from course2career.llm_client import LLMClientError
 from course2career.llm_provider import ProviderName
 from course2career.llm_providers import ProviderError
+from course2career.model_capability import ModelStatus, Verification, model_capability
+from course2career.model_discovery import ModelCatalogService
 from course2career.models import AnalysisReport, JobAnalysis, JobSkill
 from course2career.permissions import (
     Permission,
@@ -44,6 +46,12 @@ from course2career.permissions import (
     authorize,
 )
 from course2career.provider_factory import LLMProviderFactory
+from course2career.provider_profile import ProviderProfileService
+from course2career.provider_registry import (
+    MAINLAND_PROVIDERS,
+    get_provider_preset,
+    ui_provider_presets,
+)
 from course2career.report_exporter import (
     export_adaptability_markdown,
     export_markdown,
@@ -60,6 +68,8 @@ def render_analysis_page(
     record_service: AnalysisRecordService,
     api_key_service: APIKeyService | None,
     guest_session_id: str,
+    profile_service: ProviderProfileService | None = None,
+    catalog_service: ModelCatalogService | None = None,
 ) -> None:
     st.title("个人分析")
     st.caption("课程、个人经历、岗位要求、五维适配度和能力路线集中在一个流程中。")
@@ -140,20 +150,26 @@ def render_analysis_page(
             max_chars=12_000,
             placeholder="粘贴岗位名称、岗位职责和任职要求。",
         )
-        system_provider_labels: list[str] = []
+        system_providers: list[ProviderName] = []
         if getattr(settings, "system_ai_enabled", True):
-            if settings.openai_api_key:
-                system_provider_labels.append("OpenAI")
-            if settings.deepseek_api_key:
-                system_provider_labels.append("DeepSeek")
+            for preset in ui_provider_presets():
+                if (
+                    preset.system_key_setting
+                    and getattr(settings, preset.system_key_setting)
+                    and (
+                        principal.plan != Plan.FREE
+                        or preset.provider_id == ProviderName.DEEPSEEK
+                    )
+                ):
+                    system_providers.append(preset.provider_id)
 
         analysis_modes = ["本地规则"]
-        if system_provider_labels:
+        if system_providers:
             analysis_modes.append("系统AI")
-        if (
-            principal.plan in {Plan.DEVELOPER, Plan.ADMIN}
-            and api_key_service is not None
-        ):
+        byok_providers = configured_byok_providers(
+            principal, api_key_service, profile_service, catalog_service
+        )
+        if byok_providers:
             analysis_modes.append("开发者API Key")
 
         analysis_mode = st.radio(
@@ -162,23 +178,62 @@ def render_analysis_page(
             horizontal=True,
             help="本地规则不消耗AI额度；平台已配置模型时才显示系统AI。",
         )
-        if not system_provider_labels:
+        if not system_providers:
             st.caption(
                 "公开 Demo 默认使用“本地规则”，无需注册或平台 AI Key，"
                 "可完成完整核心分析流程。"
             )
         selected_provider = ProviderName.OPENAI
-        selected_model = settings.openai_model
+        selected_model = get_provider_preset(ProviderName.OPENAI).configured_model(
+            settings
+        )
+        selected_endpoint_id: str | None = None
+        profile = None
         if analysis_mode != "本地规则":
             provider_options = (
-                system_provider_labels
-                if analysis_mode == "系统AI"
-                else ["OpenAI", "DeepSeek"]
+                system_providers if analysis_mode == "系统AI" else list(byok_providers)
             )
-            provider_label = st.selectbox("模型供应商", provider_options)
-            if provider_label == "DeepSeek":
-                selected_provider = ProviderName.DEEPSEEK
-                selected_model = settings.deepseek_model
+            selected_provider = st.selectbox(
+                "模型供应商",
+                provider_options,
+                format_func=lambda item: get_provider_preset(item).display_name,
+            )
+            selected_model = get_provider_preset(selected_provider).configured_model(
+                settings
+            )
+            if analysis_mode == "开发者API Key" and profile_service is not None:
+                profile = profile_service.get(principal, selected_provider)
+                if profile is not None:
+                    selected_model = profile.model_id
+                    selected_endpoint_id = profile.endpoint_id
+            if analysis_mode == "开发者API Key" and catalog_service is not None:
+                snapshot = catalog_service.peek(
+                    principal,
+                    selected_provider,
+                    selected_endpoint_id
+                    or get_provider_preset(selected_provider).selected_endpoint_id,
+                    workspace_id=profile.workspace_id if profile is not None else None,
+                )
+                if snapshot is not None:
+                    with st.expander("查看该供应商全部已发现模型"):
+                        if snapshot.stale:
+                            st.caption("目录缓存已过期，可到 Provider Hub 手动刷新。")
+                        st.dataframe(
+                            [
+                                {
+                                    "模型 ID": item.model_id,
+                                    "状态": item.status.value,
+                                    "上下文": item.context_window,
+                                    "输入价/百万 tokens": item.input_price,
+                                    "输出价/百万 tokens": item.output_price,
+                                    "币种": item.currency,
+                                }
+                                for item in snapshot.models
+                            ],
+                            width="stretch",
+                            hide_index=True,
+                        )
+            if selected_provider == ProviderName.DEEPSEEK:
                 if getattr(settings, "deepseek_model_mode", "pinned") == "auto_safe":
                     preference = " → ".join(
                         getattr(
@@ -192,16 +247,63 @@ def render_analysis_page(
                     st.caption(f"当前固定模型：{selected_model}")
             else:
                 st.caption(f"当前模型：{selected_model}")
+            if analysis_mode == "开发者API Key" and selected_model:
+                capability = (
+                    catalog_service.selected_model(
+                        principal,
+                        selected_provider,
+                        selected_endpoint_id
+                        or get_provider_preset(selected_provider).selected_endpoint_id,
+                        selected_model,
+                        workspace_id=profile.workspace_id
+                        if profile is not None
+                        else None,
+                    )
+                    if catalog_service is not None
+                    else model_capability(
+                        selected_provider, selected_model, selected_endpoint_id
+                    )
+                )
+                if capability.verification != Verification.VERIFIED:
+                    if capability.status == ModelStatus.UNKNOWN:
+                        st.warning(
+                            "该模型尚无可用的官方目录或真实验证记录；"
+                            "请核对模型 ID 和能力后使用。"
+                        )
+                    else:
+                        st.warning(
+                            "该模型尚未通过 Course2Career 真实验证；"
+                            "可继续尝试，结果需自行核对。"
+                        )
+
+        if analysis_mode == "本地规则":
+            st.caption("本地规则仅在应用内处理 JD，不会发送给第三方模型。")
+        else:
+            provider_name = get_provider_preset(selected_provider).display_name
+            st.info(
+                f"提交后，JD 会发送给当前选择的第三方模型 Provider：{provider_name}。"
+            )
+            if analysis_mode == "开发者API Key":
+                st.caption("BYOK 请求可能产生 Provider API 费用，由 Key 持有人承担。")
+            input_rate, output_rate = get_provider_preset(selected_provider).cost_rates(
+                settings
+            )
+            if (
+                input_rate is None
+                or output_rate is None
+                or input_rate <= 0
+                or output_rate <= 0
+            ):
+                st.caption("费用未知/未配置；本项目不会把未知价格当作免费。")
+            else:
+                st.caption("费用仅为配置费率估算，实际费用以 Provider 账单为准。")
 
         if st.button("提取岗位技能", type="primary"):
             usage_id = None
             client = None
-            if selected_provider == ProviderName.DEEPSEEK:
-                input_cost_per_million = settings.deepseek_input_cost_per_million
-                output_cost_per_million = settings.deepseek_output_cost_per_million
-            else:
-                input_cost_per_million = settings.openai_input_cost_per_million
-                output_cost_per_million = settings.openai_output_cost_per_million
+            input_cost_per_million, output_cost_per_million = get_provider_preset(
+                selected_provider
+            ).cost_rates(settings)
             try:
                 if analysis_mode == "本地规则":
                     authorize(principal, Permission.USE_DEMO)
@@ -211,7 +313,8 @@ def render_analysis_page(
                         principal,
                         provider=selected_provider,
                         key_mode=key_mode,
-                        model=selected_model,
+                        model=selected_model or "",
+                        endpoint_id=selected_endpoint_id,
                     )
                     usage_id = usage_service.start_call(
                         principal,
@@ -676,6 +779,62 @@ def render_demo_cases() -> None:
         if st.button("重新开始合成演示"):
             st.session_state.pop("demo_result", None)
         saved = st.session_state.get("demo_result")
-        if saved is not None and saved[0] == case_id:
-            # 与真实输入报告共用渲染器；演示仅保存独立会话结果。
-            render_adaptability_report(saved[1], key_prefix="demo_")
+    if saved is not None and saved[0] == case_id:
+        # 与真实输入报告共用渲染器；演示仅保存独立会话结果。
+        render_adaptability_report(saved[1], key_prefix="demo_")
+
+
+def configured_byok_providers(
+    principal: Principal,
+    api_key_service: APIKeyService | None,
+    profile_service: ProviderProfileService | None,
+    catalog_service: ModelCatalogService | None = None,
+) -> tuple[ProviderName, ...]:
+    if api_key_service is None:
+        return ()
+    try:
+        authorize(principal, Permission.USE_OWN_API_KEY)
+        saved = {item.provider for item in api_key_service.list_keys(principal)}
+        profiles = (
+            {
+                ProviderName(item.provider): item
+                for item in profile_service.list(principal)
+            }
+            if profile_service is not None
+            else {}
+        )
+    except PermissionDeniedError:
+        return ()
+    ranked: list[tuple[int, int, ProviderName]] = []
+    for order, preset in enumerate(ui_provider_presets()):
+        provider = preset.provider_id
+        if provider not in saved:
+            continue
+        profile = profiles.get(provider)
+        model = profile.model_id if profile is not None else preset.default_model
+        if not model:
+            continue
+        endpoint = (
+            profile.endpoint_id if profile is not None else preset.selected_endpoint_id
+        )
+        capability = (
+            catalog_service.selected_model(
+                principal,
+                provider,
+                endpoint,
+                model,
+                workspace_id=profile.workspace_id if profile is not None else None,
+            )
+            if catalog_service is not None
+            else model_capability(provider, model, endpoint)
+        )
+        if capability.status in {ModelStatus.UNSUPPORTED, ModelStatus.RETIRED}:
+            continue
+        group = 0 if provider in MAINLAND_PROVIDERS else 1
+        status_rank = {
+            ModelStatus.VERIFIED: 0,
+            ModelStatus.CAPABILITY_ELIGIBLE: 1,
+            ModelStatus.UNVERIFIED: 2,
+        }.get(capability.status, 3)
+        ranked.append((group * 10 + status_rank, order, provider))
+    return tuple(item[2] for item in sorted(ranked))

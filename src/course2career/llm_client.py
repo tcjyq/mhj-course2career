@@ -15,14 +15,20 @@ class LLMClientError(RuntimeError):
 class OpenAIJDClient:
     """使用 OpenAI Responses API 返回结构化岗位技能。"""
 
-    def __init__(self, settings: Settings, sdk_client: Any | None = None) -> None:
+    def __init__(
+        self,
+        settings: Settings,
+        sdk_client: Any | None = None,
+        max_output_tokens: int = 1500,
+    ) -> None:
         if not settings.openai_api_key:
             raise LLMClientError("未配置 OPENAI_API_KEY，无法启用 AI 分析模式。")
         self.settings = settings
+        self.max_output_tokens = max(int(max_output_tokens), 1)
         self._last_usage: LLMUsage | None = None
         if sdk_client is None:
             try:
-                from openai import OpenAI
+                from openai import DefaultHttpxClient, OpenAI
             except ImportError as exc:
                 raise LLMClientError(
                     "未安装 OpenAI SDK，无法启用 AI 分析模式。"
@@ -30,6 +36,7 @@ class OpenAIJDClient:
             sdk_client = OpenAI(
                 api_key=settings.openai_api_key,
                 timeout=settings.openai_timeout_seconds,
+                http_client=DefaultHttpxClient(follow_redirects=False),
             )
         self.client = sdk_client
 
@@ -53,7 +60,7 @@ class OpenAIJDClient:
                 instructions=PROMPT_PATH.read_text(encoding="utf-8"),
                 input=jd_text,
                 text_format=JobAnalysis,
-                max_output_tokens=1500,
+                max_output_tokens=self.max_output_tokens,
             )
             usage = getattr(response, "usage", None)
             if usage is not None:
@@ -62,6 +69,8 @@ class OpenAIJDClient:
                     output_tokens=coerce_token_count(
                         getattr(usage, "output_tokens", 0)
                     ),
+                    model=getattr(response, "model", None)
+                    or self.settings.openai_model,
                 )
             result = response.output_parsed
             if result is None:

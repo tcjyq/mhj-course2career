@@ -1,5 +1,65 @@
 # Course2Career 开发日志
 
+## 2026-09-26 C08-D1 精确 Provider 认证与证据门槛
+
+在无 VPN 环境生成的本机 `records.json`、仅记录最后一次 DeepSeek 运行的 `summary.md` 及 `fixture_diagnostics.json` 已交叉核对：Bailian `cn-beijing` / `qwen3.8-flash`、DeepSeek `global` / `deepseek-flash` 均为 VERIFIED、4/4 固定样例、usage 可用、5 次请求尝试、返回模型与请求一致且 `error_code` 为 null。每款模型的 4 条逐题诊断均通过；将这两条脱敏 `VerificationRecord` 精确写入受控认证文件，未加入其他模型或提交本地证据。没有在本轮重发真实 Provider 请求。
+
+远程 PostgreSQL PASS、备份恢复 PASS 和恢复后解密 PASS 依据此前独立合成远程演练记录；本轮未连接远端。Draft PR 先前提交的 PostgreSQL 3.12/3.14 CI 集成、备份恢复及解密 job 已核验成功，新认证提交仍需 CI 全绿。当前 `ARCHITECTURE_READY=yes`、`POSTGRES_CI_READY=yes`、`REMOTE_POSTGRES_READY=yes`、`BACKUP_RESTORE_READY=yes`、`PERSISTENCE_READY=yes`、`PROVIDER_VALIDATED=yes`；尚未进行 C08-D2 Release Gate，`RELEASE_READY=no`。不 merge、不部署、不改生产 Secrets 或数据库。
+
+## 2026-09-26 C08-D1 B2 逐题诊断（本地，未调用百炼）
+
+无 VPN 既有记录显示 `bailian` / `cn-beijing` / `qwen3.8-flash` 连接达 `SCHEMA_COMPATIBLE`，4 个固定样例仅过 1 个、在 `case_02_multiple` 停止；旧记录没有可判定根因的逐题细节。本轮保持 strict JSON Schema、原文 evidence、固定 fixtures 和无重试门槛不变，增加仅本机忽略目录内的逐题脱敏诊断；解析成功后的技能/证据业务断言失败使用 `FIXTURE_ASSERTION_FAILED`，不再误称 Schema 不兼容。新诊断在用户关闭 VPN 后显式运行脚本时才生成；原始记录和受控认证文件不变。离线全套回归 249 通过、2 跳过（独立 PostgreSQL 测试库未配置），Ruff lint、format 与 `git diff --check` 均通过。PR #2 保持 Draft，不 merge、不 deploy。
+
+## 2026-09-26 C08-D1 百炼真实验证续测
+
+本机现有 `BAILIAN_API_KEY`、`BAILIAN_WORKSPACE_ID` 与 `DEEPSEEK_API_KEY`（仅检查存在性）。查询北京 Workspace 官方目录中的精确候选 `qwen3.8-flash` 时，DNS 与 TCP 443 可达，但 TLS 握手 EOF；北京通用 DashScope 端点在 Python 和 Windows curl 上同样无法完成握手，而本机访问阿里云官网及 DeepSeek 域名的 TLS 成功。未收到目录 HTTP 响应，不能核对 Key 地域、Workspace、模型可见性或授权；收费推理请求 0 次、固定合成集执行 0 次，usage 和费用未知。百炼仍为 `PENDING`，`PROVIDER_VALIDATED=no`；待北京端点 TLS 可用后继续，不能改用其他区域端点。
+
+定向回归 32 项通过：`tests/test_c08_b2.py`、`tests/test_c08_c.py`、`tests/test_provider_registry.py`（pytest 临时目录放在 D 盘）。首次测试因默认 C 盘 pytest 临时目录权限不足出现 11 项 setup 错误，改用可写目录后通过。未执行全套回归、提交或部署。
+
+## 2026-09-25 C08-D1 远程恢复诊断
+
+独立远程恢复目标已有 8 张表和完整合成行数；新归档不含 `public` schema 条目，原恢复命令在首张已存在表处报冲突。目标默认 search path 不包含 `public`，因此恢复后校验改为仅会话内设置该路径。恢复脚本仅允许空目标或完整且符合预期的合成演练目标，使用 `--clean --if-exists --single-transaction` 原子恢复。远程 restore-only 已核对行数、正确密钥解密与错误密钥安全失败；不代表生产部署或供应商验证。
+
+## 2026-09-24 C08-D1 持久化证明与大陆供应商验证
+
+在 D0 的 PostgreSQL 合成集成测试后增加 CI 容器内 `pg_dump`→空库 `pg_restore`，核对持久表、schema 版本和恢复后密文解密；增加独立远程测试库脚本与[备份恢复操作说明](c08-backup-restore-runbook.md)。本地补测生产库不可达／TLS 不合格时无 SQLite 回退、错误主密钥安全失败，以及 Streamlit 根级 Secrets 与环境变量配置路径一致。CI、远程库和恢复演练的实际结果以运行记录为准，未运行的环节保持 PENDING。
+
+本机未提供 `C2C_TEST_DATABASE_URL`，DeepSeek、百炼、SiliconFlow 凭证也不可用；未运行独立远程 PostgreSQL 或真实大陆模型调用。`PERSISTENCE_READY=no`、`PROVIDER_VALIDATED=no`、`RELEASE_READY=no`。D1 feature 分支与 Draft PR 只用于 CI，不能合入或部署。
+
+## 2026-09-24 C08-C 大陆优先官方模型目录（本地，未发布）
+
+新增十家受控预设的目录策略：DeepSeek、百炼、SiliconFlow、MiniMax、OpenRouter、OpenAI、Anthropic、Gemini 动态读取官方模型 API，Kimi/GLM 暂用注明来源日期的短目录。官方可用性/能力/价格与 B2 真实验证分层；DeepSeek 当前 `deepseek-flash` 为默认候选，旧 `deepseek-v4-flash` 只作为兼容别名提示用户主动迁移。百炼按区域/Workspace 查询，MiniMax 区分国内与国际端点。缓存按用户、端点、Workspace 和 Key 版本隔离，支持 TTL、手动刷新与失败旧目录；B3 关闭即拒绝读取。Provider Hub 大陆优先，国际折叠；分析页按模型级证据排序并提示未知/未验证。文档与来源见 [模型目录](c08-model-discovery.md)、[官方矩阵](c08-provider-matrix.md)、[ADR 006](decisions/006-model-catalog-provenance-and-scope.md)。
+
+本地 Python 3.12/3.14 各 224 项离线测试通过；Ruff、格式、3.14 `pip check` 通过。隔离 Streamlit 浏览器用假账号/Key 验证 Free 用户开关、Kimi 目录选模与刷新、配置恢复、国际折叠、分析页全部已发现模型和未验证警告；390px `scrollWidth=390`，控制台 0 错误/警告。没有合法大陆 Key，本轮真实 discovery 和 B2 模型调用均为 0；所有真实兼容性仍待验证。
+
+## 2026-09-23 C08-B3 开发者模式自助启用（本地，未发布）
+
+普通注册用户可免费开启或关闭独立的 BYOK capability，不改变 Role、Plan 和平台系统 AI 额度。新 `user_byok_settings` 表持久化用户 ID、开关和更新时间；Admin 与历史 Developer Role/Plan 兼容。Key、Profile 与用户 Key 调用在服务层读取最新状态，关闭后拒绝新操作但保留 AES-256-GCM 密文。会员页把 Free/Pro 套餐演示与免费开发者模式分开，开发者页提供介绍、启用、Provider Hub 和关闭入口。决策见 [ADR 005](decisions/005-self-service-byok-capability.md)。
+
+权限与迁移回归覆盖 Free/Pro 额度、旧会话、跨用户隔离、历史用户、重复初始化与回滚。本轮浏览器使用隔离账号和假 Key，完成注册、登录、启用、保存、刷新后重新登录、关闭与重开；390px 页面宽度无整体溢出，见[截图](../screenshots/c08-b3-developer-mobile.png)。直接访问子路由与刷新时仍会出现 Streamlit `_stcore` 两条相对路径 404，页面可继续使用。本轮不进行真实供应商调用；最终检查结果见本次交付报告。未推送或部署。
+
+## 2026-09-23 C08-B2 真实 Provider 兼容性验证（本地，未发布）
+
+新增协议输出策略、Anthropic/Gemini/百炼小型 schema adapter、精确 Provider × 官方端点 × 模型验证记录、4 个固定合成 JD 和脱敏错误分类。连接测试最多达到 `SCHEMA_COMPATIBLE`，完整 fixture、usage、返回模型和原文 evidence 均通过才可标 `VERIFIED`；DeepSeek 历史 Auto-Safe 白名单不再直接显示为 B2 VERIFIED。百炼默认候选改为 `qwen3.8-flash`，OpenRouter 需模型 metadata 证明支持 strict schema。决策见 [ADR 004](decisions/004-provider-validation-evidence.md)，官方依据与真实记录见 [B2 验证报告](c08-provider-validation.md)。
+
+本次只检测环境变量存在性，不读取或输出凭证内容。OpenAI `gpt-5.6-luna` 与 Anthropic `claude-haiku-4-5-20251001` 各真实请求 1 次，均 HTTP 401／`AUTH_ERROR`；因此未执行后续 fixture，0 家 VERIFIED、0 家 CONNECTED、8 家无 Key PENDING。无 usage 回执，费用不可估算。原始错误、请求头、Key 和真实 JD 未写入文档或仓库；本地 JSON 与摘要位于 gitignored `outputs/c08-provider-validation/`。未推送、未部署、未改生产 Secrets。
+
+本地 Python 3.12 与 3.14 各 207 项 pytest 通过；Ruff lint、format、3.14 `pip check` 与 `git diff --check` 通过。此自动化结果只验证代码与 fake 编排，真实兼容性仍受可用凭证限制。C08-C 继续模型发现、能力、价格和上下文元数据。
+
+## 2026-09-23 C08-B1 主流 Provider BYOK 基础（本地，未发布）
+
+新增十家官方受控预设和四类协议路由，保留旧 OpenAI Responses 与 DeepSeek Auto-Safe；Developer/Admin 统一卡片可加密保存、更新、删除 Key，配置端点 ID／模型 ID，分析页只列当前账户已配置 Provider。新增 Anthropic Messages、Gemini Native 适配器、合成 JD 连接测试契约和模型级验证状态。SQLite 将旧 2/4 值 Key 约束事务化扩到十值，保留原密文与 nonce，新增用户 Profile 和费用 `estimated/unknown`。官方来源见 [Provider 矩阵](c08-provider-matrix.md)，架构决定见 [ADR 003](decisions/003-protocol-based-byok-provider-presets.md)。本轮只使用 fake Key/响应，未做真实供应商调用、推送或部署；验证结果见本次交付报告。
+
+安全复核时发现本地 OpenAI SDK 默认 HTTP 客户端会跟随重定向；本阶段为 OpenAI Responses、DeepSeek 调用／目录和共享 Chat 显式禁用重定向，原生 Anthropic/Gemini 同样拒绝重定向。本地隔离浏览器已走通游客/Free 权限、Developer 添加／更新／删除／重新登录后持久化、Admin 十卡与 390px 无整体溢出；强制浏览器刷新会丢失 Streamlit 会话并要求重新登录。直接刷新子路由时浏览器记录两条 Streamlit `_stcore` 相对路径 404，页面可继续显示；未将其归为供应商调用结果。
+
+## 2026-09-23 C08-A 多供应商基础（本地，未发布）
+
+从 `3c9378683640bfbeb1ddcaec1a909a8ca0286c82` 创建 `feature/c08-multi-provider`。新增四项受控 Provider 预设及百炼/OpenRouter 共享兼容 Chat 适配器；保留 DeepSeek Auto-Safe 和 OpenAI Responses 路径。免费套餐系统AI固定 DeepSeek；用户 Key 与系统额度分离。旧 SQLite API Key 表约束事务化扩展，密文原样保留。百炼/OpenRouter 尚未开放页面或真实调用；设计、验证和后续阶段见 [C08 设计](c08-multi-provider-design.md)。
+
+2026-09-23：完成 C08-OSS 开源架构与许可研究，确认 C08-B 为十家主流受控预设 + Developer BYOK，C08-C 为模型发现，C08-D 为自定义 Provider。研究报告见 [C08-OSS](c08-open-source-research.md)。本轮仅更新文档，没有移植第三方代码、增加依赖或进行真实 API 调用。
+
+本地验证：Python 3.12 与 3.14 全量 pytest 通过，Ruff 检查与格式检查通过，3.14 `pip check` 通过；隔离浏览器以假平台 Key 验证游客系统AI仅显示 DeepSeek，控制台无错误或警告，未发出模型请求。以上不代表真实供应商兼容性验证或生产发布。
+
 ## 记录规则
 
 每次完成一个可验证的开发阶段后追加记录，包含日期、目标、完成内容、验证结果、技术决策和后续任务。时间统一使用东八区。
@@ -478,3 +538,16 @@ Streamlit 的当前页面内容位于浏览器会话状态中，刷新、重新�
 
 - 新增旧仓储缓存兼容测试，验证模型结果只处理一次且 Token 仍能落库。
 - 120 项自动化测试、Ruff、格式和差异检查将在提交前统一验证。
+
+## 2026-09-24 C08-D0 本地开发
+
+- 审计七张 SQLite 业务表并新增 `schema_migrations`；生产通过标准 PostgreSQL URL 与 TLS，缺失或不可用时安全停止。
+- 加入合成 SQLite→PostgreSQL 迁移、独立数据库 CI job、受控生产验证记录与长期加密主密钥部署说明。
+- Kimi 与 MiniMax 精确 ID 已按官方目录复核；GLM 官方页面请求超时，保持未验证候选。大陆真实模型验证、远端 CI 和备份恢复仍待证据，不推送或部署。
+
+## 2026-09-26 C08-D2 Pre-Release Blocker Closure
+
+- D1 已在 Draft PR 完成 PostgreSQL CI、独立远程合成库、备份恢复与 Bailian/DeepSeek 两款精确模型认证；D2 未重复真实 Provider 请求，也未操作生产资源。
+- 作品集公开 Demo 决策：当前 Community Cloud SQLite 是 disposable demo state；C08 使用全新、独立的 production PostgreSQL，旧账号、历史和临时 Key 不迁移，也不执行生产自动迁移或在线切换。
+- 生产入口强制 `sslmode=verify-full` 且数据库失败时安全停止；分析页在 AI 技能提取前提示第三方 JD 传输、BYOK 费用和未知价格，本地规则提示无第三方模型传输。修复同浏览器切换账号后连接状态提示可能跨账号显示的问题。
+- 使用隔离合成账户、假 Key 和本地 Provider 完成离线端到端、浏览器桌面/390px 回归、独立只读安全审查与 Git 历史凭证模式扫描。精确结果和限制见[候选报告](c08-d2-release-candidate.md)。

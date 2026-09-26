@@ -36,8 +36,8 @@ AI 只提取 JD 技能；原文引用核对、映射、评分、门槛与学习�
 ## 核心能力
 
 - 下载并上传课程 Excel 模板，提供字段、范围和重复值校验。
-- 通过本地规则、OpenAI 或 DeepSeek 提取岗位技能。
-- DeepSeek 支持 Auto-Safe 模型发现：只在官方当前可用且已验证的模型中自动选择，并在模型下线时执行一次受控回退。
+- 通过本地规则、已配置的系统 OpenAI/DeepSeek，或已启用开发者模式的登录用户及历史 Developer/Admin 自带 Key 的官方 Provider 预设提取岗位技能。
+- DeepSeek 支持 Auto-Safe 模型发现：只在官方当前可用且列入历史兼容白名单的模型中自动选择，并在模型下线时执行一次受控回退；白名单不等于 C08-B2 当前真实验证状态。
 - 规范化技能并允许用户在分析前人工确认。
 - 采集教育、项目、实习、成长潜力和到岗条件，并区分“未填写”与“目前没有”。
 - 通过课程、项目、实习和相邻技能迁移计算单项技能支撑分。
@@ -48,6 +48,10 @@ AI 只提取 JD 技能；原文引用核对、映射、评分、门槛与学习�
 - 支持游客、普通用户、开发者和管理员权限。
 - 支持 AI 日额度、历史分析记录和轻量管理员 Dashboard。
 - 开发者 API Key 使用 AES-256-GCM 加密后保存。
+- C08-B1 在本地分支提供十家受控官方预设，按四类协议适配；免费套餐系统 AI 仍固定 DeepSeek。[设计与边界](docs/c08-multi-provider-design.md) · [开源架构研究](docs/c08-open-source-research.md)。
+- C08-B3 在本地分支允许普通登录用户免费启用开发者模式并管理自己的加密 API Key。启用或关闭不改变 Free/Pro 套餐及系统 AI 日额度；关闭后停止新的 BYOK 使用，已保存的 Key 保留，可重新开启。历史 Developer/Admin 权限继续可用。会员页的 Free/Pro 升级仍只是演示，线上状态以部署版本为准。
+- C08-B2 增加模型级真实验证记录、固定合成 JD 套件及原生 schema adapter。2026-09-26 本机完成 Bailian `cn-beijing` / `qwen3.8-flash` 与 DeepSeek `global` / `deepseek-flash` 的精确模型验证：两者均为 4/4、usage 可用、返回模型一致且无错误，受控认证文件只包含这两个模型。OpenAI 与 Anthropic 的历史请求均为 401，不能推广认证到其他模型或整家 Provider。逐题脱敏诊断留在 gitignored 目录；本轮只更新 feature 分支，未发布。D2 候选审查见[报告](docs/c08-d2-release-candidate.md)。[真实验证报告](docs/c08-provider-validation.md)。
+- C08-C 在本地分支提供大陆六家优先、国际四家可选的官方模型目录：DeepSeek、百炼、SiliconFlow、MiniMax 等动态发现，Kimi/GLM 有日期的官方静态候选；能力、价格来源和 B2 真实验证分开展示。缓存按用户、端点、Workspace 和 Key 版本隔离，刷新失败保留过期目录；关闭开发者模式即禁止读取和刷新。仅上述两条精确模型记录已 VERIFIED；目录价格不等于实际账单。`deepseek-v4-flash` 作为兼容旧名提示，用户 Profile 不会自动迁移。[目录说明](docs/c08-model-discovery.md) · [官方来源矩阵](docs/c08-provider-matrix.md)。C08-D 才讨论自定义端点。
 - 开发者 API Key 提交后立即清空输入框与对应会话状态，页面只保留末四位元数据。
 - 页面切换采用隔离渲染，避免首页或上一页内容残留到当前页面。
 
@@ -111,8 +115,12 @@ Copy-Item .env.example .env
 | `OPENAI_MODEL` | OpenAI 模型名称 | 否 |
 | `DEEPSEEK_API_KEY` | 平台 DeepSeek 调用 | 仅 DeepSeek 系统模式 |
 | `DEEPSEEK_MODEL` | DeepSeek 模型名称 | 否 |
+| `BAILIAN_REGION` | 百炼受控端点区域（北京/新加坡/美国/香港）；开发者页面可单独选择 | 否 |
+| `BAILIAN_BASE_URL` | 可覆盖为注册表列出的官方百炼区域端点；拒绝任意 URL | 否 |
+| `BAILIAN_INPUT_COST_PER_MILLION` / `BAILIAN_OUTPUT_COST_PER_MILLION` | 百炼估算费率，默认 0 表示未配置 | 否 |
+| `OPENROUTER_INPUT_COST_PER_MILLION` / `OPENROUTER_OUTPUT_COST_PER_MILLION` | OpenRouter 估算费率，默认 0 表示未配置 | 否 |
 | `DEEPSEEK_MODEL_MODE` | `auto_safe` 自动安全选择或 `pinned` 固定模型 | 否 |
-| `DEEPSEEK_MODEL_PREFERENCE` | 已验证模型的优先顺序 | 否 |
+| `DEEPSEEK_MODEL_PREFERENCE` | 历史兼容白名单内模型的优先顺序；不代表 B2 实测状态 | 否 |
 | `DEEPSEEK_MODEL_CACHE_SECONDS` | 官方模型目录缓存时间 | 否 |
 | `DEEPSEEK_MODEL_STALE_SECONDS` | 目录故障时允许使用旧缓存的时间 | 否 |
 | `DEEPSEEK_MAX_OUTPUT_TOKENS` | DeepSeek 单次最大输出 Token | 否 |
@@ -193,7 +201,7 @@ course2career/
 - 院校分类不对海外教育质量作统一推断；无法可靠判断时使用中性分并说明判断限制。
 - 未填写的信息使用中性值，不按零分处理，但会降低数据完整度和资料完整度等级。
 - 课程、项目和实习均依赖用户提供的信息，无法替代招聘方核验和实际面试。
-- 当前版本使用 SQLite，适合本地和单实例演示。
+- 当前线上版本使用临时 SQLite，适合本地和单实例演示；C08 生产版本要求独立 PostgreSQL。
 - 会员页面为权限模型演示，不接入真实支付。
 
 ## 参与贡献
@@ -204,7 +212,7 @@ course2career/
 
 登录用户完成分析后，报告会以账号归属的快照保存。刷新、重新登录或再次进入“个人分析”后，可在“最近分析”中选择并重新打开历史报告。相同时间、岗位和分数的记录仍会按唯一报告 ID 分别保留。v2.1 上线前生成的报告会以“旧版技能匹配报告”原样展示，不会伪装成五维岗位适配度。课程 Excel、完整 JD 与表单编辑内容不会被自动回填，以减少长期保存的个人和招聘数据。
 
-当前线上演示仍使用 SQLite。Streamlit Community Cloud 的临时磁盘不保证长期保存 SQLite 文件；如需长期保留线上账号、报告和开发者 API Key，下一步应迁移至外部 PostgreSQL。
+当前线上演示仍使用 SQLite，其状态定义为 **disposable demo state**。C08 发布将从全新、独立的 production PostgreSQL 开始；旧 Demo 账号、历史和临时 Key 不迁移，也不做自动迁移或在线切换。PostgreSQL CI、独立远程合成库、备份恢复演练和上述两款精确模型验证已有 D1 证据。用户已确认独立生产 Neon 项目及数据库、长期加密主密钥和 Streamlit 根级 Secrets 配置完成；本轮未读取 Secret 值或执行生产运行时验收。PR #2 保持 Draft，`RELEASE_READY=no`。见[候选报告](docs/c08-d2-release-candidate.md)、[持久化说明](docs/c08-production-persistence.md)和[备份恢复操作说明](docs/c08-backup-restore-runbook.md)。
 
 ## License
 

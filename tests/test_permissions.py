@@ -64,8 +64,9 @@ def test_plan_capabilities_and_ai_limits() -> None:
     authorize(developer, Permission.USE_OWN_API_KEY)
 
 
-def test_plan_cannot_cross_role_security_boundary() -> None:
-    inconsistent = Principal(role=Role.USER, plan=Plan.DEVELOPER)
+def test_legacy_developer_plan_does_not_grant_admin_permissions() -> None:
+    legacy = Principal(role=Role.USER, plan=Plan.DEVELOPER)
 
+    authorize(legacy, Permission.USE_OWN_API_KEY)
     with pytest.raises(PermissionDeniedError):
-        authorize(inconsistent, Permission.USE_OWN_API_KEY)
+        authorize(legacy, Permission.MANAGE_SYSTEM_CONFIG)

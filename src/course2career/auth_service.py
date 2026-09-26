@@ -3,6 +3,8 @@ import sqlite3
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
+import psycopg
+
 from course2career.password_security import (
     hash_password,
     is_supported_password_hash,
@@ -65,7 +67,7 @@ class AuthService:
         )
         try:
             self.repository.add(user)
-        except sqlite3.IntegrityError as exc:
+        except (sqlite3.IntegrityError, psycopg.IntegrityError) as exc:
             raise RegistrationError("该用户名已存在。") from exc
         return _to_principal(user)
 
@@ -105,7 +107,7 @@ class AuthService:
             raise InvalidCredentialsError("用户名或密码错误。")
         if attempt_scope:
             self.repository.clear_failed_logins(attempt_scope, normalized_username)
-        return _to_principal(user)
+        return _to_principal(user, byok_enabled=self._byok_enabled(user.id))
 
     def refresh_principal(self, principal: Principal) -> Principal:
         if principal.user_id is None or principal.session_version is None:
@@ -117,7 +119,14 @@ class AuthService:
             or getattr(user, "session_version", 1) != principal.session_version
         ):
             raise InvalidSessionError("登录状态已失效，请重新登录。")
-        return _to_principal(user)
+        return _to_principal(user, byok_enabled=self._byok_enabled(user.id))
+
+    def _byok_enabled(self, user_id: str) -> bool:
+        get_mode = getattr(self.repository, "get_byok_mode", None)
+        if not callable(get_mode):
+            return False
+        mode = get_mode(user_id)
+        return mode is not None and mode.byok_enabled
 
     def ensure_bootstrap_admin(
         self,
@@ -174,7 +183,7 @@ class AuthService:
         )
         try:
             self.repository.add(user)
-        except sqlite3.IntegrityError as exc:
+        except (sqlite3.IntegrityError, psycopg.IntegrityError) as exc:
             existing_user = self.repository.find_by_normalized_username(
                 normalized_username
             )
@@ -211,11 +220,12 @@ def _resolve_admin_password_hash(
     return hash_password(password)
 
 
-def _to_principal(user: StoredUser) -> Principal:
+def _to_principal(user: StoredUser, *, byok_enabled: bool = False) -> Principal:
     return Principal(
         user_id=user.id,
         username=user.username,
         role=user.role,
         plan=user.plan,
         session_version=getattr(user, "session_version", 1),
+        byok_enabled=byok_enabled,
     )

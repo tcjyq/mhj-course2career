@@ -44,6 +44,7 @@ def test_deepseek_provider_uses_json_mode_and_validates_domain_model() -> None:
     assert result.job_title == "数据分析师"
     assert completions.kwargs["response_format"] == {"type": "json_object"}
     assert completions.kwargs["model"] == "deepseek-v4-flash"
+    assert completions.kwargs["extra_body"] == {"thinking": {"type": "disabled"}}
     assert provider.last_usage is not None
     assert provider.last_usage.input_tokens == 210
     assert provider.last_usage.output_tokens == 90
@@ -118,3 +119,20 @@ def test_deepseek_provider_does_not_fallback_on_non_model_errors() -> None:
 
     assert completions.call_count == 1
     assert provider.model_name == "deepseek-v4-flash"
+
+
+@pytest.mark.parametrize("content", ["", '{"skills": ['])
+def test_deepseek_empty_or_truncated_json_is_not_schema_success(content: str) -> None:
+    completions = SimpleNamespace(
+        create=lambda **_kwargs: SimpleNamespace(
+            choices=[SimpleNamespace(message=SimpleNamespace(content=content))],
+            usage=SimpleNamespace(prompt_tokens=20, completion_tokens=10),
+            model="deepseek-v4-flash",
+        )
+    )
+    provider = DeepSeekProvider(
+        api_key="fake-key",
+        sdk_client=SimpleNamespace(chat=SimpleNamespace(completions=completions)),
+    )
+    with pytest.raises(ProviderError):
+        provider.extract_job_skills("合成岗位：要求 SQL。")

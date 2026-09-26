@@ -1,10 +1,12 @@
+from collections.abc import Callable
 from datetime import UTC, datetime
 
 from pydantic import BaseModel, ConfigDict
 
+from course2career.byok_mode import require_current_byok_access
 from course2career.key_encryption import APIKeyCipher, EncryptedSecret
 from course2career.llm_provider import ProviderName
-from course2career.permissions import Permission, Principal, authorize
+from course2career.permissions import Principal
 from course2career.product_repository import (
     SQLiteProductRepository,
     StoredAPIKey,
@@ -37,12 +39,15 @@ class APIKeyService:
         principal: Principal,
         provider: ProviderName,
         api_key: str,
+        validator: Callable[[str], None] | None = None,
     ) -> APIKeyMetadata:
-        authorize(principal, Permission.CONFIGURE_OWN_API_KEY)
+        require_current_byok_access(principal, self.repository)
         user_id = _require_user_id(principal)
         cleaned_key = api_key.strip()
         if not 8 <= len(cleaned_key) <= 512:
             raise ValueError("API Key长度无效。")
+        if validator is not None:
+            validator(cleaned_key)
         encrypted = self.cipher.encrypt(cleaned_key, user_id=user_id, provider=provider)
         updated_time = datetime.now(UTC).isoformat()
         self.repository.upsert_api_key(
@@ -62,7 +67,7 @@ class APIKeyService:
         )
 
     def get_key(self, principal: Principal, provider: ProviderName) -> str:
-        authorize(principal, Permission.USE_OWN_API_KEY)
+        require_current_byok_access(principal, self.repository)
         user_id = _require_user_id(principal)
         stored = self.repository.get_api_key(user_id, provider.value)
         if stored is None:
@@ -77,7 +82,7 @@ class APIKeyService:
         )
 
     def list_keys(self, principal: Principal) -> list[APIKeyMetadata]:
-        authorize(principal, Permission.CONFIGURE_OWN_API_KEY)
+        require_current_byok_access(principal, self.repository)
         user_id = _require_user_id(principal)
         return [
             APIKeyMetadata(
@@ -89,7 +94,7 @@ class APIKeyService:
         ]
 
     def delete_key(self, principal: Principal, provider: ProviderName) -> None:
-        authorize(principal, Permission.CONFIGURE_OWN_API_KEY)
+        require_current_byok_access(principal, self.repository)
         self.repository.delete_api_key(_require_user_id(principal), provider.value)
 
 

@@ -1,8 +1,10 @@
 import sqlite3
+from contextlib import nullcontext
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
+from course2career.database_backend import DatabaseBackend
 from course2career.permissions import Plan, Role
 
 
@@ -24,8 +26,10 @@ class SQLiteUserRepository:
 
     def __init__(self, database_path: str | Path) -> None:
         self.database_path = Path(database_path)
-        self.database_path.parent.mkdir(parents=True, exist_ok=True)
-        self._initialize_schema()
+        self.backend = DatabaseBackend(database_path=self.database_path)
+        from course2career.database_migrations import migrate_sqlite
+
+        migrate_sqlite(self, target=1)
 
     def add(self, user: StoredUser) -> None:
         with self._connect() as connection:
@@ -157,13 +161,16 @@ class SQLiteUserRepository:
         return cursor.rowcount == 1
 
     def _connect(self) -> sqlite3.Connection:
-        connection = sqlite3.connect(self.database_path, timeout=10)
-        connection.row_factory = sqlite3.Row
-        connection.execute("PRAGMA foreign_keys = ON")
-        return connection
+        return self.backend.connect()
 
-    def _initialize_schema(self) -> None:
-        with self._connect() as connection:
+    def _initialize_schema(self, migration_connection=None) -> None:
+        from course2career.database_migrations import execute_sqlite_statements
+
+        with (
+            nullcontext(migration_connection)
+            if migration_connection
+            else self._connect() as connection
+        ):
             connection.execute(
                 """
                 CREATE TABLE IF NOT EXISTS users (
@@ -213,7 +220,8 @@ class SQLiteUserRepository:
                 WHERE plan = 'free' AND role IN ('developer', 'admin')
                 """
             )
-            connection.executescript(
+            execute_sqlite_statements(
+                connection,
                 """
                 CREATE TABLE IF NOT EXISTS login_attempts (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -225,7 +233,7 @@ class SQLiteUserRepository:
                     ON login_attempts(
                         scope_id, username_normalized, attempted_time
                     );
-                """
+                """,
             )
 
 

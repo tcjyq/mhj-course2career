@@ -4,15 +4,23 @@ from pathlib import Path
 import pandas as pd
 from streamlit.testing.v1 import AppTest
 
+from course2career.api_key_service import APIKeyService
 from course2career.auth_service import AuthService
-from course2career.permissions import Plan, Role
+from course2career.key_encryption import APIKeyCipher
+from course2career.llm_provider import ProviderName
+from course2career.permissions import Plan, Principal, Role
 from course2career.product_repository import SQLiteProductRepository
+from course2career.provider_profile import ProviderProfileService
+from course2career.user_repository import StoredUser
+
+APP_PATH = Path(__file__).resolve().parents[1] / "app.py"
 
 
 def _analysis_app(
     tmp_path: Path,
     *,
     developer: bool = False,
+    system_keys: bool = False,
 ) -> AppTest:
     database_path = (tmp_path / "analysis.db").as_posix()
     principal_source = (
@@ -31,6 +39,12 @@ principal = Principal()
 key_service = None
 """
     )
+    settings_source = (
+        'Settings(openai_api_key="fake-openai-key", '
+        'deepseek_api_key="fake-deepseek-key")'
+        if system_keys
+        else "Settings(openai_api_key=None, deepseek_api_key=None)"
+    )
     return AppTest.from_string(
         f"""
 from course2career.access_services import AIUsageService, AnalysisRecordService
@@ -40,10 +54,11 @@ from course2career.key_encryption import APIKeyCipher
 from course2career.permissions import Plan, Principal, Role
 from course2career.product_repository import SQLiteProductRepository
 from course2career.provider_factory import LLMProviderFactory
+from course2career.provider_profile import ProviderProfileService
 from course2career.ui.analysis_page import render_analysis_page
 
 repository = SQLiteProductRepository(r"{database_path}")
-settings = Settings(openai_api_key=None, deepseek_api_key=None)
+settings = {settings_source}
 {principal_source}
 render_analysis_page(
     principal,
@@ -53,6 +68,7 @@ render_analysis_page(
     AnalysisRecordService(repository),
     key_service,
     "guest-test",
+    profile_service=ProviderProfileService(repository) if {developer!r} else None,
 )
 """
     ).run()
@@ -172,8 +188,59 @@ render_analysis_page(
     ).run()
 
 
+def test_analysis_notice_distinguishes_local_and_paid_provider(tmp_path: Path) -> None:
+    app = _analysis_app(tmp_path, system_keys=True)
+    assert not app.exception
+    assert any("不会发送给第三方模型" in item.value for item in app.caption)
+    assert not any("JD 会发送给" in item.value for item in app.info)
+
+    next(item for item in app.radio if item.label == "技能提取模式").set_value(
+        "系统AI"
+    ).run()
+    assert not app.exception
+    assert any("JD 会发送给当前选择的第三方模型" in item.value for item in app.info)
+    assert any("费用未知/未配置" in item.value for item in app.caption)
+
+
+def test_analysis_notice_handles_provider_without_configured_rates(
+    tmp_path: Path,
+) -> None:
+    repository = SQLiteProductRepository(tmp_path / "analysis.db")
+    repository.add(
+        StoredUser(
+            id="developer-test",
+            username="developer",
+            username_normalized="developer",
+            password_hash="not-used",
+            role=Role.DEVELOPER,
+            plan=Plan.DEVELOPER,
+            created_time="2026-08-03T00:00:00+00:00",
+        )
+    )
+    principal = Principal(
+        role=Role.DEVELOPER,
+        plan=Plan.DEVELOPER,
+        user_id="developer-test",
+        username="developer",
+    )
+    APIKeyService(repository, APIKeyCipher(bytes(range(32)))).save_key(
+        principal, ProviderName.ANTHROPIC, "synthetic-key-never-sent"
+    )
+    ProviderProfileService(repository).save(
+        principal, ProviderName.ANTHROPIC, "global", "claude-sonnet-4-5"
+    )
+
+    app = _analysis_app(tmp_path, developer=True)
+    next(item for item in app.radio if item.label == "技能提取模式").set_value(
+        "开发者API Key"
+    ).run()
+    assert not app.exception
+    assert any("Anthropic Claude" in item.value for item in app.info)
+    assert any("费用未知/未配置" in item.value for item in app.caption)
+
+
 def test_app_initial_page_is_product_home() -> None:
-    app = AppTest.from_file("app.py").run()
+    app = AppTest.from_file(APP_PATH).run()
 
     assert not app.exception
     assert app.title[0].value == "把学过的课程，翻译成求职能力"
@@ -244,7 +311,7 @@ def test_app_bootstraps_owner_admin_from_environment(
     monkeypatch.setenv("ADMIN_PASSWORD", "unique-admin-pass-123")
     monkeypatch.delenv("ADMIN_PASSWORD_HASH", raising=False)
 
-    app = AppTest.from_file("app.py").run()
+    app = AppTest.from_file(APP_PATH).run()
 
     assert not app.exception
     principal = AuthService(SQLiteProductRepository(database_path)).authenticate(
@@ -305,6 +372,22 @@ def test_guest_analysis_hides_system_ai_without_platform_key(tmp_path: Path) -> 
     assert any(
         "公开 Demo 默认使用“本地规则”" in caption.value for caption in app.caption
     )
+
+
+def test_free_system_ai_only_shows_deepseek_when_both_platform_keys_exist(
+    tmp_path: Path,
+) -> None:
+    app = _analysis_app(tmp_path, system_keys=True)
+    extraction_mode = next(
+        radio for radio in app.radio if radio.label == "技能提取模式"
+    )
+    assert extraction_mode.options == ["本地规则", "系统AI"]
+
+    extraction_mode.set_value("系统AI").run()
+
+    provider = next(box for box in app.selectbox if box.label == "模型供应商")
+    assert not app.exception
+    assert provider.options == ["DeepSeek"]
 
 
 def test_analysis_page_upload_invalid_excel_shows_readable_error(
@@ -439,9 +522,10 @@ render_developer_page(
     ).run()
 
     assert not analysis_app.exception
-    assert "开发者API Key" in analysis_app.radio[0].options
+    assert analysis_app.radio[0].options == ["本地规则"]
     assert not key_app.exception
-    assert key_app.title[0].value == "开发者API Key"
+    assert key_app.title[0].value == "我的 AI Provider"
+    assert len([box for box in key_app.selectbox if box.label == "官方端点"]) == 10
 
 
 def test_developer_api_key_input_is_cleared_after_save(tmp_path: Path) -> None:
@@ -482,13 +566,19 @@ render_developer_page(
 """
     ).run()
 
-    original_widget_key = app.text_input[0].key
-    app.text_input[0].set_value("sk-test-secret-value")
-    app.button[-1].click().run(timeout=5)
+    secret_input = next(
+        item for item in app.text_input if item.label == "API Key（更新时填写新 Key）"
+    )
+    original_widget_key = secret_input.key
+    secret_input.set_value("sk-test-secret-value")
+    next(item for item in app.button if item.label == "保存配置").click().run(timeout=5)
 
     assert not app.exception
-    assert app.text_input[0].value == ""
-    assert app.text_input[0].key != original_widget_key
+    new_secret_input = next(
+        item for item in app.text_input if item.label == "API Key（更新时填写新 Key）"
+    )
+    assert new_secret_input.value == ""
+    assert new_secret_input.key != original_widget_key
 
 
 def test_quota_and_membership_pages_render(tmp_path: Path) -> None:
@@ -554,7 +644,7 @@ render_admin_dashboard(
         "今日分析次数",
         "AI调用次数",
         "Token消耗",
-        "预计费用",
+        "已配置费率的预计费用",
     }.issubset({metric.label for metric in app.metric})
 
 

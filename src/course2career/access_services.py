@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 
 from pydantic import BaseModel, ConfigDict
 
+from course2career.byok_mode import require_current_byok_access
 from course2career.llm_provider import LLMUsage
 from course2career.models import AdaptabilityReport, AnalysisReport
 from course2career.permissions import (
@@ -55,12 +56,10 @@ class AIUsageService:
         guest_session_id: str | None = None,
         provider: str = "openai",
     ) -> str:
-        permission = (
-            Permission.USE_OWN_API_KEY
-            if key_mode == "user"
-            else Permission.USE_SYSTEM_AI
-        )
-        authorize(principal, permission)
+        if key_mode == "user":
+            require_current_byok_access(principal, self.repository)
+        else:
+            authorize(principal, Permission.USE_SYSTEM_AI)
         limit = daily_ai_limit(principal, key_mode)
         if principal.user_id is None and not guest_session_id:
             raise ValueError("游客调用必须提供匿名会话标识。")
@@ -85,20 +84,32 @@ class AIUsageService:
         *,
         success: bool,
         usage: LLMUsage | None = None,
-        input_cost_per_million: float = 0.0,
-        output_cost_per_million: float = 0.0,
+        input_cost_per_million: float | None = None,
+        output_cost_per_million: float | None = None,
     ) -> None:
         input_tokens = usage.input_tokens if usage is not None else 0
         output_tokens = usage.output_tokens if usage is not None else 0
+        cost_known = (
+            input_cost_per_million is not None
+            and output_cost_per_million is not None
+            and input_cost_per_million > 0
+            and output_cost_per_million > 0
+        )
         estimated_cost = (
-            input_tokens * max(input_cost_per_million, 0.0)
-            + output_tokens * max(output_cost_per_million, 0.0)
-        ) / 1_000_000
+            (
+                input_tokens * input_cost_per_million
+                + output_tokens * output_cost_per_million
+            )
+            / 1_000_000
+            if cost_known
+            else 0.0
+        )
         completion = {
             "status": "success" if success else "failed",
             "input_tokens": input_tokens,
             "output_tokens": output_tokens,
             "cost": estimated_cost,
+            "cost_status": "estimated" if cost_known else "unknown",
         }
         try:
             self.repository.complete_ai_call(
@@ -109,9 +120,15 @@ class AIUsageService:
         except TypeError as exc:
             # Streamlit Cloud 热更新时，cache_resource 可能短暂保留旧仓储实例。
             # 旧接口不接受 model，但仍能安全回写状态、Token 与费用。
-            if "unexpected keyword argument 'model'" not in str(exc):
+            if not any(
+                f"unexpected keyword argument '{name}'" in str(exc)
+                for name in ("model", "cost_status")
+            ):
                 raise
-            self.repository.complete_ai_call(usage_id, **completion)
+            fallback = {
+                key: value for key, value in completion.items() if key != "cost_status"
+            }
+            self.repository.complete_ai_call(usage_id, **fallback)
 
     def get_quota_status(
         self,
@@ -119,6 +136,8 @@ class AIUsageService:
         key_mode: str,
         guest_session_id: str | None = None,
     ) -> AIQuotaStatus:
+        if key_mode == "user":
+            require_current_byok_access(principal, self.repository)
         limit = daily_ai_limit(principal, key_mode)
         if principal.user_id is None and not guest_session_id:
             raise ValueError("游客额度查询必须提供匿名会话标识。")

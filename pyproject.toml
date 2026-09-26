@@ -11,11 +11,13 @@ requires-python = ">=3.11"
 license = "MIT"
 dependencies = [
     "cryptography>=49,<50",
+    "httpx>=0.28,<1",
     "openai>=2.46,<3",
     "openpyxl>=3.1,<4",
     "pandas>=3,<4",
     "pydantic>=2.13,<3",
     "python-dotenv>=1.2,<2",
+    "psycopg[binary]>=3.3,<4",
     "streamlit>=1.60,<2",
 ]
 
@@ -27,6 +29,9 @@ dev = [
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+course2career = ["verified_models.json"]
 
 [tool.ruff]
 line-length = 88

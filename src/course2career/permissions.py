@@ -40,6 +40,7 @@ class Principal(BaseModel):
     user_id: str | None = None
     username: str | None = None
     session_version: int | None = None
+    byok_enabled: bool = False
 
 
 class PermissionDeniedError(PermissionError):
@@ -63,8 +64,6 @@ ROLE_PERMISSIONS = {
             Permission.USE_SYSTEM_AI,
             Permission.SAVE_ANALYSIS,
             Permission.VIEW_OWN_ANALYSES,
-            Permission.CONFIGURE_OWN_API_KEY,
-            Permission.USE_OWN_API_KEY,
             Permission.VIEW_ADVANCED_REPORT,
         }
     ),
@@ -96,8 +95,6 @@ PLAN_PERMISSIONS = {
             Permission.SAVE_ANALYSIS,
             Permission.VIEW_OWN_ANALYSES,
             Permission.VIEW_ADVANCED_REPORT,
-            Permission.CONFIGURE_OWN_API_KEY,
-            Permission.USE_OWN_API_KEY,
         }
     ),
     Plan.ADMIN: frozenset(Permission),
@@ -112,7 +109,19 @@ PLAN_SYSTEM_AI_DAILY_LIMITS = {
 
 
 def authorize(principal: Principal, permission: Permission) -> None:
-    """在业务动作前同时执行服务端角色和套餐权限判断。"""
+    """Role 管管理权限，Plan 管平台能力，BYOK 独立授权。"""
+
+    if permission in {
+        Permission.CONFIGURE_OWN_API_KEY,
+        Permission.USE_OWN_API_KEY,
+    }:
+        if principal.role != Role.GUEST and (
+            principal.role in {Role.ADMIN, Role.DEVELOPER}
+            or principal.plan == Plan.DEVELOPER
+            or (principal.user_id is not None and principal.byok_enabled)
+        ):
+            return
+        raise PermissionDeniedError("请先启用开发者模式。")
 
     if (
         permission not in ROLE_PERMISSIONS[principal.role]

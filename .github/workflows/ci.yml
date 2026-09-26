@@ -29,3 +29,45 @@ jobs:
         run: ruff format --check .
       - name: Test
         run: pytest
+
+  postgres-integration:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12", "3.14"]
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: course2career
+          POSTGRES_PASSWORD: synthetic-ci-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d course2career"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      C08_TEST_DATABASE_URL: postgresql://postgres:synthetic-ci-only@localhost:5432/course2career?sslmode=disable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - name: Install dependencies
+        run: python -m pip install -r requirements-dev.txt
+      - name: PostgreSQL integration
+        run: pytest -m postgres -q
+      - name: Backup and restore synthetic database
+        run: |
+          container_id="$(docker ps --filter ancestor=postgres:17 --format '{{.ID}}' | head -n 1)"
+          test -n "$container_id"
+          docker exec -e PGPASSWORD=synthetic-ci-only "$container_id" pg_dump -U postgres -d course2career --format=custom --file=/tmp/c08.dump
+          docker exec -e PGPASSWORD=synthetic-ci-only "$container_id" createdb -U postgres course2career_restore
+          docker exec -e PGPASSWORD=synthetic-ci-only "$container_id" pg_restore -U postgres -d course2career_restore --exit-on-error /tmp/c08.dump
+      - name: Verify restored assets and decryption
+        env:
+          C08_TEST_RESTORE_DATABASE_URL: postgresql://postgres:synthetic-ci-only@localhost:5432/course2career_restore?sslmode=disable
+        run: pytest -m postgres_restore -q

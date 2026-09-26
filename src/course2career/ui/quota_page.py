@@ -48,7 +48,11 @@ def render_quota_page(
         else:
             st.write("管理员平台AI调用不受每日次数限制。")
 
-    if principal.plan in {Plan.DEVELOPER, Plan.ADMIN}:
+    if (
+        principal.byok_enabled
+        or principal.plan in {Plan.DEVELOPER, Plan.ADMIN}
+        or principal.role in {Role.DEVELOPER, Role.ADMIN}
+    ):
         with st.container(border=True):
             st.markdown("### 自带API Key")
             st.write("使用自己的API Key不消耗平台每日额度，费用由对应供应商计费。")

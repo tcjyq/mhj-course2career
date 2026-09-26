@@ -24,6 +24,9 @@
 - 未提取到技能时阻止分析并给出可读提示。
 - 用户可编辑或排除技能，至少保留一项后才能生成报告。
 - DeepSeek 默认采用 Auto-Safe：仅从官方目录中“当前可用且已通过应用验证”的模型选择。
+- C08-B1 本地实现十家主流官方 Provider Preset + Developer/Admin BYOK：OpenAI、DeepSeek、百炼、OpenRouter、SiliconFlow、Moonshot/Kimi、Zhipu/GLM、MiniMax、Google Gemini、Anthropic Claude；按 OpenAI Responses、OpenAI Chat Completions、Anthropic Messages、Gemini API 四类协议复用适配器。免费套餐系统 AI 只提供 DeepSeek；分析页只显示已配置 Key 且有模型 ID 的用户 Provider。用户 Key 使用 AES-256-GCM，BYOK 不消耗平台 system quota，端点只取受控官方 ID。新增模型仅有 fake 契约测试，真实兼容性待验证；价格未知不显示为免费。C08-D 才开放经 SSRF 防护的自定义 Provider。
+- C08-C 官方模型目录优先显示大陆六家，国际四家折叠；动态 API 和短静态官方目录均记录来源与核对日期。官方 Structured Output、目录可用性和 Course2Career 真实验证分层，UNKNOWN 不当作 0 元或不支持。缓存按用户/端点/Workspace/Key 版本隔离，支持 TTL、手动刷新与失败旧目录；B3 关闭时禁止使用缓存。DeepSeek 旧名只提示主动迁移，不自动修改 Profile。[模型发现规范](c08-model-discovery.md)。
+- C08-B2 将 `UNKNOWN`、`CONNECTED`、`SCHEMA_COMPATIBLE`、`VERIFIED`、`UNSUPPORTED` 限定为 Provider × 官方端点 × 精确模型状态。只有完整固定合成 JD 集、原文证据、usage 和返回模型均通过才能标 VERIFIED；单次连接测试最多标 Schema 兼容。Anthropic/Gemini 使用原生 schema 请求，百炼仅指定 Qwen 模型用 strict schema，DeepSeek 是 JSON object 加本地校验。解析成功但固定样例的技能或逐字证据断言失败时，记录 `FIXTURE_ASSERTION_FAILED`，不误称 schema 不兼容；脱敏逐题诊断仅写本机忽略文件。2026-09-26 仅 Bailian `cn-beijing` / `qwen3.8-flash` 与 DeepSeek `global` / `deepseek-flash` 完成 4/4 并按精确模型 VERIFIED，未通过 C08-D2 Release Gate；详见 [B2 报告](c08-provider-validation.md)。
 - 官方目录不可用时允许使用有效旧缓存或固定回退模型；未知模型不得自动上线。
 - 主模型返回模型不存在错误时，最多尝试一个已验证备用模型；限流、鉴权和服务错误不得触发跨模型重试。
 
@@ -56,14 +59,14 @@
 
 ### 用户权限
 
-- 游客始终可以使用完整本地规则 Demo；只有平台已配置且启用至少一个模型凭证时，才显示系统AI及其每天2次体验额度。
+- 游客始终可以使用完整本地规则 Demo；平台已配置且启用 DeepSeek 凭证时，才显示免费套餐系统AI及其每天2次体验额度。
 - 公开注册只能创建普通用户，密码只保存scrypt哈希。
 - Free用户每天5次平台AI调用，可以保存和查看自己的分析历史。
 - Pro用户每天20次平台AI调用，并预留高级报告权限。
-- Developer用户可以加密保存并使用自己的API Key。
+- 普通登录用户可免费启用或关闭独立的开发者模式；启用后可加密保存并使用自己的 API Key，不改变 Role、Plan 或平台系统 AI 日额度。关闭后服务层拒绝新的 BYOK 配置和调用，但保留密文供重新开启后使用；Admin 和历史 Developer Role/Plan 保留访问能力。
 - API Key 提交后必须立即清空输入控件和对应会话状态，页面不得回显完整密钥。
 - Admin拥有系统状态和会员管理权限，不受平台AI日额度限制。
-- 当前不实现支付、订单、订阅和用户自助升级。
+- 当前不实现支付、订单、订阅和 Free/Pro 用户自助升级；开发者模式开关不属于套餐升级。
 - 管理员不受AI日额度限制，可以查看聚合系统状态。
 - 权限检查发生在服务端应用层，不修改原有评分和分析逻辑。
 
@@ -95,3 +98,7 @@
 - JD引用仅支持逐字或连续空白折叠核对；引用落点与技能含义分开；修正后重新检查。未定位项仍可按现有人工勾选契约纳入，并提示待确认；空引用需修正。
 - 三个合成案例独立演示、下载输入、重置及导出；不覆盖个人资料。
 - 学习任务含交付物与验收标准；兼容旧快照、旧CSV五列及旧学习路径；不更改无关权重。
+
+## C08-D0 生产持久化要求
+
+正式开发者 BYOK 的账号、鉴权、会话版本、开发者开关、加密 Key、Provider Profile、报告与用量必须同在持久 SQL 数据库；生产数据库失败时停用相关功能并显示安全错误，不回退临时 SQLite。生产 PostgreSQL 连接必须使用 `sslmode=verify-full`；当前线上 SQLite 定义为 disposable demo state，旧账户、历史和临时 Key 不迁移。AI 技能提取前应提示第三方 JD 传输和 BYOK 费用，未知价格显示“费用未知/未配置”；本地规则无第三方模型传输。模型缓存可丢失；项目 VERIFIED 只接受受控版本证据。D1 的 PostgreSQL CI、独立远程合成演练、备份恢复及上述两条精确模型认证已记录为通过；D2 候选状态见[报告](c08-d2-release-candidate.md)。生产资源和 Secrets 已由用户人工确认；未获合并与部署授权前不得发布。
