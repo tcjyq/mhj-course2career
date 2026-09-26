@@ -1,5 +1,7 @@
 """B2 的本地确定性测试，不调用外部 API。"""
 
+import json
+import sys
 from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
@@ -16,8 +18,10 @@ from course2career.provider_error_classification import classify_provider_error
 from course2career.provider_registry import get_provider_preset
 from course2career.provider_validation import (
     ValidationFixture,
+    diagnose_fixture,
     fixture_passes,
     load_fixtures,
+    save_fixture_diagnostics,
     validate_provider,
 )
 from course2career.provider_verification import (
@@ -118,6 +122,221 @@ def test_fixture_suite_is_synthetic_and_checks_evidence() -> None:
         }
     )
     assert not fixture_passes(sample, invalid)
+
+
+def _analysis_with_skills(
+    *names: str, invalid_evidence: str | None = None
+) -> JobAnalysis:
+    return JobAnalysis(
+        skills=[
+            JobSkill(
+                name=name,
+                normalized_name=name,
+                category="技术",
+                evidence_text="非原文" if name == invalid_evidence else name,
+            )
+            for name in names
+        ]
+    )
+
+
+@pytest.mark.parametrize("missing", ["Python", "SQL", "需求分析"])
+def test_fixture_diagnostic_identifies_each_missing_term(missing: str) -> None:
+    fixture = load_fixtures()[1]
+    names = (name for name in fixture.must_include if name != missing)
+    diagnosis = diagnose_fixture(fixture, _analysis_with_skills(*names))
+    assert not diagnosis.passed
+    assert diagnosis.missing_required_terms == (missing,)
+    assert diagnosis.present_forbidden_terms == ()
+    assert diagnosis.invalid_evidence_skill_names == ()
+    assert diagnosis.skill_count == 2
+    assert not fixture_passes(fixture, _analysis_with_skills(*names))
+
+
+def test_fixture_diagnostic_identifies_non_verbatim_evidence() -> None:
+    fixture = load_fixtures()[1]
+    analysis = _analysis_with_skills(*fixture.must_include, invalid_evidence="SQL")
+    diagnosis = diagnose_fixture(fixture, analysis)
+    assert not diagnosis.passed
+    assert diagnosis.missing_required_terms == ()
+    assert diagnosis.invalid_evidence_skill_names == ("SQL",)
+    assert not fixture_passes(fixture, analysis)
+
+
+def test_fixture_diagnostic_accepts_exact_evidence() -> None:
+    fixture = load_fixtures()[1]
+    analysis = _analysis_with_skills(*fixture.must_include)
+    diagnosis = diagnose_fixture(fixture, analysis)
+    assert diagnosis.passed
+    assert diagnosis.skill_count == 3
+    assert not diagnosis.invalid_evidence_skill_names
+    assert fixture_passes(fixture, analysis)
+
+
+def test_fixture_diagnostic_identifies_forbidden_java() -> None:
+    fixture = load_fixtures()[3]
+    analysis = _analysis_with_skills("Python", "Java")
+    diagnosis = diagnose_fixture(fixture, analysis)
+    assert not diagnosis.passed
+    assert diagnosis.present_forbidden_terms == ("Java",)
+    assert diagnosis.invalid_evidence_skill_names == ()
+    assert not fixture_passes(fixture, analysis)
+
+
+def test_fixture_diagnostic_keeps_unknown_skill_names_out_of_file(
+    tmp_path: Path,
+) -> None:
+    fixture = load_fixtures()[1]
+    analysis = _analysis_with_skills("Python", "SQL", "需求分析", "private-secret")
+    diagnosis = diagnose_fixture(fixture, analysis)
+    assert diagnosis.invalid_evidence_skill_names == ("skill_4",)
+    path = tmp_path / "fixture_diagnostics.json"
+    save_fixture_diagnostics(
+        ProviderName.BAILIAN, "cn-beijing", "qwen3.8-flash", [diagnosis], path
+    )
+    saved = json.loads(path.read_text(encoding="utf-8"))
+    assert len(saved) == 1
+    assert set(saved[0]) == {
+        "provider",
+        "endpoint_id",
+        "model",
+        "fixture_id",
+        "passed",
+        "missing_required_terms",
+        "present_forbidden_terms",
+        "invalid_evidence_skill_names",
+    }
+    assert fixture.jd not in path.read_text(encoding="utf-8")
+    assert "private-secret" not in path.read_text(encoding="utf-8")
+    path.write_text(
+        json.dumps([{**saved[0], "raw_response": "private-secret"}]),
+        encoding="utf-8",
+    )
+    save_fixture_diagnostics(ProviderName.OPENAI, "global", "gpt-test", [], path)
+    assert "raw_response" not in path.read_text(encoding="utf-8")
+    assert "private-secret" not in path.read_text(encoding="utf-8")
+    save_fixture_diagnostics(
+        ProviderName.BAILIAN, "cn-beijing", "qwen3.8-flash", [], path
+    )
+    assert json.loads(path.read_text(encoding="utf-8")) == []
+
+
+def test_fixture_assertion_failure_is_not_schema_failure() -> None:
+    class MissingTermClient(FakeClient):
+        def extract_job_skills(self, jd: str) -> JobAnalysis:
+            analysis = super().extract_job_skills(jd)
+            if self.calls == 3:
+                return analysis.model_copy(
+                    update={
+                        "skills": [
+                            skill for skill in analysis.skills if skill.name != "SQL"
+                        ]
+                    }
+                )
+            return analysis
+
+    client = MissingTermClient()
+    diagnostics = []
+    record = validate_provider(
+        ProviderName.OPENAI,
+        client.model_name,
+        "global",
+        client,
+        load_fixtures(),
+        diagnostics=diagnostics,
+    )
+    assert record.result == Verification.SCHEMA_COMPATIBLE
+    assert record.error_code == ProviderErrorCode.FIXTURE_ASSERTION_FAILED
+    assert record.fixture_passed == 1
+    assert record.external_calls == 3
+    assert [item.fixture_id for item in diagnostics] == [
+        "case_01_simple",
+        "case_02_multiple",
+    ]
+    assert diagnostics[0].passed
+    assert diagnostics[1].missing_required_terms == ("SQL",)
+
+
+def test_fixture_parse_failure_keeps_schema_error_separate() -> None:
+    class InvalidFixtureClient(FakeClient):
+        def extract_job_skills(self, jd: str) -> JobAnalysis:
+            if self.calls == 2:
+                self.calls += 1
+                raise ValueError("private raw model response")
+            return super().extract_job_skills(jd)
+
+    client = InvalidFixtureClient()
+    diagnostics = []
+    record = validate_provider(
+        ProviderName.OPENAI,
+        client.model_name,
+        "global",
+        client,
+        load_fixtures(),
+        diagnostics=diagnostics,
+    )
+    assert record.error_code == ProviderErrorCode.SCHEMA_VALIDATION_FAILED
+    assert [item.fixture_id for item in diagnostics] == ["case_01_simple"]
+    assert "private raw model response" not in str(record)
+
+
+def test_validation_script_persists_sanitized_fixture_rows(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from scripts import validate_provider as script
+
+    class OfflineClient(FakeClient):
+        model_name = "qwen3.8-flash"
+
+        def extract_job_skills(self, jd: str) -> JobAnalysis:
+            analysis = super().extract_job_skills(jd)
+            if self.calls == 3:
+                return analysis.model_copy(
+                    update={
+                        "skills": [
+                            skill for skill in analysis.skills if skill.name != "SQL"
+                        ]
+                    }
+                )
+            return analysis
+
+    path = tmp_path / "fixture_diagnostics.json"
+    saved_records = []
+    monkeypatch.setenv("BAILIAN_API_KEY", "fake-key-never-sent")
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "validate_provider.py",
+            "--provider",
+            "bailian",
+            "--endpoint-id",
+            "cn-beijing",
+            "--model",
+            "qwen3.8-flash",
+        ],
+    )
+    monkeypatch.setattr(
+        script, "build_validation_client", lambda *_args, **_kwargs: OfflineClient()
+    )
+    monkeypatch.setattr(script, "save_record", saved_records.append)
+    monkeypatch.setattr(script, "SUMMARY_PATH", tmp_path / "summary.md")
+    monkeypatch.setattr(script, "DIAGNOSTIC_PATH", path)
+    monkeypatch.setattr(
+        script,
+        "save_fixture_diagnostics",
+        lambda provider, endpoint, model, diagnostics: save_fixture_diagnostics(
+            provider, endpoint, model, diagnostics, path
+        ),
+    )
+    assert script.main() == 0
+    assert saved_records[0].error_code == ProviderErrorCode.FIXTURE_ASSERTION_FAILED
+    rows = json.loads(path.read_text(encoding="utf-8"))
+    assert len(rows) == 2
+    assert rows[0]["passed"]
+    assert rows[1]["missing_required_terms"] == ["SQL"]
+    assert "fake-key-never-sent" not in path.read_text(encoding="utf-8")
+    assert load_fixtures()[1].jd not in path.read_text(encoding="utf-8")
 
 
 def test_verification_record_scopes_endpoint_and_model(tmp_path: Path) -> None:

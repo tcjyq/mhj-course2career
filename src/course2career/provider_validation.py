@@ -1,7 +1,7 @@
 """固定合成 JD 的真实验证编排；仅显式运行脚本时调用外部 API。"""
 
 import json
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from time import monotonic
 from types import SimpleNamespace
@@ -22,6 +22,7 @@ from course2career.provider_connection import test_provider_connection
 from course2career.provider_error_classification import classify_provider_error
 from course2career.provider_registry import get_provider_preset
 from course2career.provider_verification import (
+    DEFAULT_RECORD_PATH,
     ProviderErrorCode,
     Verification,
     VerificationRecord,
@@ -36,6 +37,7 @@ FIXTURE_PATH = (
     / "provider_validation"
     / "cases.json"
 )
+DIAGNOSTIC_PATH = DEFAULT_RECORD_PATH.with_name("fixture_diagnostics.json")
 
 _COST_RATES: dict[tuple[ProviderName, str], tuple[float, float, str]] = {
     (ProviderName.OPENAI, "gpt-5.6-luna"): (
@@ -59,6 +61,16 @@ class ValidationFixture:
     must_exclude: tuple[str, ...]
 
 
+@dataclass(frozen=True)
+class FixtureDiagnostic:
+    fixture_id: str
+    passed: bool
+    missing_required_terms: tuple[str, ...]
+    present_forbidden_terms: tuple[str, ...]
+    invalid_evidence_skill_names: tuple[str, ...]
+    skill_count: int
+
+
 def load_fixtures(path: Path = FIXTURE_PATH) -> tuple[ValidationFixture, ...]:
     return tuple(
         ValidationFixture(
@@ -72,24 +84,98 @@ def load_fixtures(path: Path = FIXTURE_PATH) -> tuple[ValidationFixture, ...]:
 
 
 def fixture_passes(fixture: ValidationFixture, result: JobAnalysis) -> bool:
+    return diagnose_fixture(fixture, result).passed
+
+
+def diagnose_fixture(
+    fixture: ValidationFixture, result: JobAnalysis
+) -> FixtureDiagnostic:
     if not isinstance(result, JobAnalysis) or not result.skills:
-        return False
+        return FixtureDiagnostic(fixture.id, False, fixture.must_include, (), (), 0)
     names = [
         f"{skill.name} {skill.normalized_name}".casefold() for skill in result.skills
     ]
-    if any(
-        not any(term.casefold() in name for name in names)
+    missing = tuple(
+        term
         for term in fixture.must_include
-    ):
-        return False
-    if any(
-        any(term.casefold() in name for name in names) for term in fixture.must_exclude
-    ):
-        return False
-    return all(
-        skill.evidence_text.strip() and skill.evidence_text.strip() in fixture.jd
-        for skill in result.skills
+        if not any(term.casefold() in name for name in names)
     )
+    forbidden = tuple(
+        term
+        for term in fixture.must_exclude
+        if any(term.casefold() in name for name in names)
+    )
+    invalid_evidence = tuple(
+        next(
+            (
+                term
+                for term in (*fixture.must_include, *fixture.must_exclude)
+                if term.casefold() in name
+            ),
+            f"skill_{index}",
+        )
+        for index, (skill, name) in enumerate(
+            zip(result.skills, names, strict=True), start=1
+        )
+        if not skill.evidence_text.strip()
+        or skill.evidence_text.strip() not in fixture.jd
+    )
+    return FixtureDiagnostic(
+        fixture.id,
+        not missing and not forbidden and not invalid_evidence,
+        missing,
+        forbidden,
+        invalid_evidence,
+        len(result.skills),
+    )
+
+
+def save_fixture_diagnostics(
+    provider: ProviderName,
+    endpoint_id: str,
+    model: str,
+    diagnostics: list[FixtureDiagnostic],
+    path: Path = DIAGNOSTIC_PATH,
+) -> None:
+    existing = json.loads(path.read_text(encoding="utf-8")) if path.exists() else []
+    if not isinstance(existing, list):
+        raise ValueError("Invalid fixture diagnostics file")
+    allowed_fields = (
+        "provider",
+        "endpoint_id",
+        "model",
+        "fixture_id",
+        "passed",
+        "missing_required_terms",
+        "present_forbidden_terms",
+        "invalid_evidence_skill_names",
+    )
+    rows = [
+        {key: row[key] for key in allowed_fields}
+        for row in existing
+        if not (
+            row["provider"] == provider.value
+            and row["endpoint_id"] == endpoint_id
+            and row["model"] == model
+        )
+    ]
+    rows.extend(
+        {
+            "provider": provider.value,
+            "endpoint_id": endpoint_id,
+            "model": model,
+            **{
+                key: value
+                for key, value in asdict(diagnostic).items()
+                if key in allowed_fields
+            },
+        }
+        for diagnostic in diagnostics
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    staged = path.with_suffix(".tmp")
+    staged.write_text(json.dumps(rows, ensure_ascii=False, indent=2), encoding="utf-8")
+    staged.replace(path)
 
 
 def build_validation_client(
@@ -194,6 +280,8 @@ def validate_provider(
     endpoint_id: str,
     client: LLMProvider,
     fixtures: tuple[ValidationFixture, ...],
+    *,
+    diagnostics: list[FixtureDiagnostic] | None = None,
 ) -> VerificationRecord:
     preset = get_provider_preset(provider)
     strategy = getattr(
@@ -243,8 +331,11 @@ def validate_provider(
                     usage_count += 1
                     returned_model = client.last_usage.model
                     model_consistent = model_consistent and returned_model == model
-                if not fixture_passes(fixture, analysis):
-                    error_code = ProviderErrorCode.SCHEMA_VALIDATION_FAILED
+                diagnosis = diagnose_fixture(fixture, analysis)
+                if diagnostics is not None:
+                    diagnostics.append(diagnosis)
+                if not diagnosis.passed:
+                    error_code = ProviderErrorCode.FIXTURE_ASSERTION_FAILED
                     break
                 passed += 1
             except Exception as exc:

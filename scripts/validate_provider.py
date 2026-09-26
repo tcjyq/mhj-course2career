@@ -7,9 +7,11 @@ from pathlib import Path
 from course2career.llm_provider import ProviderName
 from course2career.provider_registry import get_provider_preset, ui_provider_presets
 from course2career.provider_validation import (
+    DIAGNOSTIC_PATH,
     build_validation_client,
     load_fixtures,
     openrouter_supports_schema,
+    save_fixture_diagnostics,
     validate_provider,
 )
 from course2career.provider_verification import DEFAULT_RECORD_PATH, save_record
@@ -92,8 +94,12 @@ def main() -> int:
         except (ValueError, RuntimeError):
             rows.append((provider.value, model, "PENDING", 0, "local setup failed"))
             continue
-        record = validate_provider(provider, model, endpoint_id, client, fixtures)
+        diagnostics = []
+        record = validate_provider(
+            provider, model, endpoint_id, client, fixtures, diagnostics=diagnostics
+        )
         save_record(record)
+        save_fixture_diagnostics(provider, endpoint_id, model, diagnostics)
         rows.append(
             (
                 provider.value,
@@ -109,6 +115,7 @@ def main() -> int:
         print(" | ".join(str(item) for item in row))
     _write_summary(rows, SUMMARY_PATH)
     print("Sanitized summary: outputs/c08-provider-validation/summary.md")
+    print(f"Sanitized fixture diagnostics: {DIAGNOSTIC_PATH}")
     return 0
 
 

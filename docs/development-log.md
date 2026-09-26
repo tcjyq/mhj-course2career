@@ -1,5 +1,9 @@
 # Course2Career 开发日志
 
+## 2026-09-26 C08-D1 B2 逐题诊断（本地，未调用百炼）
+
+无 VPN 既有记录显示 `bailian` / `cn-beijing` / `qwen3.8-flash` 连接达 `SCHEMA_COMPATIBLE`，4 个固定样例仅过 1 个、在 `case_02_multiple` 停止；旧记录没有可判定根因的逐题细节。本轮保持 strict JSON Schema、原文 evidence、固定 fixtures 和无重试门槛不变，增加仅本机忽略目录内的逐题脱敏诊断；解析成功后的技能/证据业务断言失败使用 `FIXTURE_ASSERTION_FAILED`，不再误称 Schema 不兼容。新诊断在用户关闭 VPN 后显式运行脚本时才生成；原始记录和受控认证文件不变。离线全套回归 249 通过、2 跳过（独立 PostgreSQL 测试库未配置），Ruff lint、format 与 `git diff --check` 均通过。PR #2 保持 Draft，不 merge、不 deploy。
+
 ## 2026-09-25 C08-D1 远程恢复诊断
 
 独立远程恢复目标已有 8 张表和完整合成行数；新归档不含 `public` schema 条目，原恢复命令在首张已存在表处报冲突。目标默认 search path 不包含 `public`，因此恢复后校验改为仅会话内设置该路径。恢复脚本仅允许空目标或完整且符合预期的合成演练目标，使用 `--clean --if-exists --single-transaction` 原子恢复。远程 restore-only 已核对行数、正确密钥解密与错误密钥安全失败；不代表生产部署或供应商验证。

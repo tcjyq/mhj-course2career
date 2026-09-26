@@ -60,3 +60,9 @@
 取得本地合法凭证后，先查询官方模型目录，核对鉴权和精确模型可见性。百炼还需核对 Key 的地域、Workspace 和受控 Endpoint 三者一致；不得用北京 Key 请求新加坡端点。随后选成本合适且支持必要结构输出的精确模型，运行 `tests/fixtures/provider_validation/cases.json` 固定合成集，并记录 Provider、Endpoint ID、精确 model ID、schema 策略、返回模型、usage、延迟、脱敏错误、验证版本、fixture 版本与时间。没有 usage 或可信官方价格时，费用为 unknown，不能写 free。
 
 只有项目维护者完成固定真实验证后，才能提交受控 `src/course2career/verified_models.json` 的精确认证记录。用户的“测试连接”只说明个人凭证与所选模型当次可用，不能改写项目认证。D1 的目标是 DeepSeek 与百炼各至少一款精确模型 VERIFIED；在两家凭证不可用期间 `PROVIDER_VALIDATED=no`。
+
+## 2026-09-26 C08-D1 百炼 B2 诊断补充（仅本地）
+
+此前无 VPN 的真实运行：`bailian` / `cn-beijing` / `qwen3.8-flash` 的单次连接为 `SCHEMA_COMPATIBLE`；固定 4 题中通过首题，第二题 `case_02_multiple` 停止，记录沿用旧的 `SCHEMA_VALIDATION_FAILED`。旧 `records.json` 没有逐题细节，不能据此判断是 JSON/Pydantic 解析异常、缺技能或 evidence 非原文，更不能宣称该模型不支持 strict JSON Schema。本轮**不重新请求百炼**，不修改已有记录或固定验证标准。
+
+显式执行 `scripts/validate_provider.py` 后，新的 `outputs/c08-provider-validation/fixture_diagnostics.json` 只保留该精确模型已成功解析题目的 `fixture_id`、`passed`、`missing_required_terms`、`present_forbidden_terms` 和 `invalid_evidence_skill_names`（未知技能用 `skill_N` 标识）。不写完整 JD、原始响应、证据正文、Key、Workspace ID 或请求头；同一模型重跑会替换旧逐题诊断，避免误读上次结果。解析成功但固定业务断言失败会记录新的 `FIXTURE_ASSERTION_FAILED`，而解析异常仍保留解析/Schema 错误类别。未执行的题目没有诊断条目，完整 4/4、usage 与返回模型全部符合条件仍是 VERIFIED 的唯一门槛。受控认证文件未因这次诊断改动而更新。

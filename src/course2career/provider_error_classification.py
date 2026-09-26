@@ -23,6 +23,7 @@ _MESSAGES = {
     ProviderErrorCode.TIMEOUT: "供应商请求超时。",
     ProviderErrorCode.SCHEMA_UNSUPPORTED: "当前模型不接受请求的结构化输出格式。",
     ProviderErrorCode.SCHEMA_VALIDATION_FAILED: "返回内容不符合 JobAnalysis 结构。",
+    ProviderErrorCode.FIXTURE_ASSERTION_FAILED: "固定验证集断言未通过。",
     ProviderErrorCode.PROVIDER_ERROR: "供应商请求失败，请检查模型与端点配置。",
     ProviderErrorCode.NETWORK_ERROR: "网络连接失败。",
     ProviderErrorCode.UNKNOWN_ERROR: "连接测试未通过。",
