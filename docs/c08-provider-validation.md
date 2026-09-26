@@ -78,4 +78,4 @@
 | Bailian | `cn-beijing` | `qwen3.8-flash` | `strict_json_schema` | 4/4 | 有 | 5 | 与请求一致 | 无 | VERIFIED |
 | DeepSeek | `global` | `deepseek-flash` | `json_object` | 4/4 | 有 | 5 | 与请求一致 | 无 | VERIFIED |
 
-两条记录均通过 `VerificationRecord` 的完整 VERIFIED 契约，`error_code` 为 null；`fixture_diagnostics.json` 各有 4 条唯一固定题目诊断，均通过且失败列表为空。`summary.md` 仅含最后一次 DeepSeek 运行，不能用它否定此前 Bailian 运行；两条精确认证的依据是本机 `records.json` 与逐题诊断交叉核对。受控 `src/course2career/verified_models.json` 仅纳入上述两个 Provider × 端点 × 精确模型键，未认证其他模型，也不上传忽略目录中的本地证据。费用无可信估算时仍为 unknown。D2 复用这些 D1 证据，没有重新调用真实 Provider；发布候选状态见[候选报告](c08-d2-release-candidate.md)，生产 Secrets 尚未配置，`RELEASE_READY=no`。
+两条记录均通过 `VerificationRecord` 的完整 VERIFIED 契约，`error_code` 为 null；`fixture_diagnostics.json` 各有 4 条唯一固定题目诊断，均通过且失败列表为空。`summary.md` 仅含最后一次 DeepSeek 运行，不能用它否定此前 Bailian 运行；两条精确认证的依据是本机 `records.json` 与逐题诊断交叉核对。受控 `src/course2career/verified_models.json` 仅纳入上述两个 Provider × 端点 × 精确模型键，未认证其他模型，也不上传忽略目录中的本地证据。费用无可信估算时仍为 unknown。D2 复用这些 D1 证据，没有重新调用真实 Provider；发布候选状态见[候选报告](c08-d2-release-candidate.md)。用户已确认生产 Secrets 保存；其值与运行时效果未核验，`RELEASE_READY=no`。

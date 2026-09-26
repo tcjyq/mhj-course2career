@@ -7,14 +7,15 @@
 | 门槛 | 状态 | 证据边界 |
 |---|---|---|
 | `ARCHITECTURE_READY` | yes | D0 受控 Provider 端点与生产持久化边界 |
-| `POSTGRES_CI_READY` / `REMOTE_POSTGRES_READY` / `BACKUP_RESTORE_READY` | yes | D1 CI 与独立远程**合成**库的备份恢复；不代表生产库已创建或备份 |
-| `PERSISTENCE_READY` | yes | D1 与生产 fail-closed 回归；C08 新生产库尚待人工创建 |
+| `POSTGRES_CI_READY` / `REMOTE_POSTGRES_READY` / `BACKUP_RESTORE_READY` | yes | D1 CI 与独立远程**合成**库的备份恢复；这些证据本身不证明生产备份可用 |
+| `PERSISTENCE_READY` | yes | D1 与生产 fail-closed 回归；独立生产库已创建，运行时仍待发布后验收 |
 | `PROVIDER_VALIDATED` | yes | 仅 Bailian `cn-beijing` / `qwen3.8-flash`、DeepSeek `global` / `deepseek-flash` 的 D1 精确认证；D2 未重测 |
 | `SYNTHETIC_E2E_READY` | yes | 本地 SQLite 服务链、fake Provider、AppTest、浏览器规则流及 D1 PostgreSQL CI 分层证据；不声称一次 UI→真实模型→生产库全链路 |
 | `BROWSER_READY` | yes | 隔离本地 Streamlit 桌面与 390px 实测；直接深链接有已知 `_stcore` 探测 404，见下文 |
 | `SECURITY_REVIEW_READY` | yes | 独立只读复核发现的生产 TLS、跨账户状态和无费率 Provider 渲染问题已修复；历史凭证模式扫描见下文 |
 | `RELEASE_CANDIDATE_READY` | yes | D2 代码提交 `5761c0d7` 的五个 PR CI 作业均通过；候选可供人工生产配置审查 |
-| `PRODUCTION_SECRETS_READY` / `RELEASE_READY` | no / no | 独立生产 PostgreSQL、主密钥和 Streamlit Secrets 尚未人工配置/确认 |
+| `PRODUCTION_DATABASE_READY` | yes | Neon 项目 `course2career-prod` 内独立数据库 `c2c_prod` 已创建；只读元数据确认，不涉及 D1 测试库 |
+| `PRODUCTION_SECRETS_READY` / `RELEASE_READY` | yes / no | 用户人工确认独立长期主密钥已安全保存，四项 Streamlit 根级 Secrets 已保存；未读取值，也未进行生产运行时验收、合并或部署 |
 
 ## 已关闭的阻断项
 
@@ -32,10 +33,9 @@
 - **Git tracked history 凭证模式扫描：** `real_secret_findings = 0`；测试/示例占位模式 12 个，代码变量引用模式 28 个（历史及本次暂存差异中去重后的匹配项）。扫描检查所有可达提交及本次暂存的新增文本行，覆盖常见 API Key 前缀与关键变量赋值；不输出匹配值。该模式扫描不能证明不存在所有未知格式的凭证，也未读取生产 Secrets。
 - **本地及 PR CI：** Python 3.12 与 3.14 各收集 260 项、258 passed / 2 skipped（两个 skip 为需独立 PostgreSQL 服务的测试，交由 PR 的 PostgreSQL jobs 承接）；3.14 `pip check` 无依赖冲突；`ruff check .`、`ruff format --check .`、`git diff --check` 和暂存差异检查通过。D2 代码提交 `5761c0d7` 的 [CI Run 36237182862](https://github.com/tcjyq/mhj-course2career/actions/runs/36237182862) 中 Python 3.11/3.12/3.14 quality 与 PostgreSQL 3.12/3.14 五个作业全部成功。
 
-## Remaining human actions
+## 最终 Pre-Merge 人工确认与边界
 
-1. 创建独立 production PostgreSQL，使用可验证主机名的 TLS 连接，不复用 D1 测试库。
-2. 生成独立 production encryption master key，安全保存且重部署保持同一值。
-3. 配置 Streamlit production 根级 Secrets：`COURSE2CAREER_ENV`、`DATABASE_URL`、`COURSE2CAREER_KEY_ENCRYPTION_KEY`；仅在启用 System DeepSeek 时另配 `DEEPSEEK_API_KEY`。
-4. 人工确认 Secrets 保存成功及目标应用/分支配置无误，不在审查记录中暴露值。
-5. 单独给出最终 merge authorization；在此之前 PR #2 保持 Draft、`RELEASE_READY=no`，不合并、不部署。
+1. 用户已确认创建独立 Neon production 项目 `course2career-prod` 和数据库 `c2c_prod`。项目与数据库名称通过 Neon 只读元数据再次核对；没有连接或修改生产数据库，也没有触碰 D1 测试库。
+2. 用户已确认生成独立 production encryption master key，并在外部长期安全保存。程序不会自动生成主密钥；重部署和数据库恢复时必须沿用同一值。本报告未读取或验证密钥值。
+3. 用户已确认在 Streamlit production 根级 Secrets 保存 `COURSE2CAREER_ENV`、`DATABASE_URL`、`COURSE2CAREER_KEY_ENCRYPTION_KEY` 和 `DEEPSEEK_API_KEY`。本报告只核对名称及代码读取路径，未读取值，也未验证已保存 URL 的实际内容或生产运行时连接。
+4. 最终合并前以 PR #2 当前 head 的 CI 与 mergeable 状态为准。仍需用户单独给出 merge authorization；在此之前 PR 保持 Draft，`RELEASE_READY=no`，不合并、不部署。

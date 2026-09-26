@@ -35,7 +35,7 @@
 
 本地 SQLite 全套测试及 PostgreSQL 独立 CI job 使用合成账户、假 Key、报告和用量。CI 使用仅限 localhost 的无 TLS 测试连接；生产入口强制 `verify-full`。PostgreSQL job 覆盖建库、幂等重连、注册登录、BYOK 关闭/重开、密文解密、Profile、报告、额度/用量、跨用户隔离及合成迁移。D1 还增加容器内备份、空库恢复、行数与主密钥验证。2026-09-26 Draft PR 的 D1 提交已通过 PostgreSQL 3.12/3.14 CI、备份恢复及恢复后解密。独立远程 PostgreSQL 合成演练的完成状态来自此前[开发日志](development-log.md)中的远程 restore-only 行数、正确密钥解密和错误密钥拒绝记录；D2 不重新连接远程数据库，远程 PASS 不等于生产恢复。D2 候选提交须单独复核 CI；结果见[候选报告](c08-d2-release-candidate.md)。
 
-状态条件：`ARCHITECTURE_READY` 要求设计与受控端点；`PERSISTENCE_READY` 要求 PostgreSQL CI、独立远程测试、备份恢复、恢复后解密及生产 fail-closed 全部通过；`PROVIDER_VALIDATED` 要求至少 DeepSeek 与百炼各有一个精确模型通过 B2 固定合成集。2026-09-26 已精确认证 Bailian `qwen3.8-flash` 和 DeepSeek `deepseek-flash`。D2 Pre-Release Blocker Closure 的结果以[候选报告](c08-d2-release-candidate.md)为准；生产 Secrets 尚待人工配置，`RELEASE_READY=no`。Draft PR 仅用于评审和 CI，不允许合入或部署。
+状态条件：`ARCHITECTURE_READY` 要求设计与受控端点；`PERSISTENCE_READY` 要求 PostgreSQL CI、独立远程测试、备份恢复、恢复后解密及生产 fail-closed 全部通过；`PROVIDER_VALIDATED` 要求至少 DeepSeek 与百炼各有一个精确模型通过 B2 固定合成集。2026-09-26 已精确认证 Bailian `qwen3.8-flash` 和 DeepSeek `deepseek-flash`。D2 Pre-Release Blocker Closure 的结果以[候选报告](c08-d2-release-candidate.md)为准；用户已确认生产库、长期主密钥及 Streamlit 根级 Secrets 配置完成，值未读取，生产运行时未验收。`RELEASE_READY=no`；Draft PR 未获合并与部署授权。
 
 | D1 状态 | 当前值 | 依据与边界 |
 |---|---|---|
@@ -45,4 +45,4 @@
 | `BACKUP_RESTORE_READY` | yes | CI 容器演练及先前独立远程恢复；恢复后正确密钥解密、错误密钥安全失败均有记录 |
 | `PERSISTENCE_READY` | yes | 上述证据和 fail-closed 离线回归满足 D1 门槛；不代表生产迁移已执行 |
 | `PROVIDER_VALIDATED` | yes | 两条精确模型认证均满足 4/4 固定集、usage、返回模型及零错误 |
-| `RELEASE_READY` | no | D2 候选审查已执行；生产 PostgreSQL、长期主密钥与 Streamlit Secrets 尚待人工创建及确认，不合并、不部署 |
+| `RELEASE_READY` | no | D2 候选审查已执行，生产资源与 Secrets 已由用户人工确认；尚未合并、部署或完成生产运行时验收 |
