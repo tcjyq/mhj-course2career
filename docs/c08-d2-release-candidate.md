@@ -13,7 +13,7 @@
 | `SYNTHETIC_E2E_READY` | yes | 本地 SQLite 服务链、fake Provider、AppTest、浏览器规则流及 D1 PostgreSQL CI 分层证据；不声称一次 UI→真实模型→生产库全链路 |
 | `BROWSER_READY` | yes | 隔离本地 Streamlit 桌面与 390px 实测；直接深链接有已知 `_stcore` 探测 404，见下文 |
 | `SECURITY_REVIEW_READY` | yes | 独立只读复核发现的生产 TLS、跨账户状态和无费率 Provider 渲染问题已修复；历史凭证模式扫描见下文 |
-| `RELEASE_CANDIDATE_READY` | 待本提交 CI | 本地检查通过；新提交的 PR CI 仍须复核 |
+| `RELEASE_CANDIDATE_READY` | yes | D2 代码提交 `5761c0d7` 的五个 PR CI 作业均通过；候选可供人工生产配置审查 |
 | `PRODUCTION_SECRETS_READY` / `RELEASE_READY` | no / no | 独立生产 PostgreSQL、主密钥和 Streamlit Secrets 尚未人工配置/确认 |
 
 ## 已关闭的阻断项
@@ -30,7 +30,7 @@
 - **390px 真实浏览器：** 登录、[Provider Hub](../screenshots/c08-d2-provider-mobile.png) 和[分析页本地规则提示](../screenshots/c08-d2-analysis-notice-mobile.png)可见，无整体横向溢出；实测 `documentElement.scrollWidth=body.scrollWidth=innerWidth=390`。另存[移动登录截图](../screenshots/c08-d2-login-mobile.png)。Provider 页可见已配置的假 Key 后四位、精确模型状态与费用未知提示；无文案遮挡。直接输入 Streamlit 子页面 URL 时，浏览器控制台有 `_stcore/health`、`_stcore/host-config` 404 探测，且新导航会话回到访客；这是已知深链接探测边界，不能记为“零 console error”。正常页面交互未见业务相关 JS 错误。
 - **独立只读审查：** 审阅 auth/access、Key 加密与用户隔离、生产 PostgreSQL、BYOK 额度、官方端点与重定向限制、受控精确模型认证。初审发现生产 TLS 模式过宽，复核发现无费率 Provider 渲染错误；均已在本提交修复。未发现需要重新设计产品的阻断项。
 - **Git tracked history 凭证模式扫描：** `real_secret_findings = 0`；测试/示例占位模式 12 个，代码变量引用模式 28 个（历史及本次暂存差异中去重后的匹配项）。扫描检查所有可达提交及本次暂存的新增文本行，覆盖常见 API Key 前缀与关键变量赋值；不输出匹配值。该模式扫描不能证明不存在所有未知格式的凭证，也未读取生产 Secrets。
-- **本地检查：** Python 3.12 与 3.14 各收集 260 项、258 passed / 2 skipped（两个 skip 为需独立 PostgreSQL 服务的测试，交由 PR 的 PostgreSQL jobs 承接）；3.14 `pip check` 无依赖冲突；`ruff check .`、`ruff format --check .`、`git diff --check` 和暂存差异检查通过。PR CI 须复核新提交的 Python 3.11/3.12/3.14 quality 与 PostgreSQL 3.12/3.14，不能沿用旧 SHA 的绿灯。
+- **本地及 PR CI：** Python 3.12 与 3.14 各收集 260 项、258 passed / 2 skipped（两个 skip 为需独立 PostgreSQL 服务的测试，交由 PR 的 PostgreSQL jobs 承接）；3.14 `pip check` 无依赖冲突；`ruff check .`、`ruff format --check .`、`git diff --check` 和暂存差异检查通过。D2 代码提交 `5761c0d7` 的 [CI Run 36237182862](https://github.com/tcjyq/mhj-course2career/actions/runs/36237182862) 中 Python 3.11/3.12/3.14 quality 与 PostgreSQL 3.12/3.14 五个作业全部成功。
 
 ## Remaining human actions
 
