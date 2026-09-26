@@ -298,21 +298,22 @@ class SQLiteProductRepository(SQLiteUserRepository):
             ).fetchone()[0]
             usage = connection.execute(
                 """
-                SELECT COUNT(*),
-                       COALESCE(SUM(input_tokens + output_tokens), 0),
-                       COALESCE(SUM(cost), 0),
+                SELECT COUNT(*) AS ai_call_count,
+                       COALESCE(SUM(input_tokens + output_tokens), 0)
+                           AS total_tokens,
+                       COALESCE(SUM(cost), 0) AS estimated_cost,
                        COALESCE(SUM(CASE WHEN cost_status = 'unknown'
-                           THEN 1 ELSE 0 END), 0)
+                           THEN 1 ELSE 0 END), 0) AS unknown_cost_calls
                 FROM api_usage
                 """
             ).fetchone()
         return AdminOverview(
             user_count=int(user_count),
             today_analysis_count=int(today_analysis_count),
-            ai_call_count=int(usage[0]),
-            total_tokens=int(usage[1]),
-            estimated_cost=float(usage[2]),
-            unknown_cost_calls=int(usage[3]),
+            ai_call_count=int(usage["ai_call_count"]),
+            total_tokens=int(usage["total_tokens"]),
+            estimated_cost=float(usage["estimated_cost"]),
+            unknown_cost_calls=int(usage["unknown_cost_calls"]),
         )
 
     def list_users_for_admin(self) -> list[AdminUserSummary]:

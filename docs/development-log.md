@@ -561,3 +561,8 @@ Streamlit 的当前页面内容位于浏览器会话状态中，刷新、重新�
 
 - Streamlit Community Cloud 的安全诊断记录 `TLS_CERTIFICATE`；当前 URL 的 `sslrootcert=system` 在该运行环境无法可靠加载 CA roots。
 - 生产 verified-TLS 连接显式传入 certifi CA bundle，同时保持 `sslmode=verify-full` 和主机名验证；其连接参数覆盖 URL 中旧的 `sslrootcert=system`。本地测试路径不改变；生产失败仍安全停止，不回退 SQLite。未改动生产 Secrets 或数据库。
+
+## 2026-09-26 C08 PostgreSQL Admin Dashboard compatibility hotfix
+
+- 生产 `/admin` 的 `admin_overview()` 聚合查询有三个同名未命名 `COALESCE` 列；psycopg `dict_row` 覆盖重复键后，位置读取 `usage[2]` 抛出 `IndexError`。已用本地 psycopg 行工厂复现。
+- 四个聚合列增加唯一 alias，构造概况时按列名读取。其他位置读取经审计均为单列聚合或无重复列名的查询，保持原样。新增 SQLite 与 CI PostgreSQL 空表、有用量回归；不触碰生产数据。

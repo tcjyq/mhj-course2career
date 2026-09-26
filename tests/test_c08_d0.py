@@ -122,6 +122,60 @@ def test_production_without_database_fails_closed(monkeypatch):
     assert any("开发者模式暂时不可用" in item.value for item in app.error)
 
 
+def _assert_admin_overview_usage(repository: SQLiteProductRepository) -> None:
+    now = datetime.now(UTC)
+    empty = repository.admin_overview(now)
+    assert (
+        empty.ai_call_count,
+        empty.total_tokens,
+        empty.estimated_cost,
+        empty.unknown_cost_calls,
+    ) == (0, 0, 0.0, 0)
+
+    for input_tokens, output_tokens, cost, cost_status in (
+        (100, 50, 0.004, "estimated"),
+        (7, 3, 0.0, "unknown"),
+    ):
+        call_id = repository.reserve_ai_call(
+            user_id=None,
+            guest_session_id="synthetic-admin-overview",
+            key_mode="system",
+            provider="deepseek",
+            model="synthetic-model",
+            daily_limit=None,
+            created_time=now,
+        )
+        repository.complete_ai_call(
+            call_id,
+            status="success",
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            cost=cost,
+            cost_status=cost_status,
+        )
+
+    populated = repository.admin_overview(now)
+    assert populated.ai_call_count == 2
+    assert populated.total_tokens == 160
+    assert populated.estimated_cost == pytest.approx(0.004)
+    assert populated.unknown_cost_calls == 1
+
+
+def test_sqlite_admin_overview_usage_aggregates(tmp_path):
+    _assert_admin_overview_usage(SQLiteProductRepository(tmp_path / "overview.db"))
+
+
+@pytest.mark.postgres
+def test_postgres_dict_row_admin_overview_usage_aggregates():
+    url = os.getenv("C08_TEST_DATABASE_URL")
+    if not url or urlsplit(url).hostname not in {"localhost", "127.0.0.1", "::1"}:
+        pytest.skip("仅在 CI 本机合成 PostgreSQL 测试库执行")
+    repository = PostgresProductRepository(url, allow_insecure_local_test=True)
+    with repository._connect() as connection:
+        connection.execute("TRUNCATE TABLE api_usage")
+    _assert_admin_overview_usage(repository)
+
+
 @pytest.mark.postgres
 def test_postgres_persists_all_user_assets_and_migrates_synthetic_sqlite(tmp_path):
     url = os.getenv("C08_TEST_DATABASE_URL")
