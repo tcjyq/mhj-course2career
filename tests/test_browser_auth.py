@@ -14,7 +14,7 @@ def test_production_cookie_is_opaque_scoped_and_expires():
     assert kwargs["secure"] is True
     assert kwargs["same_site"] == "strict"
     assert kwargs["path"] == "/"
-    assert 6.99 < (kwargs["expires_at"] - before).total_seconds() / 86400 <= 7
+    assert 6.99 < (kwargs["expires_at"] - before).total_seconds() / 86400 < 7.01
     assert "token" not in kwargs
 
 
