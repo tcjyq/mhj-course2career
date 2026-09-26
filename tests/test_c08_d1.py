@@ -1,8 +1,10 @@
 """D1 production failure and recovery contracts, with synthetic credentials only."""
 
+import logging
 import os
 from pathlib import Path
 
+import psycopg
 import pytest
 from streamlit.runtime.secrets import Secrets
 from streamlit.testing.v1 import AppTest
@@ -11,6 +13,12 @@ from course2career.api_key_service import APIKeyService
 from course2career.auth_service import AuthService
 from course2career.config import load_settings
 from course2career.data_migration import TABLES
+from course2career.database_backend import (
+    DatabaseBackend,
+    DatabaseUnavailableError,
+    classify_database_failure,
+    log_database_startup_failure,
+)
 from course2career.database_migrations import schema_version
 from course2career.key_encryption import (
     APIKeyCipher,
@@ -40,8 +48,62 @@ def test_production_failure_never_creates_sqlite(
         timeout=15
     )
     assert not app.exception
-    assert any("开发者模式暂时不可用" in item.value for item in app.error)
+    assert any(
+        item.value == "开发者模式暂时不可用：持久数据库连接或配置失败。"
+        for item in app.error
+    )
     assert not sqlite_path.exists()
+
+
+def test_database_startup_log_never_contains_url_or_credentials(
+    monkeypatch, caplog
+) -> None:
+    url = "postgresql://synthetic_user:synthetic_password@db.example.test/c2c?sslmode=verify-full"
+    secret = "napi_synthetic_long_token_123456789"
+
+    def failed_connect(*_args, **_kwargs):
+        raise psycopg.OperationalError(
+            f"certificate verify failed {url} password={secret} user=synthetic_user "
+            f"DATABASE_URL={url} {secret}"
+        )
+
+    monkeypatch.setattr(psycopg, "connect", failed_connect)
+    backend = DatabaseBackend(url=url, require_verified_tls=True)
+    with pytest.raises(DatabaseUnavailableError) as error:
+        backend.connect()
+    with caplog.at_level(logging.ERROR):
+        log_database_startup_failure(error.value)
+    assert "failure_category=TLS_CERTIFICATE" in caplog.text
+    for value in (url, "synthetic_user", "synthetic_password", secret, "DATABASE_URL="):
+        assert value not in caplog.text
+
+
+@pytest.mark.parametrize(
+    ("message", "expected"),
+    (
+        ("certificate verify failed", "TLS_CERTIFICATE"),
+        ("server certificate hostname mismatch", "TLS_HOSTNAME"),
+        ("password authentication failed for user secret-user", "AUTHENTICATION"),
+        ("could not translate host name", "DNS"),
+    ),
+)
+def test_database_startup_failure_categories(message: str, expected: str) -> None:
+    assert classify_database_failure(psycopg.OperationalError(message)) == expected
+
+
+def test_unknown_database_error_does_not_log_raw_secret(caplog) -> None:
+    secret = "synthetic_credential_123456789012345"
+    with caplog.at_level(logging.ERROR):
+        log_database_startup_failure(Exception(f"unknown failure {secret}"))
+        log_database_startup_failure(
+            DatabaseUnavailableError(
+                "safe", failure_category=secret, source_type=secret
+            )
+        )
+    assert "database_startup_failure" in caplog.text
+    assert "exception_type=Exception" in caplog.text
+    assert "failure_category=UNKNOWN" in caplog.text
+    assert secret not in caplog.text
 
 
 def test_correct_master_key_decrypts_wrong_key_fails_safely() -> None:

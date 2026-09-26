@@ -551,3 +551,8 @@ Streamlit 的当前页面内容位于浏览器会话状态中，刷新、重新�
 - 作品集公开 Demo 决策：当前 Community Cloud SQLite 是 disposable demo state；C08 使用全新、独立的 production PostgreSQL，旧账号、历史和临时 Key 不迁移，也不执行生产自动迁移或在线切换。
 - 生产入口强制 `sslmode=verify-full` 且数据库失败时安全停止；分析页在 AI 技能提取前提示第三方 JD 传输、BYOK 费用和未知价格，本地规则提示无第三方模型传输。修复同浏览器切换账号后连接状态提示可能跨账号显示的问题。
 - 使用隔离合成账户、假 Key 和本地 Provider 完成离线端到端、浏览器桌面/390px 回归、独立只读安全审查与 Git 历史凭证模式扫描。精确结果和限制见[候选报告](c08-d2-release-candidate.md)。
+
+## 2026-09-26 C08 production startup diagnostic hotfix
+
+- PR #2 已合并，但生产 smoke test 的仓储初始化仍显示统一安全提示，Cloud logs 缺少可定位的错误类别；`RELEASE_READY=no`。
+- 连接层对异常先进行脱敏和固定类别判定，启动失败时日志仅记录 `database_startup_failure`、安全异常类型与类别。页面文案、PostgreSQL `verify-full` 要求及失败时停止行为保持不变；不读取或修改生产 Secrets、数据库，也不调用真实 Provider。

@@ -19,6 +19,7 @@ from course2career.config import load_settings
 from course2career.database_backend import (
     DatabaseConfigurationError,
     DatabaseUnavailableError,
+    log_database_startup_failure,
 )
 from course2career.key_encryption import (
     APIKeyCipher,
@@ -85,7 +86,8 @@ try:
         database_url=getattr(settings, "database_url", None),
         production_mode=getattr(settings, "production_mode", False),
     )
-except Exception:
+except Exception as exc:
+    log_database_startup_failure(exc)
     st.error("开发者模式暂时不可用：持久数据库连接或配置失败。")
     st.stop()
 auth_service = AuthService(repository)

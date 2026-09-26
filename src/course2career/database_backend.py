@@ -1,5 +1,7 @@
 """Small DB boundary shared by the existing repository SQL on SQLite and PostgreSQL."""
 
+import logging
+import re
 import sqlite3
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
@@ -11,6 +13,164 @@ class DatabaseConfigurationError(ValueError):
 
 class DatabaseUnavailableError(RuntimeError):
     """The persistent database cannot be reached; details are deliberately hidden."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        failure_category: str = "UNKNOWN",
+        source_type: str = "DatabaseUnavailableError",
+    ) -> None:
+        super().__init__(message)
+        self.failure_category = failure_category
+        self.source_type = source_type
+
+
+_SAFE_EXCEPTION_TYPES = {
+    "DatabaseConfigurationError",
+    "DatabaseUnavailableError",
+    "OperationalError",
+    "InterfaceError",
+    "ProgrammingError",
+    "InsufficientPrivilege",
+    "InvalidCatalogName",
+    "RuntimeError",
+    "OSError",
+}
+_FAILURE_CATEGORIES = {
+    "CONFIGURATION",
+    "TLS_CERTIFICATE",
+    "TLS_HOSTNAME",
+    "DNS",
+    "NETWORK",
+    "AUTHENTICATION",
+    "DATABASE_NOT_FOUND",
+    "PERMISSION",
+    "MIGRATION",
+    "UNKNOWN",
+}
+
+
+def _safe_exception_type(exc: Exception) -> str:
+    name = getattr(exc, "source_type", type(exc).__name__)
+    return name if name in _SAFE_EXCEPTION_TYPES else "Exception"
+
+
+def _redacted_error_text(exc: Exception) -> str:
+    """Redact connection details before classifying an exception message."""
+    message = str(exc)
+    message = re.sub(r"(?i)postgres(?:ql)?(?:\\)?://\S+", "[REDACTED_URL]", message)
+    message = re.sub(
+        r"(?i)\b(?:password|passwd|pwd|user|username|database_url|token|api[_-]?key)"
+        r"\s*[:=]\s*(?:\"[^\"]*\"|'[^']*'|\S+)",
+        "[REDACTED_CREDENTIAL]",
+        message,
+    )
+    message = re.sub(
+        r"(?i)\b(?:napi|sk|ds)[_-][A-Za-z0-9_-]{12,}\b",
+        "[REDACTED_CREDENTIAL]",
+        message,
+    )
+    return re.sub(r"\b[A-Za-z0-9+/_=-]{24,}\b", "[REDACTED_CREDENTIAL]", message)
+
+
+def classify_database_failure(exc: Exception) -> str:
+    """Return a fixed diagnostic category; never return exception text."""
+    if isinstance(exc, DatabaseConfigurationError):
+        return "CONFIGURATION"
+    if (
+        isinstance(exc, DatabaseUnavailableError)
+        and isinstance(exc.failure_category, str)
+        and exc.failure_category in _FAILURE_CATEGORIES
+        and exc.failure_category != "UNKNOWN"
+    ):
+        return exc.failure_category
+    sqlstate = getattr(exc, "sqlstate", None)
+    if sqlstate in {"28P01", "28000"}:
+        return "AUTHENTICATION"
+    if sqlstate == "3D000":
+        return "DATABASE_NOT_FOUND"
+    if sqlstate == "42501":
+        return "PERMISSION"
+    if sqlstate in {"42P01", "42P07", "42703"}:
+        return "MIGRATION"
+    if isinstance(sqlstate, str) and sqlstate.startswith("08"):
+        return "NETWORK"
+    message = _redacted_error_text(exc).lower()
+    if any(
+        term in message
+        for term in (
+            "hostname mismatch",
+            "host name mismatch",
+            "does not match the host",
+            "does not match host name",
+            "hostname verification failed",
+        )
+    ):
+        return "TLS_HOSTNAME"
+    if any(
+        term in message
+        for term in ("certificate", "sslrootcert", "tls handshake", "ssl error")
+    ):
+        return "TLS_CERTIFICATE"
+    if any(
+        term in message
+        for term in (
+            "could not translate host name",
+            "name or service not known",
+            "getaddrinfo",
+            "nodename nor servname",
+        )
+    ):
+        return "DNS"
+    if any(
+        term in message
+        for term in (
+            "password authentication failed",
+            "authentication failed",
+            "no pg_hba.conf entry",
+        )
+    ):
+        return "AUTHENTICATION"
+    if "database" in message and "does not exist" in message:
+        return "DATABASE_NOT_FOUND"
+    if any(
+        term in message
+        for term in ("permission denied", "insufficient privilege", "must be owner")
+    ):
+        return "PERMISSION"
+    if any(
+        term in message for term in ("schema", "migration", "relation does not exist")
+    ):
+        return "MIGRATION"
+    if any(
+        term in message
+        for term in (
+            "connection refused",
+            "connection timed out",
+            "timeout expired",
+            "network is unreachable",
+            "could not connect",
+        )
+    ):
+        return "NETWORK"
+    return "UNKNOWN"
+
+
+def log_database_startup_failure(exc: Exception) -> None:
+    logging.getLogger(__name__).error(
+        "database_startup_failure exception_type=%s failure_category=%s",
+        _safe_exception_type(exc),
+        classify_database_failure(exc),
+    )
+
+
+def _unavailable(exc: Exception) -> DatabaseUnavailableError:
+    return DatabaseUnavailableError(
+        "持久数据库暂时不可用。",
+        failure_category=classify_database_failure(exc),
+        source_type=_safe_exception_type(exc),
+    )
 
 
 class _Row(dict):
@@ -47,30 +207,30 @@ class PostgresConnection:
             # Serialize quota reservations across workers in this database.
             try:
                 self.connection.execute("SELECT pg_advisory_xact_lock(809138721)")
-            except (psycopg.OperationalError, psycopg.InterfaceError):
-                raise DatabaseUnavailableError("持久数据库暂时不可用。") from None
+            except (psycopg.OperationalError, psycopg.InterfaceError) as exc:
+                raise _unavailable(exc) from None
             return None
         sql = sql.replace(" IS ?", " IS NOT DISTINCT FROM %s").replace("?", "%s")
         try:
             return _Cursor(self.connection.execute(sql, params))
-        except (psycopg.OperationalError, psycopg.InterfaceError):
-            raise DatabaseUnavailableError("持久数据库暂时不可用。") from None
+        except (psycopg.OperationalError, psycopg.InterfaceError) as exc:
+            raise _unavailable(exc) from None
 
     def commit(self):
         import psycopg
 
         try:
             self.connection.commit()
-        except (psycopg.OperationalError, psycopg.InterfaceError):
-            raise DatabaseUnavailableError("持久数据库暂时不可用。") from None
+        except (psycopg.OperationalError, psycopg.InterfaceError) as exc:
+            raise _unavailable(exc) from None
 
     def rollback(self):
         import psycopg
 
         try:
             self.connection.rollback()
-        except (psycopg.OperationalError, psycopg.InterfaceError):
-            raise DatabaseUnavailableError("持久数据库暂时不可用。") from None
+        except (psycopg.OperationalError, psycopg.InterfaceError) as exc:
+            raise _unavailable(exc) from None
 
     def close(self):
         self.connection.close()
@@ -145,5 +305,5 @@ class DatabaseBackend:
                     sslmode=self.sslmode,
                 )
             )
-        except psycopg.OperationalError:
-            raise DatabaseUnavailableError("持久数据库暂时不可用。") from None
+        except psycopg.OperationalError as exc:
+            raise _unavailable(exc) from None
