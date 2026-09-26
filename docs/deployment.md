@@ -116,7 +116,7 @@ Streamlit Community Cloud 中应将应用 Sharing 设为 **Public**。不要把�
 
 ## C08-D0/D1 生产 PostgreSQL 准备
 
-正式启用 BYOK 前，在 Community Cloud 根级 Secrets 中配置 `COURSE2CAREER_ENV="production"`、`DATABASE_URL="postgresql://USER:PASSWORD@HOST/DB?sslmode=verify-full"` 与长期保存的 `COURSE2CAREER_KEY_ENCRYPTION_KEY`。示例仅为占位值；实际凭证不能进入仓库、截图、日志或聊天。此 URL 必须指向独立 production PostgreSQL，不能使用 `C2C_TEST_DATABASE_URL`、`C2C_TEST_RESTORE_DATABASE_URL` 或 D1 测试库。生产入口只接受 `sslmode=verify-full`，须核验托管方 CA 及服务端主机名；缺 URL、TLS 配置不合格或连接失败时应用停止，不回退 SQLite。`.env` 和 `.streamlit/secrets.toml` 已忽略。
+正式启用 BYOK 前，在 Community Cloud 根级 Secrets 中配置 `COURSE2CAREER_ENV="production"`、`DATABASE_URL="postgresql://USER:PASSWORD@HOST/DB?sslmode=verify-full"` 与长期保存的 `COURSE2CAREER_KEY_ENCRYPTION_KEY`。示例仅为占位值；实际凭证不能进入仓库、截图、日志或聊天。此 URL 必须指向独立 production PostgreSQL，不能使用 `C2C_TEST_DATABASE_URL`、`C2C_TEST_RESTORE_DATABASE_URL` 或 D1 测试库。生产入口只接受 `sslmode=verify-full`，并在连接时显式使用依赖包 certifi 的 CA bundle 校验证书和主机名；即使 URL 暂含 `sslrootcert=system`，连接参数也会覆盖它，无需把 CA 内容写入 Secrets。缺 URL、TLS 配置不合格或连接失败时应用停止，不回退 SQLite。`.env` 和 `.streamlit/secrets.toml` 已忽略。
 
 生产数据库应启用托管备份并限定权限。主密钥与数据库备份分开保存，重部署必须保持同一值；程序不会自动生成替代主密钥。D1 的[备份恢复操作说明](c08-backup-restore-runbook.md)及远程演练仅针对独立合成测试库，不代表生产备份已配置。D1 PostgreSQL CI、远程合成库、备份恢复及两款精确 Provider 模型认证已通过；D2 候选审查与生产 Secrets 配置已由用户人工确认完成。PR #2 已合并；生产运行时验收仍未通过，`RELEASE_READY=no`。
 

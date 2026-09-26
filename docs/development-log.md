@@ -556,3 +556,8 @@ Streamlit 的当前页面内容位于浏览器会话状态中，刷新、重新�
 
 - PR #2 已合并，但生产 smoke test 的仓储初始化仍显示统一安全提示，Cloud logs 缺少可定位的错误类别；`RELEASE_READY=no`。
 - 连接层对异常先进行脱敏和固定类别判定，启动失败时日志仅记录 `database_startup_failure`、安全异常类型与类别。页面文案、PostgreSQL `verify-full` 要求及失败时停止行为保持不变；不读取或修改生产 Secrets、数据库，也不调用真实 Provider。
+
+## 2026-09-26 C08 production TLS portability hotfix
+
+- Streamlit Community Cloud 的安全诊断记录 `TLS_CERTIFICATE`；当前 URL 的 `sslrootcert=system` 在该运行环境无法可靠加载 CA roots。
+- 生产 verified-TLS 连接显式传入 certifi CA bundle，同时保持 `sslmode=verify-full` 和主机名验证；其连接参数覆盖 URL 中旧的 `sslrootcert=system`。本地测试路径不改变；生产失败仍安全停止，不回退 SQLite。未改动生产 Secrets 或数据库。

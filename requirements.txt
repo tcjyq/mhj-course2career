@@ -1,6 +1,7 @@
 # Production/runtime dependencies. Keep this file pinned for reproducible deploys.
 # The editable local package must be rebuilt when deployment code changes.
 -e .
+certifi==2026.7.22
 cryptography==49.0.0
 openai==2.46.0
 openpyxl==3.1.5

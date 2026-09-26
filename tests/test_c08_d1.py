@@ -4,8 +4,10 @@ import logging
 import os
 from pathlib import Path
 
+import certifi
 import psycopg
 import pytest
+from psycopg.conninfo import conninfo_to_dict, make_conninfo
 from streamlit.runtime.secrets import Secrets
 from streamlit.testing.v1 import AppTest
 
@@ -76,6 +78,45 @@ def test_database_startup_log_never_contains_url_or_credentials(
     assert "failure_category=TLS_CERTIFICATE" in caplog.text
     for value in (url, "synthetic_user", "synthetic_password", secret, "DATABASE_URL="):
         assert value not in caplog.text
+
+
+def test_production_connect_uses_explicit_certifi_bundle_over_url(monkeypatch) -> None:
+    url = "postgresql://synthetic@db.example.test/c2c?sslmode=verify-full&sslrootcert=system"
+    captured = {}
+
+    def fake_connect(conninfo, **kwargs):
+        captured.update(kwargs)
+        assert conninfo == url
+        return object()
+
+    monkeypatch.setattr(psycopg, "connect", fake_connect)
+    DatabaseBackend(url=url, require_verified_tls=True).connect()
+    assert captured["sslmode"] == "verify-full"
+    assert captured["sslrootcert"] == certifi.where()
+    assert Path(captured["sslrootcert"]).is_file()
+    effective = conninfo_to_dict(
+        make_conninfo(
+            url, sslmode=captured["sslmode"], sslrootcert=captured["sslrootcert"]
+        )
+    )
+    assert effective["sslmode"] == "verify-full"
+    assert effective["sslrootcert"] == certifi.where()
+
+
+def test_local_postgres_test_does_not_override_ca_bundle(monkeypatch) -> None:
+    captured = {}
+
+    def fake_connect(_conninfo, **kwargs):
+        captured.update(kwargs)
+        return object()
+
+    monkeypatch.setattr(psycopg, "connect", fake_connect)
+    DatabaseBackend(
+        url="postgresql://localhost/test?sslmode=disable",
+        allow_insecure_local_test=True,
+    ).connect()
+    assert captured["sslmode"] == "disable"
+    assert "sslrootcert" not in captured
 
 
 @pytest.mark.parametrize(

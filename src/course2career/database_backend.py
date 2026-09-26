@@ -262,6 +262,7 @@ class DatabaseBackend:
         self.path = Path(database_path) if database_path else None
         self.url = url
         self.sslmode = None
+        self.require_verified_tls = require_verified_tls
         if self.path:
             self.path.parent.mkdir(parents=True, exist_ok=True)
         else:
@@ -296,13 +297,21 @@ class DatabaseBackend:
         import psycopg
         from psycopg.rows import dict_row
 
+        tls_options = {"sslmode": self.sslmode}
+        if self.require_verified_tls:
+            import certifi
+
+            tls_options = {
+                "sslmode": "verify-full",
+                "sslrootcert": certifi.where(),
+            }
         try:
             return PostgresConnection(
                 psycopg.connect(
                     self.url,
                     row_factory=dict_row,
                     connect_timeout=8,
-                    sslmode=self.sslmode,
+                    **tls_options,
                 )
             )
         except psycopg.OperationalError as exc:
