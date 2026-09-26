@@ -58,7 +58,7 @@ def get_repository(
     if production_mode:
         if not database_url:
             raise DatabaseConfigurationError("生产模式缺少持久数据库。")
-        return PostgresProductRepository(database_url)
+        return PostgresProductRepository(database_url, require_verified_tls=True)
     if database_url:
         raise DatabaseConfigurationError("本地模式不能使用生产 DATABASE_URL。")
     return SQLiteProductRepository(database_path)

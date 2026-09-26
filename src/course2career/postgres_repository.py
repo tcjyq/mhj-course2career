@@ -7,10 +7,16 @@ from course2career.product_repository import SQLiteProductRepository
 
 class PostgresProductRepository(SQLiteProductRepository):
     def __init__(
-        self, database_url: str, *, allow_insecure_local_test: bool = False
+        self,
+        database_url: str,
+        *,
+        allow_insecure_local_test: bool = False,
+        require_verified_tls: bool = False,
     ) -> None:
         self.backend = DatabaseBackend(
-            url=database_url, allow_insecure_local_test=allow_insecure_local_test
+            url=database_url,
+            allow_insecure_local_test=allow_insecure_local_test,
+            require_verified_tls=require_verified_tls,
         )
         migrate_postgres(self.backend)
 

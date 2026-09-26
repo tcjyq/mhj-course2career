@@ -144,6 +144,7 @@ def render_developer_page(
             profile_service.save(
                 principal, provider, endpoint_id, model_id, workspace_id
             )
+            st.session_state.pop(f"provider_connection_{provider.value}", None)
             st.session_state[feedback_key] = "配置已保存；模型仍须真实验证。"
         except (PermissionDeniedError, ValueError) as exc:
             st.session_state[feedback_key] = str(exc)
@@ -294,9 +295,10 @@ def _render_provider_card(
         if (
             key_metadata is not None
             and last_connection is not None
-            and last_connection[:2] == (selected_endpoint, selected_model)
+            and last_connection[:3]
+            == (principal.user_id, selected_endpoint, selected_model)
         ):
-            st.caption(last_connection[2])
+            st.caption(last_connection[3])
         st.link_button("获取官方 API Key / 文档", preset.api_key_help_url)
         if capability.source_url:
             st.link_button("官方模型来源", capability.source_url)
@@ -404,6 +406,7 @@ def _render_provider_card(
                 else "连接未通过"
             )
             st.session_state[f"provider_connection_{name}"] = (
+                principal.user_id,
                 selected_endpoint,
                 selected_model,
                 connection_label,
@@ -423,4 +426,5 @@ def _render_provider_card(
         ):
             api_key_service.delete_key(principal, provider)
             profile_service.delete(principal, provider)
+            st.session_state.pop(f"provider_connection_{name}", None)
             st.rerun()

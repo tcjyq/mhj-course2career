@@ -276,6 +276,28 @@ def render_analysis_page(
                             "可继续尝试，结果需自行核对。"
                         )
 
+        if analysis_mode == "本地规则":
+            st.caption("本地规则仅在应用内处理 JD，不会发送给第三方模型。")
+        else:
+            provider_name = get_provider_preset(selected_provider).display_name
+            st.info(
+                f"提交后，JD 会发送给当前选择的第三方模型 Provider：{provider_name}。"
+            )
+            if analysis_mode == "开发者API Key":
+                st.caption("BYOK 请求可能产生 Provider API 费用，由 Key 持有人承担。")
+            input_rate, output_rate = get_provider_preset(selected_provider).cost_rates(
+                settings
+            )
+            if (
+                input_rate is None
+                or output_rate is None
+                or input_rate <= 0
+                or output_rate <= 0
+            ):
+                st.caption("费用未知/未配置；本项目不会把未知价格当作免费。")
+            else:
+                st.caption("费用仅为配置费率估算，实际费用以 Provider 账单为准。")
+
         if st.button("提取岗位技能", type="primary"):
             usage_id = None
             client = None

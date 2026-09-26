@@ -16,4 +16,4 @@ DeepSeek、百炼、SiliconFlow、MiniMax、OpenRouter、OpenAI、Anthropic、Ge
 
 ## 发布前剩余证据
 
-本地 fake 测试证明解析、权限和缓存契约，不证明供应商真实模型输出。当前 B2 只有 OpenAI、Anthropic 两次 401；十家均无 VERIFIED。合法大陆 Key 可由持有人主动执行低成本 `GET models`，不要自动触发收费的 B2 固定 JD 验证。发布前需逐区域和精确模型跑 B2，核对结构化输出、返回模型、usage、计费与安全边界；随后复核生产持久化、隐私和浏览器行为。[Provider 矩阵](c08-provider-matrix.md) · [B2 报告](c08-provider-validation.md)。
+本地 fake 测试证明解析、权限和缓存契约，不证明供应商真实模型输出。2026-09-24 的 OpenAI、Anthropic 两次 401 是历史首轮结果；2026-09-26 仅 Bailian `cn-beijing` / `qwen3.8-flash` 与 DeepSeek `global` / `deepseek-flash` 已通过完整固定集并写入受控认证文件，其余预设及模型仍未获项目认证。C08-D2 不重复真实 Provider 调用；发布前对已认证模型复用 D1 证据，并审查生产持久化、隐私和浏览器行为。[Provider 矩阵](c08-provider-matrix.md) · [B2 报告](c08-provider-validation.md)。

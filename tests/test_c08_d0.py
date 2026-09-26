@@ -94,6 +94,21 @@ def test_production_database_rejects_local_or_unencrypted_targets(tmp_path):
         DatabaseBackend(database_path=tmp_path / "x.db", url="postgresql://x/y")
 
 
+@pytest.mark.parametrize("sslmode", ["disable", "require", "verify-ca"])
+def test_production_entry_requires_verified_postgres_hostname(sslmode):
+    with pytest.raises(DatabaseConfigurationError):
+        DatabaseBackend(
+            url=f"postgresql://localhost/example?sslmode={sslmode}",
+            allow_insecure_local_test=True,
+            require_verified_tls=True,
+        )
+    backend = DatabaseBackend(
+        url="postgresql://localhost/example?sslmode=verify-full",
+        require_verified_tls=True,
+    )
+    assert backend.sslmode == "verify-full"
+
+
 def test_local_validation_file_does_not_certify_production():
     assert DEFAULT_RECORD_PATH != get_record.__defaults__[0]
     assert get_record(ProviderName.OPENAI, "global", "local-only") is None

@@ -26,6 +26,7 @@ from course2career.postgres_repository import PostgresProductRepository
     (
         "postgresql://127.0.0.1:1/test?sslmode=require",
         "postgresql://127.0.0.1:1/test?sslmode=disable",
+        "postgresql://127.0.0.1:1/test?sslmode=verify-full",
     ),
 )
 def test_production_failure_never_creates_sqlite(
@@ -73,7 +74,7 @@ def test_root_streamlit_secrets_and_os_environment_share_config(
     secret_file = tmp_path / "secrets.toml"
     secret_file.write_text(
         'COURSE2CAREER_ENV = "production"\n'
-        'DATABASE_URL = "postgresql://synthetic@localhost/test?sslmode=require"\n'
+        'DATABASE_URL = "postgresql://synthetic@localhost/test?sslmode=verify-full"\n'
         'COURSE2CAREER_KEY_ENCRYPTION_KEY = "synthetic-config-only"\n',
         encoding="utf-8",
     )

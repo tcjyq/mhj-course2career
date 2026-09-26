@@ -95,6 +95,7 @@ class DatabaseBackend:
         database_path: str | Path | None = None,
         url: str | None = None,
         allow_insecure_local_test: bool = False,
+        require_verified_tls: bool = False,
     ):
         if bool(database_path) == bool(url):
             raise DatabaseConfigurationError("必须且只能配置一个数据库连接目标。")
@@ -109,14 +110,20 @@ class DatabaseBackend:
             mode = modes[0] if len(modes) == 1 else ""
             local_test = (
                 allow_insecure_local_test
+                and not require_verified_tls
                 and parsed.hostname in {"localhost", "127.0.0.1", "::1"}
                 and mode == "disable"
             )
+            allowed_modes = (
+                {"verify-full"}
+                if require_verified_tls
+                else {"require", "verify-ca", "verify-full"}
+            )
             if parsed.scheme not in {"postgresql", "postgres"} or not (
-                local_test or mode in {"require", "verify-ca", "verify-full"}
+                local_test or mode in allowed_modes
             ):
                 raise DatabaseConfigurationError(
-                    "生产 DATABASE_URL 必须为启用 TLS 的 PostgreSQL URL。"
+                    "生产 DATABASE_URL 必须为符合 TLS 策略的 PostgreSQL URL。"
                 )
             self.sslmode = mode
 

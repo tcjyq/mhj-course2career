@@ -50,7 +50,7 @@ AI 只提取 JD 技能；原文引用核对、映射、评分、门槛与学习�
 - 开发者 API Key 使用 AES-256-GCM 加密后保存。
 - C08-B1 在本地分支提供十家受控官方预设，按四类协议适配；免费套餐系统 AI 仍固定 DeepSeek。[设计与边界](docs/c08-multi-provider-design.md) · [开源架构研究](docs/c08-open-source-research.md)。
 - C08-B3 在本地分支允许普通登录用户免费启用开发者模式并管理自己的加密 API Key。启用或关闭不改变 Free/Pro 套餐及系统 AI 日额度；关闭后停止新的 BYOK 使用，已保存的 Key 保留，可重新开启。历史 Developer/Admin 权限继续可用。会员页的 Free/Pro 升级仍只是演示，线上状态以部署版本为准。
-- C08-B2 增加模型级真实验证记录、固定合成 JD 套件及原生 schema adapter。2026-09-26 本机完成 Bailian `cn-beijing` / `qwen3.8-flash` 与 DeepSeek `global` / `deepseek-flash` 的精确模型验证：两者均为 4/4、usage 可用、返回模型一致且无错误，受控认证文件只包含这两个模型。OpenAI 与 Anthropic 的历史请求均为 401，不能推广认证到其他模型或整家 Provider。逐题脱敏诊断留在 gitignored 目录；本轮只更新 feature 分支，未发布，D2 Release Gate 尚未进行。[真实验证报告](docs/c08-provider-validation.md)。
+- C08-B2 增加模型级真实验证记录、固定合成 JD 套件及原生 schema adapter。2026-09-26 本机完成 Bailian `cn-beijing` / `qwen3.8-flash` 与 DeepSeek `global` / `deepseek-flash` 的精确模型验证：两者均为 4/4、usage 可用、返回模型一致且无错误，受控认证文件只包含这两个模型。OpenAI 与 Anthropic 的历史请求均为 401，不能推广认证到其他模型或整家 Provider。逐题脱敏诊断留在 gitignored 目录；本轮只更新 feature 分支，未发布。D2 候选审查见[报告](docs/c08-d2-release-candidate.md)。[真实验证报告](docs/c08-provider-validation.md)。
 - C08-C 在本地分支提供大陆六家优先、国际四家可选的官方模型目录：DeepSeek、百炼、SiliconFlow、MiniMax 等动态发现，Kimi/GLM 有日期的官方静态候选；能力、价格来源和 B2 真实验证分开展示。缓存按用户、端点、Workspace 和 Key 版本隔离，刷新失败保留过期目录；关闭开发者模式即禁止读取和刷新。仅上述两条精确模型记录已 VERIFIED；目录价格不等于实际账单。`deepseek-v4-flash` 作为兼容旧名提示，用户 Profile 不会自动迁移。[目录说明](docs/c08-model-discovery.md) · [官方来源矩阵](docs/c08-provider-matrix.md)。C08-D 才讨论自定义端点。
 - 开发者 API Key 提交后立即清空输入框与对应会话状态，页面只保留末四位元数据。
 - 页面切换采用隔离渲染，避免首页或上一页内容残留到当前页面。
@@ -201,7 +201,7 @@ course2career/
 - 院校分类不对海外教育质量作统一推断；无法可靠判断时使用中性分并说明判断限制。
 - 未填写的信息使用中性值，不按零分处理，但会降低数据完整度和资料完整度等级。
 - 课程、项目和实习均依赖用户提供的信息，无法替代招聘方核验和实际面试。
-- 当前版本使用 SQLite，适合本地和单实例演示。
+- 当前线上版本使用临时 SQLite，适合本地和单实例演示；C08 生产版本要求独立 PostgreSQL。
 - 会员页面为权限模型演示，不接入真实支付。
 
 ## 参与贡献
@@ -212,7 +212,7 @@ course2career/
 
 登录用户完成分析后，报告会以账号归属的快照保存。刷新、重新登录或再次进入“个人分析”后，可在“最近分析”中选择并重新打开历史报告。相同时间、岗位和分数的记录仍会按唯一报告 ID 分别保留。v2.1 上线前生成的报告会以“旧版技能匹配报告”原样展示，不会伪装成五维岗位适配度。课程 Excel、完整 JD 与表单编辑内容不会被自动回填，以减少长期保存的个人和招聘数据。
 
-当前线上演示仍使用 SQLite。Streamlit Community Cloud 的临时磁盘不保证长期保存 SQLite 文件；C08-D0 分支已加入 PostgreSQL 生产路径，但尚未部署。正式 BYOK 上线必须配置持久数据库和长期加密主密钥，完成 PostgreSQL CI、独立远程库与备份恢复演练，以及大陆 Provider 真实验证。见 [持久化说明](docs/c08-production-persistence.md)和[备份恢复操作说明](docs/c08-backup-restore-runbook.md)。
+当前线上演示仍使用 SQLite，其状态定义为 **disposable demo state**。C08 发布将从全新、独立的 production PostgreSQL 开始；旧 Demo 账号、历史和临时 Key 不迁移，也不做自动迁移或在线切换。PostgreSQL CI、独立远程合成库、备份恢复演练和上述两款精确模型验证已有 D1 证据；生产数据库与长期加密主密钥尚须人工创建并在 Streamlit 根级 Secrets 配置，PR #2 保持 Draft，`RELEASE_READY=no`。见[候选报告](docs/c08-d2-release-candidate.md)、[持久化说明](docs/c08-production-persistence.md)和[备份恢复操作说明](docs/c08-backup-restore-runbook.md)。
 
 ## License
 

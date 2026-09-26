@@ -544,3 +544,10 @@ Streamlit 的当前页面内容位于浏览器会话状态中，刷新、重新�
 - 审计七张 SQLite 业务表并新增 `schema_migrations`；生产通过标准 PostgreSQL URL 与 TLS，缺失或不可用时安全停止。
 - 加入合成 SQLite→PostgreSQL 迁移、独立数据库 CI job、受控生产验证记录与长期加密主密钥部署说明。
 - Kimi 与 MiniMax 精确 ID 已按官方目录复核；GLM 官方页面请求超时，保持未验证候选。大陆真实模型验证、远端 CI 和备份恢复仍待证据，不推送或部署。
+
+## 2026-09-26 C08-D2 Pre-Release Blocker Closure
+
+- D1 已在 Draft PR 完成 PostgreSQL CI、独立远程合成库、备份恢复与 Bailian/DeepSeek 两款精确模型认证；D2 未重复真实 Provider 请求，也未操作生产资源。
+- 作品集公开 Demo 决策：当前 Community Cloud SQLite 是 disposable demo state；C08 使用全新、独立的 production PostgreSQL，旧账号、历史和临时 Key 不迁移，也不执行生产自动迁移或在线切换。
+- 生产入口强制 `sslmode=verify-full` 且数据库失败时安全停止；分析页在 AI 技能提取前提示第三方 JD 传输、BYOK 费用和未知价格，本地规则提示无第三方模型传输。修复同浏览器切换账号后连接状态提示可能跨账号显示的问题。
+- 使用隔离合成账户、假 Key 和本地 Provider 完成离线端到端、浏览器桌面/390px 回归、独立只读安全审查与 Git 历史凭证模式扫描。精确结果和限制见[候选报告](c08-d2-release-candidate.md)。

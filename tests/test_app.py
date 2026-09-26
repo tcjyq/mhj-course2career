@@ -4,9 +4,14 @@ from pathlib import Path
 import pandas as pd
 from streamlit.testing.v1 import AppTest
 
+from course2career.api_key_service import APIKeyService
 from course2career.auth_service import AuthService
-from course2career.permissions import Plan, Role
+from course2career.key_encryption import APIKeyCipher
+from course2career.llm_provider import ProviderName
+from course2career.permissions import Plan, Principal, Role
 from course2career.product_repository import SQLiteProductRepository
+from course2career.provider_profile import ProviderProfileService
+from course2career.user_repository import StoredUser
 
 APP_PATH = Path(__file__).resolve().parents[1] / "app.py"
 
@@ -49,6 +54,7 @@ from course2career.key_encryption import APIKeyCipher
 from course2career.permissions import Plan, Principal, Role
 from course2career.product_repository import SQLiteProductRepository
 from course2career.provider_factory import LLMProviderFactory
+from course2career.provider_profile import ProviderProfileService
 from course2career.ui.analysis_page import render_analysis_page
 
 repository = SQLiteProductRepository(r"{database_path}")
@@ -62,6 +68,7 @@ render_analysis_page(
     AnalysisRecordService(repository),
     key_service,
     "guest-test",
+    profile_service=ProviderProfileService(repository) if {developer!r} else None,
 )
 """
     ).run()
@@ -179,6 +186,57 @@ render_analysis_page(
 )
 """
     ).run()
+
+
+def test_analysis_notice_distinguishes_local_and_paid_provider(tmp_path: Path) -> None:
+    app = _analysis_app(tmp_path, system_keys=True)
+    assert not app.exception
+    assert any("不会发送给第三方模型" in item.value for item in app.caption)
+    assert not any("JD 会发送给" in item.value for item in app.info)
+
+    next(item for item in app.radio if item.label == "技能提取模式").set_value(
+        "系统AI"
+    ).run()
+    assert not app.exception
+    assert any("JD 会发送给当前选择的第三方模型" in item.value for item in app.info)
+    assert any("费用未知/未配置" in item.value for item in app.caption)
+
+
+def test_analysis_notice_handles_provider_without_configured_rates(
+    tmp_path: Path,
+) -> None:
+    repository = SQLiteProductRepository(tmp_path / "analysis.db")
+    repository.add(
+        StoredUser(
+            id="developer-test",
+            username="developer",
+            username_normalized="developer",
+            password_hash="not-used",
+            role=Role.DEVELOPER,
+            plan=Plan.DEVELOPER,
+            created_time="2026-08-03T00:00:00+00:00",
+        )
+    )
+    principal = Principal(
+        role=Role.DEVELOPER,
+        plan=Plan.DEVELOPER,
+        user_id="developer-test",
+        username="developer",
+    )
+    APIKeyService(repository, APIKeyCipher(bytes(range(32)))).save_key(
+        principal, ProviderName.ANTHROPIC, "synthetic-key-never-sent"
+    )
+    ProviderProfileService(repository).save(
+        principal, ProviderName.ANTHROPIC, "global", "claude-sonnet-4-5"
+    )
+
+    app = _analysis_app(tmp_path, developer=True)
+    next(item for item in app.radio if item.label == "技能提取模式").set_value(
+        "开发者API Key"
+    ).run()
+    assert not app.exception
+    assert any("Anthropic Claude" in item.value for item in app.info)
+    assert any("费用未知/未配置" in item.value for item in app.caption)
 
 
 def test_app_initial_page_is_product_home() -> None:

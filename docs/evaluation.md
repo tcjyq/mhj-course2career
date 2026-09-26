@@ -92,4 +92,4 @@ GitHub 模型监测发现的新模型不视为通过评测。只有完成上述�
 
 ## C08-D0 发布评估
 
-SQLite 单元回归与 PostgreSQL 服务容器集成分别记录；前者通过不推断后者可用。独立集成覆盖新库、重新连接、用户及 BYOK 资产、用量/额度、跨用户隔离和合成 SQLite 迁移。真实大陆 Provider 必须在持久化基础上使用 B2 合成固定集取得 exact model、usage、返回模型和证据定位；仅 `/v1/models` 或连接测试成功不计 VERIFIED。D1 所需 PostgreSQL CI、独立远程合成演练、备份恢复与两款精确模型验证已有证据；在 C08-D2 Release Gate 完成前发布门槛仍关闭。
+SQLite 单元回归与 PostgreSQL 服务容器集成分别记录；前者通过不推断后者可用。独立集成覆盖新库、重新连接、用户及 BYOK 资产、用量/额度、跨用户隔离和合成 SQLite 迁移。真实大陆 Provider 必须在持久化基础上使用 B2 合成固定集取得 exact model、usage、返回模型和证据定位；仅 `/v1/models` 或连接测试成功不计 VERIFIED。D1 所需 PostgreSQL CI、独立远程合成演练、备份恢复与两款精确模型验证已有证据；D2 合成完整路径与桌面/390px 浏览器证据见[候选报告](c08-d2-release-candidate.md)。合成 Provider 不等于真实模型重测；生产 Secrets 尚未配置，发布门槛保持关闭。

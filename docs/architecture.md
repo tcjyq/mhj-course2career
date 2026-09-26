@@ -124,7 +124,7 @@ flowchart LR
 
 ## 5. 后续演进
 
-GitHub 定时任务每日读取官方目录，发现未知模型时创建一次待验证 Issue，不自动改白名单。公开部署前需要继续加强网关级游客限流和管理员角色授予流程。C08-D0 已在本地分支增加 PostgreSQL 生产路径；独立 CI、备份恢复与发布审查仍待完成。用户量增长后可考虑增加独立API服务。评分模型若要用于更广泛的人群，需要建立人工标注案例和公平性审查，不能直接使用录用结果训练成“录用概率”。
+GitHub 定时任务每日读取官方目录，发现未知模型时创建一次待验证 Issue，不自动改白名单。C08-D1 已完成 PostgreSQL 独立 CI、远程合成库与备份恢复验证；D2 候选审查见[报告](c08-d2-release-candidate.md)，仍未部署。当前公开 SQLite 演示状态在 C08 上线时丢弃，生产从独立全新 PostgreSQL 开始。用户量增长后可考虑增加独立 API 服务。评分模型若要用于更广泛的人群，需要建立人工标注案例和公平性审查，不能直接使用录用结果训练成“录用概率”。
 
 ## 6. 招聘 Showcase 静态边界
 
@@ -142,4 +142,4 @@ Showcase 仅承担稳定说明、真实截图和外部链接职责。实际交�
 
 ## C08-D0 数据架构
 
-`database_backend.py` 集中管理 SQLite/psycopg 连接与参数绑定；现有产品仓储方法由 `PostgresProductRepository` 复用。`database_migrations.py` 记录 SQLite 版本 1/2 与 PostgreSQL 新库事务建表；`data_migration.py` 将经过审查的 SQLite 快照全部七张业务表复制到空 PostgreSQL。生产入口必须选择持久后端，失败即停止。生产 VERIFIED 读取随代码版本控制的认证记录，本地验证文件不能提升生产状态。[表清单与限制](c08-production-persistence.md)。
+`database_backend.py` 集中管理 SQLite/psycopg 连接与参数绑定；现有产品仓储方法由 `PostgresProductRepository` 复用。`database_migrations.py` 记录 SQLite 版本 1/2 与 PostgreSQL 新库事务建表；`data_migration.py` 仅供显式离线工具将已审查的 SQLite 快照复制到空 PostgreSQL。生产入口要求独立 PostgreSQL 和 `sslmode=verify-full`，失败即停止，不会自动迁移旧 Demo SQLite 或回退到本地数据库。生产 VERIFIED 读取随代码版本控制的认证记录，本地验证文件不能提升生产状态。[表清单与限制](c08-production-persistence.md)。
