@@ -10,11 +10,16 @@ from zoneinfo import ZoneInfo
 
 from course2career.llm_provider import ProviderName
 from course2career.models import AdaptabilityReport, AnalysisReport
-from course2career.user_repository import SQLiteUserRepository
+from course2career.permissions import Plan
+from course2career.user_repository import SQLiteUserRepository, StoredUser
 
 
 class QuotaConflictError(RuntimeError):
     """仓储检测到当前周期额度已耗尽。"""
+
+
+class RegistrationLimitError(RuntimeError):
+    """Installation registration window is exhausted."""
 
 
 @dataclass(frozen=True)
@@ -89,6 +94,56 @@ class SQLiteProductRepository(SQLiteUserRepository):
 
         migrate_sqlite(self)
 
+    def add_public_user(
+        self, user: StoredUser, installation_hash: str, *, now: datetime
+    ) -> None:
+        connection = self._connect()
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            cutoff_30d = (now - timedelta(days=30)).isoformat()
+            connection.execute(
+                "UPDATE users SET registration_installation_hash = NULL "
+                "WHERE id IN (SELECT id FROM users "
+                "WHERE registration_installation_hash IS NOT NULL "
+                "AND created_time < ? LIMIT 100)",
+                (cutoff_30d,),
+            )
+            for window, limit in ((timedelta(hours=24), 2), (timedelta(days=7), 3)):
+                count = connection.execute(
+                    "SELECT COUNT(*) AS count FROM users "
+                    "WHERE registration_installation_hash = ? AND created_time >= ?",
+                    (installation_hash, (now - window).isoformat()),
+                ).fetchone()["count"]
+                if count >= limit:
+                    raise RegistrationLimitError
+            connection.execute(
+                "INSERT INTO users (id, username, username_normalized, "
+                "password_hash, role, plan, created_time, session_version, "
+                "status, registration_installation_hash) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    user.id,
+                    user.username,
+                    user.username_normalized,
+                    user.password_hash,
+                    user.role.value,
+                    Plan(user.plan).value,
+                    user.created_time,
+                    user.session_version,
+                    user.status,
+                    installation_hash,
+                ),
+            )
+            connection.commit()
+        except RegistrationLimitError:
+            connection.commit()  # Retain bounded privacy cleanup; no user was inserted.
+            raise
+        except Exception:
+            connection.rollback()
+            raise
+        finally:
+            connection.close()
+
     def reserve_ai_call(
         self,
         *,
@@ -99,6 +154,11 @@ class SQLiteProductRepository(SQLiteUserRepository):
         provider: str = "openai",
         daily_limit: int | None,
         created_time: datetime,
+        installation_hash: str | None = None,
+        quota_class: str | None = None,
+        installation_limit: int | None = None,
+        public_global_limit: int | None = None,
+        absolute_limit: int | None = None,
     ) -> str:
         usage_id = str(uuid4())
         local_time = created_time.astimezone(ZoneInfo("Asia/Shanghai"))
@@ -108,6 +168,30 @@ class SQLiteProductRepository(SQLiteUserRepository):
         connection = self._connect()
         try:
             connection.execute("BEGIN IMMEDIATE")
+            if key_mode == "system":
+                if quota_class not in {"public_free", "assigned_20", "admin"}:
+                    raise ValueError("缺少平台 AI 额度类别。")
+                if quota_class != "admin" and (
+                    not installation_hash or not installation_limit
+                ):
+                    raise ValueError("缺少有效的设备标识。")
+                if not public_global_limit or not absolute_limit:
+                    raise ValueError("缺少平台 AI 安全上限。")
+                cutoff_8d = (created_time - timedelta(days=8)).isoformat()
+                connection.execute(
+                    "UPDATE api_usage SET installation_hash = NULL WHERE id IN "
+                    "(SELECT id FROM api_usage WHERE installation_hash IS NOT NULL "
+                    "AND created_time < ? LIMIT 100)",
+                    (cutoff_8d,),
+                )
+                cutoff_30d = (created_time - timedelta(days=30)).isoformat()
+                connection.execute(
+                    """UPDATE users SET registration_installation_hash = NULL
+                    WHERE id IN (SELECT id FROM users
+                    WHERE registration_installation_hash IS NOT NULL
+                    AND created_time < ? LIMIT 100)""",
+                    (cutoff_30d,),
+                )
             if daily_limit is not None:
                 used = connection.execute(
                     """
@@ -125,12 +209,58 @@ class SQLiteProductRepository(SQLiteUserRepository):
                 ).fetchone()[0]
                 if used >= daily_limit:
                     raise QuotaConflictError
+            if key_mode == "system":
+                day_window = (day_start.isoformat(), day_end.isoformat())
+                if quota_class != "admin":
+                    source = None
+                    if user_id is not None:
+                        user_row = connection.execute(
+                            "SELECT registration_installation_hash, created_time "
+                            "FROM users WHERE id = ?",
+                            (user_id,),
+                        ).fetchone()
+                        if user_row is None:
+                            raise QuotaConflictError
+                        if user_row["created_time"] >= cutoff_30d:
+                            source = user_row["registration_installation_hash"]
+                    for bucket in {installation_hash, source} - {None}:
+                        used = connection.execute(
+                            "SELECT COUNT(*) AS count FROM api_usage a "
+                            "LEFT JOIN users u ON a.user_id = u.id "
+                            "WHERE a.key_mode = 'system' AND a.quota_class = ? "
+                            "AND a.created_time >= ? AND a.created_time < ? "
+                            "AND (a.installation_hash = ? OR "
+                            "(u.registration_installation_hash = ? "
+                            "AND u.created_time >= ?))",
+                            (quota_class, *day_window, bucket, bucket, cutoff_30d),
+                        ).fetchone()["count"]
+                        if used >= installation_limit:
+                            raise QuotaConflictError
+                    public_used = connection.execute(
+                        "SELECT COUNT(*) AS count FROM api_usage a "
+                        "LEFT JOIN users u ON a.user_id = u.id "
+                        "WHERE a.key_mode = 'system' AND a.created_time >= ? "
+                        "AND a.created_time < ? AND (a.quota_class != 'admin' "
+                        "OR (a.quota_class IS NULL AND "
+                        "COALESCE(u.role, 'guest') != 'admin'))",
+                        day_window,
+                    ).fetchone()["count"]
+                    if public_used >= public_global_limit:
+                        raise QuotaConflictError
+                absolute_used = connection.execute(
+                    "SELECT COUNT(*) AS count FROM api_usage WHERE key_mode = 'system' "
+                    "AND created_time >= ? AND created_time < ?",
+                    day_window,
+                ).fetchone()["count"]
+                if absolute_used >= absolute_limit:
+                    raise QuotaConflictError
             connection.execute(
                 """
                 INSERT INTO api_usage (
                     id, user_id, guest_session_id, provider, model, key_mode,
-                    input_tokens, output_tokens, cost, status, created_time
-                ) VALUES (?, ?, ?, ?, ?, ?, 0, 0, 0, 'reserved', ?)
+                    input_tokens, output_tokens, cost, status, created_time,
+                    installation_hash, quota_class
+                ) VALUES (?, ?, ?, ?, ?, ?, 0, 0, 0, 'reserved', ?, ?, ?)
                 """,
                 (
                     usage_id,
@@ -140,9 +270,14 @@ class SQLiteProductRepository(SQLiteUserRepository):
                     model,
                     key_mode,
                     created_time.astimezone(UTC).isoformat(),
+                    installation_hash if key_mode == "system" else None,
+                    quota_class if key_mode == "system" else None,
                 ),
             )
             connection.commit()
+        except QuotaConflictError:
+            connection.commit()  # Retain bounded privacy cleanup; no call was reserved.
+            raise
         except Exception:
             connection.rollback()
             raise

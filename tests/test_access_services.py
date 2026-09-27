@@ -48,11 +48,29 @@ def test_guest_system_ai_is_limited_to_two_calls_per_day(
     service = AIUsageService(repository)
     guest = Principal(role=Role.GUEST)
 
-    service.start_call(guest, "system", "test-model", guest_session_id="guest-1")
-    service.start_call(guest, "system", "test-model", guest_session_id="guest-1")
+    service.start_call(
+        guest,
+        "system",
+        "test-model",
+        guest_session_id="guest-1",
+        installation_id="A" * 43,
+    )
+    service.start_call(
+        guest,
+        "system",
+        "test-model",
+        guest_session_id="guest-1",
+        installation_id="A" * 43,
+    )
 
     with pytest.raises(QuotaExceededError, match="今日 AI 体验次数已用完"):
-        service.start_call(guest, "system", "test-model", guest_session_id="guest-1")
+        service.start_call(
+            guest,
+            "system",
+            "test-model",
+            guest_session_id="guest-1",
+            installation_id="A" * 43,
+        )
 
 
 def test_quota_status_reports_used_and_remaining_calls(
@@ -60,7 +78,13 @@ def test_quota_status_reports_used_and_remaining_calls(
 ) -> None:
     service = AIUsageService(repository)
     guest = Principal(role=Role.GUEST)
-    service.start_call(guest, "system", "test-model", guest_session_id="guest-1")
+    service.start_call(
+        guest,
+        "system",
+        "test-model",
+        guest_session_id="guest-1",
+        installation_id="A" * 43,
+    )
 
     status = service.get_quota_status(
         guest,
@@ -84,6 +108,7 @@ def test_complete_call_persists_real_token_usage_and_configured_cost(
         "test-model",
         guest_session_id="guest-1",
         provider="deepseek",
+        installation_id="A" * 43,
     )
 
     service.complete_call(
@@ -137,6 +162,7 @@ def test_complete_call_survives_cached_legacy_repository_during_hot_reload(
         "deepseek-v4-flash",
         guest_session_id="guest-legacy",
         provider="deepseek",
+        installation_id="A" * 43,
     )
 
     service.complete_call(

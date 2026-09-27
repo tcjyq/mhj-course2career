@@ -15,6 +15,7 @@ from course2career.course_parser import (
     create_course_template,
     read_course_excel,
 )
+from course2career.database_backend import DatabaseUnavailableError
 from course2career.demo_cases import (
     demo_course_frame,
     demo_inputs,
@@ -58,6 +59,7 @@ from course2career.report_exporter import (
     export_skill_matches_csv,
 )
 from course2career.ui.candidate_profile_form import render_candidate_profile_form
+from course2career.ui.installation import InstallationState
 
 
 def render_analysis_page(
@@ -70,6 +72,7 @@ def render_analysis_page(
     guest_session_id: str,
     profile_service: ProviderProfileService | None = None,
     catalog_service: ModelCatalogService | None = None,
+    installation: InstallationState | None = None,
 ) -> None:
     st.title("个人分析")
     st.caption("课程、个人经历、岗位要求、五维适配度和能力路线集中在一个流程中。")
@@ -309,6 +312,23 @@ def render_analysis_page(
                     authorize(principal, Permission.USE_DEMO)
                 else:
                     key_mode = "user" if analysis_mode == "开发者API Key" else "system"
+                    if key_mode == "system":
+                        provider_factory.validate_system_selection(
+                            principal,
+                            selected_provider,
+                            selected_model or "",
+                            selected_endpoint_id,
+                        )
+                        usage_id = usage_service.start_call(
+                            principal,
+                            key_mode,
+                            selected_model or "",
+                            guest_session_id=guest_session_id,
+                            provider=selected_provider.value,
+                            installation_id=(
+                                installation.value if installation is not None else None
+                            ),
+                        )
                     client = provider_factory.create(
                         principal,
                         provider=selected_provider,
@@ -316,13 +336,14 @@ def render_analysis_page(
                         model=selected_model or "",
                         endpoint_id=selected_endpoint_id,
                     )
-                    usage_id = usage_service.start_call(
-                        principal,
-                        key_mode,
-                        client.model_name,
-                        guest_session_id=guest_session_id,
-                        provider=selected_provider.value,
-                    )
+                    if key_mode == "user":
+                        usage_id = usage_service.start_call(
+                            principal,
+                            key_mode,
+                            client.model_name,
+                            guest_session_id=guest_session_id,
+                            provider=selected_provider.value,
+                        )
                 st.session_state.job_analysis = analyze_job_description(jd_text, client)
                 st.session_state.pop("skill_editor", None)
                 if usage_id is not None:
@@ -351,6 +372,12 @@ def render_analysis_page(
                         output_cost_per_million=output_cost_per_million,
                     )
                 st.error(str(exc))
+            except DatabaseUnavailableError:
+                raise
+            except Exception:
+                if usage_id is not None:
+                    usage_service.complete_call(usage_id, success=False)
+                st.error("平台模型暂时不可用，请稍后重试或使用本地规则模式。")
 
     job_analysis = st.session_state.get("job_analysis")
     edited_skills: pd.DataFrame | None = None

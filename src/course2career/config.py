@@ -3,6 +3,8 @@ from dataclasses import dataclass, field
 
 from dotenv import load_dotenv
 
+SYSTEM_AI_HARD_MAX_OUTPUT_TOKENS = 4096
+
 
 @dataclass(frozen=True)
 class Settings:
@@ -21,6 +23,14 @@ class Settings:
     deepseek_model_stale_seconds: int = 86400
     deepseek_max_output_tokens: int = 1500
     system_ai_enabled: bool = True
+    public_free_installation_daily_limit: int = 10
+    assigned_20_installation_daily_limit: int = 20
+    public_system_ai_daily_limit: int = 100
+    system_credential_absolute_daily_limit: int = 120
+    system_ai_max_output_tokens: int = SYSTEM_AI_HARD_MAX_OUTPUT_TOKENS
+    turnstile_site_key: str | None = None
+    turnstile_secret_key: str | None = field(default=None, repr=False)
+    turnstile_allowed_hostnames: tuple[str, ...] = ("mhj-course2career.streamlit.app",)
     openai_input_cost_per_million: float = 0.0
     openai_output_cost_per_million: float = 0.0
     deepseek_input_cost_per_million: float = 0.0
@@ -75,6 +85,30 @@ def load_settings() -> Settings:
             "DEEPSEEK_MAX_OUTPUT_TOKENS", 1500
         ),
         system_ai_enabled=_bool_env("SYSTEM_AI_ENABLED", True),
+        public_free_installation_daily_limit=_positive_int_env(
+            "PUBLIC_FREE_INSTALLATION_DAILY_LIMIT", 10
+        ),
+        assigned_20_installation_daily_limit=_positive_int_env(
+            "ASSIGNED_20_INSTALLATION_DAILY_LIMIT", 20
+        ),
+        public_system_ai_daily_limit=_positive_int_env(
+            "PUBLIC_SYSTEM_AI_DAILY_LIMIT", 100
+        ),
+        system_credential_absolute_daily_limit=_positive_int_env(
+            "SYSTEM_CREDENTIAL_ABSOLUTE_DAILY_LIMIT", 120
+        ),
+        system_ai_max_output_tokens=min(
+            _positive_int_env(
+                "SYSTEM_AI_MAX_OUTPUT_TOKENS", SYSTEM_AI_HARD_MAX_OUTPUT_TOKENS
+            ),
+            SYSTEM_AI_HARD_MAX_OUTPUT_TOKENS,
+        ),
+        turnstile_site_key=os.getenv("TURNSTILE_SITE_KEY") or None,
+        turnstile_secret_key=os.getenv("TURNSTILE_SECRET_KEY") or None,
+        turnstile_allowed_hostnames=_csv_env(
+            "TURNSTILE_ALLOWED_HOSTNAMES",
+            ("mhj-course2career.streamlit.app",),
+        ),
         openai_input_cost_per_million=_nonnegative_float_env(
             "OPENAI_INPUT_COST_PER_MILLION"
         ),

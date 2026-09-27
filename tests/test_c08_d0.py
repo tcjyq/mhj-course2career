@@ -36,7 +36,7 @@ from course2career.provider_verification import (
 def test_sqlite_fresh_schema_version_and_reconnect(tmp_path):
     path = tmp_path / "local.db"
     first = SQLiteProductRepository(path)
-    assert schema_version(first.backend) == 3
+    assert schema_version(first.backend) == 4
     assert SQLiteProductRepository(path).count_users() == 0
     with sqlite3.connect(path) as connection:
         names = {row[0] for row in connection.execute("SELECT name FROM sqlite_master")}
@@ -47,7 +47,7 @@ def test_newer_sqlite_schema_refuses_downgrade(tmp_path):
     path = tmp_path / "newer.db"
     SQLiteProductRepository(path)
     with sqlite3.connect(path) as connection:
-        connection.execute("INSERT INTO schema_migrations(version) VALUES (4)")
+        connection.execute("INSERT INTO schema_migrations(version) VALUES (5)")
     with pytest.raises(RuntimeError, match="高于"):
         SQLiteProductRepository(path)
 
@@ -68,7 +68,7 @@ def test_old_sqlite_snapshot_upgrades_in_copy_only(tmp_path):
         )
     prepare_sqlite_copy(old, copy)
     assert SQLiteProductRepository(copy).find_by_id("legacy").plan.value == "developer"
-    assert schema_version(DatabaseBackend(database_path=copy)) == 3
+    assert schema_version(DatabaseBackend(database_path=copy)) == 4
     with sqlite3.connect(old) as connection:
         assert connection.execute("PRAGMA table_info(users)").fetchall()[-1][1] == (
             "created_time"
@@ -144,6 +144,11 @@ def _assert_admin_overview_usage(repository: SQLiteProductRepository) -> None:
             model="synthetic-model",
             daily_limit=None,
             created_time=now,
+            installation_hash="a" * 64,
+            quota_class="public_free",
+            installation_limit=10,
+            public_global_limit=100,
+            absolute_limit=120,
         )
         repository.complete_ai_call(
             call_id,
@@ -190,7 +195,7 @@ def test_postgres_persists_all_user_assets_and_migrates_synthetic_sqlite(tmp_pat
             "user_api_keys, user_provider_profiles, user_byok_settings "
             "RESTART IDENTITY CASCADE"
         )
-    assert schema_version(repo.backend) == 3
+    assert schema_version(repo.backend) == 4
     auth = AuthService(repo)
     alice = auth.register("alice", "synthetic-password-123")
     bob = auth.register("bob", "synthetic-password-456")

@@ -14,6 +14,8 @@ Course2Career 面向准备实习和校招的大学生，将课程、教育背景
 
 招聘展示先访问稳定 Showcase；Streamlit Live Demo 支持游客以“本地规则”完成完整核心流程，无需注册或平台 AI Key。平台未配置模型凭证时，应用不会显示“系统AI”选项。
 
+C08-E1 分支正在实现公开注册防滥用：Turnstile 验证、同浏览器 installation 的成功注册窗口、平台 AI 的 installation 与全站调用熔断。此分支尚未合并或配置生产 Turnstile；线上体验以已部署版本为准。规则与限制见 [C08-E 设计](docs/c08-e-registration-abuse-design.md)。
+
 ![Course2Career 首页](screenshots/home.png)
 
 ## 90 秒了解与体验

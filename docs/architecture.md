@@ -1,12 +1,18 @@
 # 系统架构
 
+## C08-E1 注册与平台补贴保护（分支实施，未上线）
+
+`ui/installation.py` 由独立的一方组件生成/读取 32 字节随机标识；认证 token 与 installation 不共用。`ui/turnstile_widget.py` 只在公开注册页显示挑战，`turnstile.py` 在服务端验证 success、精确 hostname 与 `register` action。`AuthService.register_public()` 先验证挑战，再做密码哈希；仓储在同一 SQLite `BEGIN IMMEDIATE` 或 PostgreSQL advisory 锁事务内清理过期来源哈希、统计滚动窗口并插入用户。Schema v4 只给 `users` 和 `api_usage` 增加三个 nullable 字段及查询索引，旧数据不回填。
+
+System AI 经 `LLMProviderFactory.validate_system_selection()` 做无网络的受控模型校验，`AIUsageService` 再将用户、当前/来源 installation、全站公开 100/日与绝对 120/日额度一起原子预留；预留成功后才创建 Provider 客户端并发出模型请求。BYOK 和本地规则不走平台补贴池。用量哈希 8 天、来源哈希 30 天后逻辑失效，并在后续相关写事务中限量清除；到期不代表立即物理删除。参见 [ADR 008](decisions/008-registration-abuse-and-system-ai-fuses.md)。
+
 ## C08 持久登录补充
 
-`app.py` 在新 Streamlit WebSocket 会话中挂载一方 `st.components.v2` 存储组件；返回 `PENDING` 时仅显示恢复提示，不写入 Guest。组件明确返回 `TOKEN_PRESENT` 后，`AuthService` 查询 `auth_sessions.token_hash` 并核对到期、撤销和 `session_version`，再用 `users` 实时恢复 Principal；返回 `NO_TOKEN` 才成为 Guest。已有 `session_state.principal` 继续按原逻辑刷新。SQLite 和 PostgreSQL 保留 schema 3。登录后通过组件将 token 写入同源 localStorage，登出先撤销服务端会话再清理浏览器存储；旧 cookie 仅作一次性迁移读取并删除。组件无法提供 HttpOnly，详见[持久化说明](c08-production-persistence.md)。
+`app.py` 在新 Streamlit WebSocket 会话中挂载一方 `st.components.v2` 存储组件；返回 `PENDING` 时仅显示恢复提示，不写入 Guest。组件明确返回 `TOKEN_PRESENT` 后，`AuthService` 查询 `auth_sessions.token_hash` 并核对到期、撤销和 `session_version`，再用 `users` 实时恢复 Principal；返回 `NO_TOKEN` 才成为 Guest。已有 `session_state.principal` 继续按原逻辑刷新。`auth_sessions` 于 schema 3 引入，C08-E1 整体 schema 为 4。登录后通过组件将 token 写入同源 localStorage，登出先撤销服务端会话再清理浏览器存储；旧 cookie 仅作一次性迁移读取并删除。组件无法提供 HttpOnly，详见[持久化说明](c08-production-persistence.md)。
 
 ## 1. 架构选择
 
-项目使用单体Streamlit与`src`布局。`app.py`负责产品外壳、会话身份和动态导航，`ui/`页面负责输入与展示；领域模块负责校验、证据映射、岗位适配度、硬门槛和导出；权限与仓储层负责用户、额度和历史。当前线上 Demo 使用 SQLite；C08-D0 本地分支已加入 PostgreSQL 生产仓储，尚未部署。B2 显式验证脚本将解析/结构异常与解析后的固定业务断言失败分开归类；成功解析的固定题目（包括通过和断言失败）写逐题脱敏诊断到 `outputs/c08-provider-validation/fixture_diagnostics.json`，受控认证仍只来自完整通过的模型级记录。
+项目使用单体Streamlit与`src`布局。`app.py`负责产品外壳、会话身份和动态导航，`ui/`页面负责输入与展示；领域模块负责校验、证据映射、岗位适配度、硬门槛和导出；权限与仓储层负责用户、额度和历史。旧线上 Demo SQLite 已作为 disposable demo state 丢弃；C08 生产使用独立 PostgreSQL，生产登录持久化已获用户验收。C08-E1 的防滥用变更仍只在本分支。B2 显式验证脚本将解析/结构异常与解析后的固定业务断言失败分开归类；成功解析的固定题目（包括通过和断言失败）写逐题脱敏诊断到 `outputs/c08-provider-validation/fixture_diagnostics.json`，受控认证仍只来自完整通过的模型级记录。
 
 ```mermaid
 flowchart LR
@@ -114,7 +120,7 @@ flowchart LR
 - 管理员Dashboard只读取聚合指标和脱敏用户字段，不读取密码哈希或API Key密文。
 - 开发者API Key以AES-256-GCM密文持久化，主密钥只来自环境变量。
 - C08-B1 以四类协议路由十家官方预设；OpenAI Responses 和 DeepSeek Auto-Safe 原路径保留，百炼/OpenRouter/SiliconFlow/Moonshot/Zhipu/MiniMax 复用 Chat 适配器，Anthropic/Gemini 用原生协议。所有新增预设只支持用户 Key。SQLite 旧 Key 约束事务化扩到十家，并新增独立 Profile 和费用状态，密文与关联数据不变；详细边界见 [C08 设计](c08-multi-provider-design.md)与[官方矩阵](c08-provider-matrix.md)。
-- C08-B2 将候选输出策略与真实验证状态分开：连接测试不升级 VERIFIED；本地忽略文件按 Provider × 端点 ID × 精确模型保存运行证据，C08-D0 后生产仅从受控版本文件读取项目认证。Anthropic 原生 `output_config.format`、Gemini `responseJsonSchema` 与 Qwen strict Chat 请求由小型 schema adapter 支持，原始 JobAnalysis 仍作本地校验。OpenRouter 只有精确模型 metadata 证明支持且完整验证通过时才使用 strict schema。OpenAI/Anthropic 的历史两次连接均 401；2026-09-26 仅 Bailian `cn-beijing` / `qwen3.8-flash` 和 DeepSeek `global` / `deepseek-flash` 已在受控文件精确 VERIFIED，未获 D2 发布许可；见 [B2 报告](c08-provider-validation.md)与 [ADR 004](decisions/004-provider-validation-evidence.md)。
+- C08-B2 将候选输出策略与真实验证状态分开：连接测试不升级 VERIFIED；本地忽略文件按 Provider × 端点 ID × 精确模型保存运行证据，C08-D0 后生产仅从受控版本文件读取项目认证。Anthropic 原生 `output_config.format`、Gemini `responseJsonSchema` 与 Qwen strict Chat 请求由小型 schema adapter 支持，原始 JobAnalysis 仍作本地校验。OpenRouter 只有精确模型 metadata 证明支持且完整验证通过时才使用 strict schema。OpenAI/Anthropic 的历史两次连接均 401；2026-09-26 仅 Bailian `cn-beijing` / `qwen3.8-flash` 和 DeepSeek `global` / `deepseek-flash` 已在受控文件精确 VERIFIED；见 [B2 报告](c08-provider-validation.md)与 [ADR 004](decisions/004-provider-validation-evidence.md)。
 - C08-C `ProviderPreset.model_discovery_strategy` 选择动态模型 API 或有来源日期的短静态目录。`ModelCatalogService` 合并官方可用性、能力、价格与独立 B2 记录，拒绝把官方结构化输出升为 `VERIFIED`。内存缓存键含用户、Provider、官方端点、Workspace、Key 更新时间；每次访问复核 B3 开关。DeepSeek 生产 Auto-Safe 目录与开发者候选目录职责不同；旧别名仅提示迁移。[目录说明](c08-model-discovery.md) · [ADR 006](decisions/006-model-catalog-provenance-and-scope.md)。
 - 开发者密钥表单通过提交回调完成加密保存；回调结束前删除明文状态并递增表单版本，使前端创建全新的空密码组件，重跑后的页面只读取脱敏元数据。
 - 页面使用`st.navigation`按角色动态展示入口，页面隐藏不替代服务端权限判断。
@@ -128,7 +134,7 @@ flowchart LR
 
 ## 5. 后续演进
 
-GitHub 定时任务每日读取官方目录，发现未知模型时创建一次待验证 Issue，不自动改白名单。C08-D1 已完成 PostgreSQL 独立 CI、远程合成库与备份恢复验证；D2 候选审查见[报告](c08-d2-release-candidate.md)，仍未部署。当前公开 SQLite 演示状态在 C08 上线时丢弃，生产从独立全新 PostgreSQL 开始。用户量增长后可考虑增加独立 API 服务。评分模型若要用于更广泛的人群，需要建立人工标注案例和公平性审查，不能直接使用录用结果训练成“录用概率”。
+GitHub 定时任务每日读取官方目录，发现未知模型时创建一次待验证 Issue，不自动改白名单。C08-D1 已完成 PostgreSQL 独立 CI、远程合成库与备份恢复验证；D2 候选审查见[报告](c08-d2-release-candidate.md)，之后生产已切换至独立 PostgreSQL，登录刷新验收通过。C08-E1 仍待生产配置与独立 smoke。用户量增长后可考虑增加独立 API 服务。评分模型若要用于更广泛的人群，需要建立人工标注案例和公平性审查，不能直接使用录用结果训练成“录用概率”。
 
 ## 6. 招聘 Showcase 静态边界
 
