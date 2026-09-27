@@ -1,13 +1,13 @@
 # C08-E 注册防滥用与平台 AI 额度设计（已审核，E1 实施中）
 
-日期：2026-09-27。阶段：**E1 分支实施**。设计经人工审核，最终决策以本节及 [ADR 008](decisions/008-registration-abuse-and-system-ai-fuses.md) 为准。生产 PostgreSQL 与持久登录已由用户验收，`AUTH_SESSION_PERSISTENCE_READY=yes`，整体 `RELEASE_READY=no`。E1 仅在本地/CI 的合成数据库与测试键上验证，不访问生产 Secret/数据库或真实 Provider。
+日期：2026-09-27。阶段：**E1 分支实施**。设计经人工审核，最终决策以本节及 [ADR 008](decisions/008-registration-abuse-and-system-ai-fuses.md) 为准。生产 PostgreSQL 与持久登录已由用户验收，`AUTH_SESSION_PERSISTENCE_READY=yes`，整体 `RELEASE_READY=no`。Cloudflare 生产 Turnstile widget 已由用户人工创建，精确 hostname 为 `mhj-course2career.streamlit.app`；`TURNSTILE_SITE_KEY` 和 `TURNSTILE_SECRET_KEY` 已人工保存到 Streamlit Secrets，值未被读取、输出、提交或分享。E1 功能仅在本地/CI 的合成数据库与测试键上验证，未访问生产 Secret/数据库或真实 Provider；生产 schema v4 迁移及真实注册/System AI smoke 尚未完成。
 
 ## 已批准的最终口径
 
 - Guest 2/会话/日、Free 5/用户/日、Pro/Developer 套餐 20/用户/日；Developer Mode 不提升 System AI 额度。`public_free` installation 池 10/日，`assigned_20` 池 20/日，Admin 不受产品额度限制但受绝对熔断限制；BYOK 独立。
 - 非 Admin System Key 全站 100/东八区自然日；含 Admin 的全部 System Key 绝对 120/日；与其他额度在同一预留事务核对。System AI 单次输出上限 4096 tokens，已有更低限制继续生效。
 - 用量哈希 8 天、注册来源哈希 30 天后逻辑失效。到期后不再参与风控识别，并在后续相关写事务中清除；不引入 scheduler，也不承诺精确物理删除。
-- 邮箱验证推迟到 E2；E1 不加邮箱字段、邮件服务或 Secret。生产 Turnstile 配置与真实浏览器上线验收属于后续门槛。
+- 邮箱验证推迟到 E2；E1 不加邮箱字段、邮件服务或 Secret。生产 Turnstile 配置已由用户人工确认；真实浏览器上线验收仍属于后续门槛。
 
 ## 决策与边界
 
@@ -86,13 +86,13 @@ Installation ID 是防滥用的 pseudonymous identifier，不是现实身份或�
 1. 离线实现：仅合成 SQLite 和 Cloudflare 官方测试密钥/stub；不接触生产 Turnstile/Provider。先定分池与全站预算数值。
 2. CI：PostgreSQL 3.12/3.14 migration、并发、注册、额度、隐私回归；五个 job 全绿。
 3. 本地真实浏览器：桌面/390px、注册失败和换设备路径，测试键与生产键隔离。
-4. 生产配置：人工创建限定实际 hostname 的 Turnstile widget，人工保存 `TURNSTILE_SECRET_KEY` 和公开 sitekey；不在设计阶段修改 Secrets。上线前备份与 v4 兼容回退构建就绪，确认 Cloud iframe/大陆用户可用性。
+4. 生产配置：用户已人工创建限定 `mhj-course2career.streamlit.app` 的 Turnstile widget，并将 `TURNSTILE_SITE_KEY`、`TURNSTILE_SECRET_KEY` 保存到 Streamlit Secrets；本项目未读取或修改其值。v4 兼容回退构建已预备；Cloud iframe/目标访问网络可用性及注册流程仍待生产 smoke 验证。
 5. 生产 smoke：不删除现有用户、不修改旧账户，使用授权测试账户验证注册、原有登录、System AI 限额、BYOK/本地规则和失败安全提示；监测挑战失败率与全站补贴使用。真实 Provider 调用只在另行授权的上线 smoke 范围内进行。
 
 若 Turnstile 或 installation 读取失败：只关闭**新注册**与受补贴 System AI，保留现有登录、本地规则、已授权 BYOK 和管理入口；不得在生产悄悄放行无挑战注册。若 v4 代码故障，回退到预备的 **v4-compatible** 构建，保持 additive schema 与既有数据，不恢复旧版 schema 3 二进制，也不删生产数据。功能开关若用于应急只能收紧补贴/关闭注册，不能绕开 Siteverify。重新开放前复核 CI 与生产 smoke。
 
 ## 后续生产验收事项
 
-1. 人工配置真实生产 Turnstile widget、精确 hostname allowlist 与 Secret，并在 Community Cloud 及目标访问网络实测。测试键不得进入生产配置。
+1. 真实生产 Turnstile widget、精确 hostname `mhj-course2career.streamlit.app` 与两项 Streamlit Secrets 已由用户人工配置；仍需在 Community Cloud 及目标访问网络完成真实注册 smoke。测试键不得进入生产配置。
 2. 核对平台模型实际单次输出与供应商账单，设置必要告警；100/120 是调用数上限，不是精确货币预算。
 3. 后续是否确有邮箱核验需求，待 E1 实际滥用与误伤数据再决定，当前不收集邮箱。

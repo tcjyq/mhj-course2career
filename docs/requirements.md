@@ -106,4 +106,4 @@
 
 ## C08-D0 生产持久化要求
 
-正式开发者 BYOK 的账号、鉴权、会话版本、开发者开关、加密 Key、Provider Profile、报告与用量必须同在持久 SQL 数据库；生产数据库失败时停用相关功能并显示安全错误，不回退临时 SQLite。生产 PostgreSQL 连接必须使用 `sslmode=verify-full`；旧线上 SQLite 定义为 disposable demo state，旧账户、历史和临时 Key 未迁移。AI 技能提取前应提示第三方 JD 传输和 BYOK 费用，未知价格显示“费用未知/未配置”；本地规则无第三方模型传输。模型缓存可丢失；项目 VERIFIED 只接受受控版本证据。D1 的 PostgreSQL CI、独立远程合成演练、备份恢复及上述两条精确模型认证已记录为通过；D2 候选状态见[报告](c08-d2-release-candidate.md)。生产 PostgreSQL 和持久登录已上线并获用户验收；C08-E1 的防滥用功能尚未合并，生产 Turnstile 配置仍待人工完成。
+正式开发者 BYOK 的账号、鉴权、会话版本、开发者开关、加密 Key、Provider Profile、报告与用量必须同在持久 SQL 数据库；生产数据库失败时停用相关功能并显示安全错误，不回退临时 SQLite。生产 PostgreSQL 连接必须使用 `sslmode=verify-full`；旧线上 SQLite 定义为 disposable demo state，旧账户、历史和临时 Key 未迁移。AI 技能提取前应提示第三方 JD 传输和 BYOK 费用，未知价格显示“费用未知/未配置”；本地规则无第三方模型传输。模型缓存可丢失；项目 VERIFIED 只接受受控版本证据。D1 的 PostgreSQL CI、独立远程合成演练、备份恢复及上述两条精确模型认证已记录为通过；D2 候选状态见[报告](c08-d2-release-candidate.md)。生产 PostgreSQL 和持久登录已上线并获用户验收；C08-E1 的防滥用功能尚未合并。Cloudflare 生产 Turnstile widget 已由用户人工创建，hostname 为 `mhj-course2career.streamlit.app`；`TURNSTILE_SITE_KEY` 和 `TURNSTILE_SECRET_KEY` 已人工保存到 Streamlit Secrets，值未被读取、输出、提交或分享。生产 schema v4 迁移与真实注册/System AI smoke 尚未完成，`RELEASE_READY=no`。

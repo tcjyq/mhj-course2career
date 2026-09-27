@@ -1,6 +1,6 @@
 # ADR 008：注册防滥用与平台 AI 预算熔断
 
-日期：2026-09-27。状态：C08-E1 分支实施；生产配置与上线未完成。
+日期：2026-09-27。状态：C08-E1 分支实施；生产 Turnstile 配置已人工确认，合并、schema v4 迁移与生产 smoke 未完成。
 
 ## 背景
 
@@ -16,4 +16,4 @@ Schema v4 仅给 `users` 增加可空来源哈希，给 `api_usage` 增加可空
 
 ## 结果与限制
 
-此标识可被浏览器持有人重置或复制，共享设备可能共用额度；Turnstile 也不能阻止人工批量注册。全站与绝对熔断限制公共凭证的每日请求数，但不等于货币支出上限。Turnstile 处理其自身的浏览器挑战信号；本站不采集 IP 或设备指纹。公开测试键只供本地测试，生产需人工配置真实站点键、Secret 与 hostname；未完成生产验收前 `RELEASE_READY=no`。详细威胁、测试与回退见 [C08-E 设计](../c08-e-registration-abuse-design.md)。
+此标识可被浏览器持有人重置或复制，共享设备可能共用额度；Turnstile 也不能阻止人工批量注册。全站与绝对熔断限制公共凭证的每日请求数，但不等于货币支出上限。Turnstile 处理其自身的浏览器挑战信号；本站不采集 IP 或设备指纹。公开测试键只供本地测试。Cloudflare 生产 widget 已由用户人工创建，hostname 为 `mhj-course2career.streamlit.app`；`TURNSTILE_SITE_KEY` 和 `TURNSTILE_SECRET_KEY` 已人工保存到 Streamlit Secrets，值未被读取、输出、提交或分享。真实注册与 System AI 生产 smoke 尚未完成，`RELEASE_READY=no`。详细威胁、测试与回退见 [C08-E 设计](../c08-e-registration-abuse-design.md)。

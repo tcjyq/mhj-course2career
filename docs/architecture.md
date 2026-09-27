@@ -134,7 +134,7 @@ flowchart LR
 
 ## 5. 后续演进
 
-GitHub 定时任务每日读取官方目录，发现未知模型时创建一次待验证 Issue，不自动改白名单。C08-D1 已完成 PostgreSQL 独立 CI、远程合成库与备份恢复验证；D2 候选审查见[报告](c08-d2-release-candidate.md)，之后生产已切换至独立 PostgreSQL，登录刷新验收通过。C08-E1 仍待生产配置与独立 smoke。用户量增长后可考虑增加独立 API 服务。评分模型若要用于更广泛的人群，需要建立人工标注案例和公平性审查，不能直接使用录用结果训练成“录用概率”。
+GitHub 定时任务每日读取官方目录，发现未知模型时创建一次待验证 Issue，不自动改白名单。C08-D1 已完成 PostgreSQL 独立 CI、远程合成库与备份恢复验证；D2 候选审查见[报告](c08-d2-release-candidate.md)，之后生产已切换至独立 PostgreSQL，登录刷新验收通过。C08-E1 生产 Turnstile widget 与 Streamlit Secrets 配置已由用户人工确认，精确 hostname 为 `mhj-course2career.streamlit.app`；未读取、输出、提交或分享 Secret 值。E1 尚未合并，生产 schema v4 迁移与独立 smoke 仍待完成，`RELEASE_READY=no`。用户量增长后可考虑增加独立 API 服务。评分模型若要用于更广泛的人群，需要建立人工标注案例和公平性审查，不能直接使用录用结果训练成“录用概率”。
 
 ## 6. 招聘 Showcase 静态边界
 
