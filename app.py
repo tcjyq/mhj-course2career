@@ -38,6 +38,7 @@ from course2career.ui.auth_page import render_auth_page
 from course2career.ui.browser_auth import (
     clear_token,
     cookie_manager,
+    log_restore_state,
     read_token,
     set_token,
 )
@@ -156,12 +157,13 @@ if pending_auth_cookie:
 if pending_cookie_clear:
     clear_token(auth_cookie_manager)
 if "principal" not in st.session_state:
-    browser_token = None
+    source = None
     if not pending_cookie_clear:
         try:
-            browser_token = read_token(auth_cookie_manager)
+            source = read_token(auth_cookie_manager)
         except Exception:
             pass
+    browser_token = source.token if source is not None else None
     if browser_token:
         try:
             restored = auth_service.restore_session(browser_token)
@@ -173,8 +175,32 @@ if "principal" not in st.session_state:
         else:
             st.session_state.auth_session_token = browser_token
         st.session_state.principal = restored or Principal()
+        log_restore_state(
+            source,
+            server_session_found=restored is not None,
+            restore_result="authenticated" if restored is not None else "guest",
+        )
     else:
         st.session_state.principal = Principal()
+        if source is not None:
+            log_restore_state(
+                source,
+                server_session_found=False,
+                restore_result="pending"
+                if not source.component_cookie_ready
+                else "guest",
+            )
+elif st.session_state.principal.role == Role.GUEST and not pending_cookie_clear:
+    # Diagnostic-only: observe whether an async component token arrives after
+    # the first run already fixed the principal as Guest.
+    try:
+        source = read_token(auth_cookie_manager)
+        found = (
+            bool(auth_service.restore_session(source.token)) if source.token else False
+        )
+        log_restore_state(source, server_session_found=found, restore_result="guest")
+    except Exception:
+        pass
 if "guest_session_id" not in st.session_state:
     st.session_state.guest_session_id = str(uuid4())
 
