@@ -37,7 +37,7 @@ def test_pending_then_token_restores_in_next_run(monkeypatch, tmp_path):
 
     app.run()
     assert not app.exception
-    assert any("正在恢复登录状态" in item.value for item in app.info)
+    assert any("正在全力加载…" in item.value for item in app.info)
     assert "principal" not in app.session_state
 
     app.run()
@@ -99,7 +99,7 @@ def test_login_waits_for_browser_write_before_showing_authenticated_ui(
 
     app.run()
     assert not app.exception
-    assert any("正在保存登录状态" in item.value for item in app.info)
+    assert any("正在全力加载…" in item.value for item in app.info)
     assert len(app.sidebar.button) == 0
 
     app.run()

@@ -51,7 +51,7 @@ st.set_page_config(
 apply_product_styles()
 
 
-def show_auth_restore_pending(message: str = "正在恢复登录状态…") -> None:
+def show_auth_restore_pending(message: str = "正在全力加载…") -> None:
     def render_pending() -> None:
         st.info(message)
 
@@ -184,16 +184,16 @@ try:
         token=pending_storage.get("token") if pending_storage else None,
     )
 except Exception:
-    st.error("登录状态暂时无法恢复，请刷新重试。")
+    st.error("页面暂时无法加载，请刷新重试。")
     st.stop()
 if pending_storage and browser_storage.phase != "PENDING":
     st.session_state.pop("pending_auth_storage", None)
     if storage_action == "set" and (
         not browser_storage.ok or browser_storage.token != pending_storage["token"]
     ):
-        st.warning("浏览器未能保存登录状态，刷新后可能需要重新登录。")
+        st.warning("暂时无法保持登录，刷新后可能需要重新登录。")
 elif pending_storage and storage_action == "set":
-    show_auth_restore_pending("正在保存登录状态…")
+    show_auth_restore_pending("正在全力加载…")
 if "principal" not in st.session_state:
     if pending_storage and storage_action == "clear":
         log_restore_state(

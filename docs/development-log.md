@@ -1,5 +1,9 @@
 # Course2Career 开发日志
 
+## 2026-09-27 C08 生产持久登录验收与文案调整
+
+用户确认生产环境 F5、Ctrl+R、新标签页、登出后 F5 均通过，`AUTH_SESSION_PERSISTENCE_READY=yes`。登录与刷新时的过渡提示统一为“正在全力加载…”，相关失败提示改为面向用户的说法；认证状态机和持久化契约不变，整体 `RELEASE_READY=no`。
+
 ## 2026-09-27 C08 生产登录刷新失败跟进
 
 `141e1bc` 的本地浏览器回归和五项 CI 通过，但用户在 Streamlit Community Cloud 实测登录后 F5 仍成为 Guest，故生产持久登录未验收。`061ba39` 只增加布尔/固定状态诊断并通过五项 CI，用于区分 cookie 未写入和首次异步读取晚到。修复方向为一方 Streamlit v2 组件显式返回 `PENDING`/`TOKEN_PRESENT`/`NO_TOKEN`，原始随机 token 仅在浏览器同源 localStorage 保存，服务端 schema 3、哈希、撤销、版本与权限规则不变；本地结果不替代后续生产 smoke test。
