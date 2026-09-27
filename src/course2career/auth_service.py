@@ -7,6 +7,7 @@ from uuid import uuid4
 
 import psycopg
 
+from course2career.emergency_fallback import REGISTRATION_MESSAGE
 from course2career.password_security import (
     hash_password,
     is_supported_password_hash,
@@ -52,31 +53,13 @@ class AuthService:
     def __init__(self, repository: SQLiteUserRepository) -> None:
         self.repository = repository
 
-    def register(self, username: str, password: str) -> Principal:
-        cleaned_username = username.strip()
-        if not USERNAME_PATTERN.fullmatch(cleaned_username):
-            raise RegistrationError(
-                "用户名需要 3 到 32 个字符，只能包含字母、数字、下划线或连字符。"
-            )
-        if len(password) < 8:
-            raise RegistrationError("密码至少需要 8 个字符。")
-        if len(password) > 128:
-            raise RegistrationError("密码不能超过 128 个字符。")
+    def register_public(self, username: str, password: str) -> Principal:
+        """Public entry point stays closed throughout an emergency fallback."""
+        raise RegistrationError(REGISTRATION_MESSAGE)
 
-        user = StoredUser(
-            id=str(uuid4()),
-            username=cleaned_username,
-            username_normalized=cleaned_username.casefold(),
-            password_hash=hash_password(password),
-            role=Role.USER,
-            plan=Plan.FREE,
-            created_time=datetime.now(UTC).isoformat(),
-        )
-        try:
-            self.repository.add(user)
-        except (sqlite3.IntegrityError, psycopg.IntegrityError) as exc:
-            raise RegistrationError("该用户名已存在。") from exc
-        return _to_principal(user)
+    def register(self, username: str, password: str) -> Principal:
+        """Legacy public API is also closed; it cannot bypass the page guard."""
+        raise RegistrationError(REGISTRATION_MESSAGE)
 
     def authenticate(
         self,

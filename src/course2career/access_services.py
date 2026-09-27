@@ -3,10 +3,12 @@ from datetime import UTC, datetime
 from pydantic import BaseModel, ConfigDict
 
 from course2career.byok_mode import require_current_byok_access
+from course2career.emergency_fallback import SYSTEM_AI_MESSAGE
 from course2career.llm_provider import LLMUsage
 from course2career.models import AdaptabilityReport, AnalysisReport
 from course2career.permissions import (
     Permission,
+    PermissionDeniedError,
     Principal,
     authorize,
     daily_ai_limit,
@@ -56,6 +58,8 @@ class AIUsageService:
         guest_session_id: str | None = None,
         provider: str = "openai",
     ) -> str:
+        if key_mode == "system":
+            raise PermissionDeniedError(SYSTEM_AI_MESSAGE)
         if key_mode == "user":
             require_current_byok_access(principal, self.repository)
         else:
@@ -138,6 +142,8 @@ class AIUsageService:
     ) -> AIQuotaStatus:
         if key_mode == "user":
             require_current_byok_access(principal, self.repository)
+        if key_mode == "system":
+            return AIQuotaStatus(used=0, limit=0, remaining=0)
         limit = daily_ai_limit(principal, key_mode)
         if principal.user_id is None and not guest_session_id:
             raise ValueError("游客额度查询必须提供匿名会话标识。")

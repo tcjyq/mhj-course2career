@@ -18,6 +18,7 @@ from course2career.llm_provider import LLMUsage, ProviderName
 from course2career.permissions import PermissionDeniedError
 from course2career.product_repository import SQLiteProductRepository
 from course2career.provider_profile import ProviderProfileService
+from tests._fallback_support import seed_user
 
 
 class SyntheticProvider:
@@ -34,7 +35,7 @@ def test_synthetic_byok_journey_persists_and_isolates_user_assets(tmp_path: Path
     repository = SQLiteProductRepository(path)
     auth = AuthService(repository)
     password = "synthetic-password-123"
-    owner = auth.register("d2-owner", password)
+    owner = seed_user(repository, "d2-owner", password)
     assert auth.authenticate("d2-owner", password).user_id == owner.user_id
 
     mode = BYOKModeService(repository)
@@ -99,7 +100,7 @@ def test_synthetic_byok_journey_persists_and_isolates_user_assets(tmp_path: Path
         synthetic_key
     )
 
-    other = AuthService(reconnected).register("d2-other", "synthetic-pass-456")
+    other = seed_user(reconnected, "d2-other", "synthetic-pass-456")
     BYOKModeService(reconnected).set_enabled(other, True)
     other = AuthService(reconnected).authenticate("d2-other", "synthetic-pass-456")
     with pytest.raises(APIKeyNotFoundError):
@@ -114,8 +115,8 @@ def test_provider_connection_status_is_not_shared_between_browser_accounts(
     path = tmp_path / "shared-browser.db"
     repository = SQLiteProductRepository(path)
     auth = AuthService(repository)
-    previous = auth.register("previous", "synthetic-pass-123")
-    current = auth.register("current", "synthetic-pass-456")
+    previous = seed_user(repository, "previous", "synthetic-pass-123")
+    current = seed_user(repository, "current", "synthetic-pass-456")
     BYOKModeService(repository).set_enabled(current, True)
     current = auth.authenticate("current", "synthetic-pass-456")
     APIKeyService(repository, APIKeyCipher(bytes(range(32)))).save_key(

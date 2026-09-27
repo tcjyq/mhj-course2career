@@ -1,5 +1,9 @@
 # 系统架构
 
+## C08-E schema v4 紧急兼容
+
+本分支的迁移目标仍为 v3，但允许读取已存在的 E1 v4 schema；不会执行 v4→v3 或改写 E1 新增列。公开注册在页面与公开服务入口关闭，System AI 在页面与 `AIUsageService.start_call` 关闭；BYOK 使用原路径。生产 PostgreSQL verify-full、certifi CA、fail-closed 与持久 `auth_sessions` 均保持。详见[回退手册](c08-e-v4-emergency-rollback.md)。
+
 ## C08 持久登录补充
 
 `app.py` 在新 Streamlit WebSocket 会话中挂载一方 `st.components.v2` 存储组件；返回 `PENDING` 时仅显示恢复提示，不写入 Guest。组件明确返回 `TOKEN_PRESENT` 后，`AuthService` 查询 `auth_sessions.token_hash` 并核对到期、撤销和 `session_version`，再用 `users` 实时恢复 Principal；返回 `NO_TOKEN` 才成为 Guest。已有 `session_state.principal` 继续按原逻辑刷新。SQLite 和 PostgreSQL 保留 schema 3。登录后通过组件将 token 写入同源 localStorage，登出先撤销服务端会话再清理浏览器存储；旧 cookie 仅作一次性迁移读取并删除。组件无法提供 HttpOnly，详见[持久化说明](c08-production-persistence.md)。

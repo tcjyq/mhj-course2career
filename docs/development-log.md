@@ -1,5 +1,11 @@
 # Course2Career 开发日志
 
+## 2026-09-27 C08-E v4 紧急回退构建
+
+从生产基线 `07d09de` 独立创建 `fallback/c08-e-v4-compatible`。v3 迁移代码只放宽到可读取 E1 的增量 schema v4，不进行降级或业务数据改写。公开注册与平台 System AI 两条入口硬停用，保留登录、会话、历史、本地规则、BYOK 和管理页；使用独立合成 PostgreSQL 数据与 SQLite 校验。该分支仅是待验证的应急工件，不合并、不部署、不操作生产资源。[回退手册](c08-e-v4-emergency-rollback.md)。
+
+本地浏览器在 390px 核对维护提示、无注册输入/系统 AI 选项和分析页无整体横向溢出；[登录页截图](../screenshots/c08-e-v4-fallback-mobile.png)。直接打开 Streamlit 子路由仍可能出现既有 `_stcore` 相对路径探测错误，不影响页面功能。
+
 ## 2026-09-27 C08 生产持久登录验收与文案调整
 
 用户确认生产环境 F5、Ctrl+R、新标签页、登出后 F5 均通过，`AUTH_SESSION_PERSISTENCE_READY=yes`。登录与刷新时的过渡提示统一为“正在全力加载…”，相关失败提示改为面向用户的说法；认证状态机和持久化契约不变，整体 `RELEASE_READY=no`。

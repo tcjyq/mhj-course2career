@@ -5,8 +5,8 @@ import streamlit as st
 from course2career.auth_service import (
     AuthService,
     InvalidCredentialsError,
-    RegistrationError,
 )
+from course2career.emergency_fallback import REGISTRATION_MESSAGE
 from course2career.permissions import Plan, Principal, Role
 
 PLAN_LABELS = {
@@ -22,7 +22,7 @@ def render_auth_page(
     auth_service: AuthService,
 ) -> None:
     st.title("登录与账户")
-    st.caption("登录后保存分析记录，并使用与你套餐对应的AI额度。")
+    st.caption("登录后可保存分析记录，继续使用本地规则和已配置的自带 API Key。")
 
     if principal.role != Role.GUEST:
         with st.container(border=True):
@@ -31,8 +31,7 @@ def render_auth_page(
             st.write("账户已登录。可以从左侧进入个人分析、AI额度或开发者页面。")
         return
 
-    login_column, register_column = st.columns(2, gap="large")
-    with login_column:
+    with st.container(border=True):
         st.markdown("## 登录")
         with st.form("login_form"):
             login_username = st.text_input(
@@ -71,43 +70,4 @@ def render_auth_page(
             except InvalidCredentialsError as exc:
                 st.error(str(exc))
 
-    with register_column:
-        st.markdown("## 创建Free账户")
-        with st.form("register_form"):
-            register_username = st.text_input(
-                "用户名",
-                key="register_username",
-                autocomplete="username",
-                help="3到32个字符，可使用字母、数字、下划线和连字符。",
-            )
-            register_password = st.text_input(
-                "密码",
-                type="password",
-                key="register_password",
-                autocomplete="new-password",
-                help="至少8个字符。",
-            )
-            register_submitted = st.form_submit_button(
-                "注册",
-                width="stretch",
-            )
-        if register_submitted:
-            try:
-                registered = auth_service.register(
-                    register_username,
-                    register_password,
-                )
-                previous = st.session_state.get("auth_session_token")
-                if previous:
-                    auth_service.revoke_session(previous)
-                token = auth_service.create_session(registered)
-                st.session_state.pending_auth_storage = {
-                    "action": "set",
-                    "nonce": uuid4().hex,
-                    "token": token,
-                }
-                st.session_state.auth_session_token = token
-                st.session_state.principal = registered
-                st.rerun()
-            except RegistrationError as exc:
-                st.error(str(exc))
+    st.info(REGISTRATION_MESSAGE)

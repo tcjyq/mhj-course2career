@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, fallback/c08-e-v4-compatible]
   pull_request:
 
 permissions:

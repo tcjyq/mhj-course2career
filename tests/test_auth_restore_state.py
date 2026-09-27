@@ -8,6 +8,7 @@ from course2career.auth_service import AuthService
 from course2career.permissions import Role
 from course2career.product_repository import SQLiteProductRepository
 from course2career.ui import browser_auth
+from tests._fallback_support import seed_user
 
 APP_PATH = Path(__file__).resolve().parents[1] / "app.py"
 
@@ -24,7 +25,7 @@ def _new_app(monkeypatch, tmp_path, phases):
 def test_pending_then_token_restores_in_next_run(monkeypatch, tmp_path):
     repo = SQLiteProductRepository(tmp_path / "restore.db")
     auth = AuthService(repo)
-    user = auth.register("pending_user", "synthetic-password-123")
+    user = seed_user(repo, "pending_user", "synthetic-password-123")
     token = auth.create_session(user)
     app = _new_app(
         monkeypatch,
@@ -80,7 +81,7 @@ def test_login_waits_for_browser_write_before_showing_authenticated_ui(
 ):
     repo = SQLiteProductRepository(tmp_path / "restore.db")
     auth = AuthService(repo)
-    user = auth.register("write_pending_user", "synthetic-password-123")
+    user = seed_user(repo, "write_pending_user", "synthetic-password-123")
     token = auth.create_session(user)
     app = _new_app(
         monkeypatch,

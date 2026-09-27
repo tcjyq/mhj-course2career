@@ -1,5 +1,7 @@
 # Course2Career
 
+> **紧急回退分支说明：** 本分支仅供生产数据库已升级到 schema v4 后应急部署。它兼容 v3/v4，暂停新账户注册及平台系统 AI，保留已有账号、本地规则与 BYOK；不得把旧 main 直接部署到 v4 数据库。操作边界见[回退手册](docs/c08-e-v4-emergency-rollback.md)。以下历史功能介绍描述常规版本，不代表此 fallback 当前开放的入口。
+
 > 面向大学生的可解释岗位适配度评估助手
 
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)

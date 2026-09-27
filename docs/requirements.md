@@ -1,5 +1,9 @@
 # Course2Career 产品需求
 
+## C08-E v4 紧急回退限定
+
+此 fallback 构建只接受 schema 3 或 E1 增量 schema 4；生产仍强制 PostgreSQL verify-full 并在连接失败时停止。公开注册与平台 System AI 均暂停，已有登录/会话、历史、Admin、本地规则和 BYOK 继续可用。下方常规功能验收要求不覆盖本应急停用条件；详见[回退手册](c08-e-v4-emergency-rollback.md)。
+
 ## C08 生产登录会话补充
 
 用户名/密码验证后，服务端生成 7 天随机 opaque token，只在 `auth_sessions` 保存 SHA-256 哈希；浏览器一方组件只保存原始 token，不保存密码、用户名、角色、套餐或 Key。新 Streamlit 会话必须区分浏览器存储未就绪、明确无 token 和有 token；未就绪时不得固定 Guest。刷新和重新打开标签页应恢复登录；登出、停用账号、删除用户、密码或 `session_version` 变化后旧会话不得恢复。角色、套餐与开发者模式从数据库实时读取。生产仍只用 PostgreSQL，连接失败安全停止。

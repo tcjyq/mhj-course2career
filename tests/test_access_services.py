@@ -6,7 +6,6 @@ import pytest
 from course2career.access_services import (
     AIUsageService,
     AnalysisRecordService,
-    QuotaExceededError,
     SystemStatusService,
 )
 from course2career.config import Settings
@@ -42,48 +41,43 @@ def _add_user(repository: SQLiteProductRepository, user_id: str, role: Role) -> 
     )
 
 
-def test_guest_system_ai_is_limited_to_two_calls_per_day(
+def test_emergency_fallback_rejects_all_system_ai_calls(
     repository: SQLiteProductRepository,
 ) -> None:
     service = AIUsageService(repository)
     guest = Principal(role=Role.GUEST)
 
-    service.start_call(guest, "system", "test-model", guest_session_id="guest-1")
-    service.start_call(guest, "system", "test-model", guest_session_id="guest-1")
-
-    with pytest.raises(QuotaExceededError, match="今日 AI 体验次数已用完"):
+    with pytest.raises(PermissionDeniedError, match="平台 AI 暂时维护中"):
         service.start_call(guest, "system", "test-model", guest_session_id="guest-1")
+    assert repository.admin_overview(datetime.now(UTC)).ai_call_count == 0
 
 
-def test_quota_status_reports_used_and_remaining_calls(
+def test_emergency_fallback_reports_no_system_ai_availability(
     repository: SQLiteProductRepository,
 ) -> None:
     service = AIUsageService(repository)
     guest = Principal(role=Role.GUEST)
-    service.start_call(guest, "system", "test-model", guest_session_id="guest-1")
-
     status = service.get_quota_status(
         guest,
         "system",
         guest_session_id="guest-1",
     )
 
-    assert status.used == 1
-    assert status.limit == 2
-    assert status.remaining == 1
+    assert (status.used, status.limit, status.remaining) == (0, 0, 0)
 
 
 def test_complete_call_persists_real_token_usage_and_configured_cost(
     repository: SQLiteProductRepository,
 ) -> None:
     service = AIUsageService(repository)
-    guest = Principal(role=Role.GUEST)
-    usage_id = service.start_call(
-        guest,
-        "system",
-        "test-model",
+    usage_id = repository.reserve_ai_call(
+        user_id=None,
         guest_session_id="guest-1",
+        key_mode="system",
+        model="test-model",
         provider="deepseek",
+        daily_limit=None,
+        created_time=datetime.now(UTC),
     )
 
     service.complete_call(
@@ -131,12 +125,14 @@ def test_complete_call_survives_cached_legacy_repository_during_hot_reload(
 
     repository = LegacyCompleteRepository(tmp_path / "legacy.db")
     service = AIUsageService(repository)
-    usage_id = service.start_call(
-        Principal(role=Role.GUEST),
-        "system",
-        "deepseek-v4-flash",
+    usage_id = repository.reserve_ai_call(
+        user_id=None,
         guest_session_id="guest-legacy",
+        key_mode="system",
+        model="deepseek-v4-flash",
         provider="deepseek",
+        daily_limit=None,
+        created_time=datetime.now(UTC),
     )
 
     service.complete_call(

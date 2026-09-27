@@ -31,6 +31,7 @@ from course2career.provider_verification import (
     DEFAULT_RECORD_PATH,
     get_record,
 )
+from tests._fallback_support import seed_user
 
 
 def test_sqlite_fresh_schema_version_and_reconnect(tmp_path):
@@ -47,7 +48,7 @@ def test_newer_sqlite_schema_refuses_downgrade(tmp_path):
     path = tmp_path / "newer.db"
     SQLiteProductRepository(path)
     with sqlite3.connect(path) as connection:
-        connection.execute("INSERT INTO schema_migrations(version) VALUES (4)")
+        connection.execute("INSERT INTO schema_migrations(version) VALUES (5)")
     with pytest.raises(RuntimeError, match="高于"):
         SQLiteProductRepository(path)
 
@@ -192,8 +193,8 @@ def test_postgres_persists_all_user_assets_and_migrates_synthetic_sqlite(tmp_pat
         )
     assert schema_version(repo.backend) == 3
     auth = AuthService(repo)
-    alice = auth.register("alice", "synthetic-password-123")
-    bob = auth.register("bob", "synthetic-password-456")
+    alice = seed_user(repo, "alice", "synthetic-password-123")
+    bob = seed_user(repo, "bob", "synthetic-password-456")
     assert auth.authenticate("alice", "synthetic-password-123").user_id == alice.user_id
     modes = BYOKModeService(repo)
     modes.set_enabled(alice, True)
@@ -255,7 +256,7 @@ def test_postgres_persists_all_user_assets_and_migrates_synthetic_sqlite(tmp_pat
             "RESTART IDENTITY CASCADE"
         )
     source = SQLiteProductRepository(tmp_path / "synthetic.db")
-    synthetic = AuthService(source).register("fixture-user", "synthetic-password-789")
+    synthetic = seed_user(source, "fixture-user", "synthetic-password-789")
     BYOKModeService(source).set_enabled(synthetic, True)
     APIKeyService(source, cipher).save_key(
         AuthService(source).refresh_principal(synthetic),

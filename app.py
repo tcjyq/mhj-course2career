@@ -109,7 +109,7 @@ settings = load_settings()
 try:
     repository = get_repository(
         settings.database_path,
-        schema_revision=7,
+        schema_revision=9,
         database_url=getattr(settings, "database_url", None),
         production_mode=getattr(settings, "production_mode", False),
     )

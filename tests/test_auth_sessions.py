@@ -14,12 +14,13 @@ from course2career.database_migrations import schema_version
 from course2career.permissions import Plan, Role
 from course2career.postgres_repository import PostgresProductRepository
 from course2career.product_repository import SQLiteProductRepository
+from tests._fallback_support import seed_user
 
 
 def test_sqlite_session_is_hashed_restorable_and_revocable(tmp_path, caplog):
     repo = SQLiteProductRepository(tmp_path / "sessions.db")
     auth = AuthService(repo)
-    principal = auth.register("alice", "synthetic-password-123")
+    principal = seed_user(repo, "alice", "synthetic-password-123")
     now = datetime.now(UTC)
     token = auth.create_session(principal, now=now)
     second_token = auth.create_session(principal, now=now)
@@ -45,8 +46,8 @@ def test_sqlite_session_is_hashed_restorable_and_revocable(tmp_path, caplog):
 def test_session_user_isolation_status_rotation_and_live_role(tmp_path):
     repo = SQLiteProductRepository(tmp_path / "isolation.db")
     auth = AuthService(repo)
-    alice = auth.register("alice", "synthetic-password-123")
-    bob = auth.register("bob", "synthetic-password-456")
+    alice = seed_user(repo, "alice", "synthetic-password-123")
+    bob = seed_user(repo, "bob", "synthetic-password-456")
     alice_token = auth.create_session(alice)
     bob_token = auth.create_session(bob)
     assert auth.restore_session(alice_token).user_id == alice.user_id
@@ -83,7 +84,7 @@ def test_session_user_isolation_status_rotation_and_live_role(tmp_path):
 def test_developer_mode_is_restored_from_database(tmp_path):
     repo = SQLiteProductRepository(tmp_path / "developer.db")
     auth = AuthService(repo)
-    user = auth.register("developer", "synthetic-password-123")
+    user = seed_user(repo, "developer", "synthetic-password-123")
     BYOKModeService(repo).set_enabled(user, True)
     self_service_token = auth.create_session(user)
     assert auth.restore_session(self_service_token).byok_enabled
@@ -100,7 +101,7 @@ def test_developer_mode_is_restored_from_database(tmp_path):
 def test_sqlite_v2_upgrade_is_additive(tmp_path):
     path = tmp_path / "existing.db"
     repo = SQLiteProductRepository(path)
-    user = AuthService(repo).register("existing", "synthetic-password-123")
+    user = seed_user(repo, "existing", "synthetic-password-123")
     with repo._connect() as connection:
         connection.execute("DROP TABLE auth_sessions")
         connection.execute("DELETE FROM schema_migrations WHERE version = 3")
@@ -117,7 +118,7 @@ def test_postgres_session_round_trip_and_v2_upgrade():
         pytest.skip("仅在 CI 本机合成 PostgreSQL 测试库执行")
     repo = PostgresProductRepository(url, allow_insecure_local_test=True)
     auth = AuthService(repo)
-    user = auth.register("session_test_user", "synthetic-password-123")
+    user = seed_user(repo, "session_test_user", "synthetic-password-123")
     token = auth.create_session(user)
     try:
         assert auth.restore_session(token) == user

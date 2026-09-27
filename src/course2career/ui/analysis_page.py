@@ -21,6 +21,7 @@ from course2career.demo_cases import (
     export_demo_bundle,
     load_demo_cases,
 )
+from course2career.emergency_fallback import SYSTEM_AI_MESSAGE
 from course2career.evidence_display import (
     EVIDENCE_NOTICE,
     eligibility_label,
@@ -40,7 +41,6 @@ from course2career.models import AnalysisReport, JobAnalysis, JobSkill
 from course2career.permissions import (
     Permission,
     PermissionDeniedError,
-    Plan,
     Principal,
     Role,
     authorize,
@@ -150,18 +150,8 @@ def render_analysis_page(
             max_chars=12_000,
             placeholder="粘贴岗位名称、岗位职责和任职要求。",
         )
+        # The emergency build never offers platform-funded model calls.
         system_providers: list[ProviderName] = []
-        if getattr(settings, "system_ai_enabled", True):
-            for preset in ui_provider_presets():
-                if (
-                    preset.system_key_setting
-                    and getattr(settings, preset.system_key_setting)
-                    and (
-                        principal.plan != Plan.FREE
-                        or preset.provider_id == ProviderName.DEEPSEEK
-                    )
-                ):
-                    system_providers.append(preset.provider_id)
 
         analysis_modes = ["本地规则"]
         if system_providers:
@@ -176,13 +166,11 @@ def render_analysis_page(
             "技能提取模式",
             analysis_modes,
             horizontal=True,
-            help="本地规则不消耗AI额度；平台已配置模型时才显示系统AI。",
+            help="本地规则不消耗AI额度；已配置的自带 API Key 仍可使用。",
         )
         if not system_providers:
-            st.caption(
-                "公开 Demo 默认使用“本地规则”，无需注册或平台 AI Key，"
-                "可完成完整核心分析流程。"
-            )
+            st.info(SYSTEM_AI_MESSAGE)
+            st.caption("本地规则无需平台 AI Key，可完成完整核心分析流程。")
         selected_provider = ProviderName.OPENAI
         selected_model = get_provider_preset(ProviderName.OPENAI).configured_model(
             settings

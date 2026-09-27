@@ -194,12 +194,9 @@ def test_analysis_notice_distinguishes_local_and_paid_provider(tmp_path: Path) -
     assert any("不会发送给第三方模型" in item.value for item in app.caption)
     assert not any("JD 会发送给" in item.value for item in app.info)
 
-    next(item for item in app.radio if item.label == "技能提取模式").set_value(
-        "系统AI"
-    ).run()
-    assert not app.exception
-    assert any("JD 会发送给当前选择的第三方模型" in item.value for item in app.info)
-    assert any("费用未知/未配置" in item.value for item in app.caption)
+    assert next(item for item in app.radio if item.label == "技能提取模式").options == [
+        "本地规则"
+    ]
 
 
 def test_analysis_notice_handles_provider_without_configured_rates(
@@ -343,7 +340,9 @@ def test_app_bootstraps_owner_admin_from_environment(
     assert principal.plan == Plan.ADMIN
 
 
-def test_login_page_has_login_and_registration_forms(tmp_path: Path) -> None:
+def test_login_page_preserves_login_and_disables_registration(
+    tmp_path: Path,
+) -> None:
     repository = SQLiteProductRepository(tmp_path / "auth.db")
     app = AppTest.from_string(
         f"""
@@ -359,7 +358,8 @@ render_auth_page(Principal(), AuthService(repository))
 
     assert not app.exception
     assert app.title[0].value == "登录与账户"
-    assert {button.label for button in app.button} >= {"登录", "注册"}
+    assert {button.label for button in app.button} == {"登录"}
+    assert any("新账户注册暂时维护中" in item.value for item in app.info)
 
 
 def test_analysis_page_upload_valid_excel_shows_course_preview(
@@ -390,25 +390,18 @@ def test_guest_analysis_hides_system_ai_without_platform_key(tmp_path: Path) -> 
 
     assert not app.exception
     assert extraction_mode.options == ["本地规则"]
-    assert any(
-        "公开 Demo 默认使用“本地规则”" in caption.value for caption in app.caption
-    )
+    assert any("平台 AI 暂时维护中" in item.value for item in app.info)
 
 
-def test_free_system_ai_only_shows_deepseek_when_both_platform_keys_exist(
+def test_emergency_fallback_hides_system_ai_even_when_platform_keys_exist(
     tmp_path: Path,
 ) -> None:
     app = _analysis_app(tmp_path, system_keys=True)
     extraction_mode = next(
         radio for radio in app.radio if radio.label == "技能提取模式"
     )
-    assert extraction_mode.options == ["本地规则", "系统AI"]
-
-    extraction_mode.set_value("系统AI").run()
-
-    provider = next(box for box in app.selectbox if box.label == "模型供应商")
+    assert extraction_mode.options == ["本地规则"]
     assert not app.exception
-    assert provider.options == ["DeepSeek"]
 
 
 def test_analysis_page_upload_invalid_excel_shows_readable_error(
@@ -625,11 +618,7 @@ render_membership_page(Principal())
     ).run()
 
     assert not quota_app.exception
-    assert {metric.label for metric in quota_app.metric} >= {
-        "今日已用",
-        "每日额度",
-        "今日剩余",
-    }
+    assert any("平台 AI 暂时维护中" in item.value for item in quota_app.info)
     assert not membership_app.exception
     assert membership_app.title[0].value == "会员方案"
 

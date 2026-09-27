@@ -2,6 +2,7 @@ import pandas as pd
 import streamlit as st
 
 from course2career.byok_mode import BYOKModeService
+from course2career.emergency_fallback import SYSTEM_AI_MESSAGE
 from course2career.permissions import Plan, Principal, Role
 from course2career.ui.byok_mode_controls import render_byok_mode_controls
 
@@ -20,6 +21,7 @@ def render_membership_page(
 ) -> None:
     st.title("会员方案")
     st.caption("Free / Pro 为套餐演示；开发者模式可独立免费启用。")
+    st.info(SYSTEM_AI_MESSAGE)
 
     current_plan = (
         "游客" if principal.role == Role.GUEST else PLAN_LABELS[principal.plan]
@@ -30,13 +32,13 @@ def render_membership_page(
             [
                 {
                     "方案": "Free",
-                    "平台AI": "5次/天",
+                    "平台AI": "暂时维护",
                     "历史记录": "支持",
                     "高级报告": "—",
                 },
                 {
                     "方案": "Pro",
-                    "平台AI": "20次/天",
+                    "平台AI": "暂时维护",
                     "历史记录": "支持",
                     "高级报告": "支持",
                 },

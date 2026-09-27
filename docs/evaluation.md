@@ -1,5 +1,9 @@
 # AI 输出评测方案
 
+## C08-E v4 fallback 验证
+
+合成 PostgreSQL 独立测试库先建立 v3 账号、`auth_sessions`、分析历史、AES-GCM BYOK 密文、Provider Profile 与用量，再执行与 E1 相同的增量 v4 DDL。fallback 在 v3/v4 两种状态下启动，比较启动前后完整业务行与 schema 指纹，并验证登录/恢复、历史、解密、Admin、规则分析可用，注册和 System AI 被拒绝。SQLite v4 也验证只读兼容；CI 的 PostgreSQL/Python 3.14 测试与生产环境验收分开报告。[操作边界](c08-e-v4-emergency-rollback.md)。
+
 ## C08 持久登录回归
 
 使用合成账号核对 SQLite/PostgreSQL 会话创建、哈希、过期、撤销、用户隔离、停用、密码轮换、管理员与开发者状态；特别模拟首次 `PENDING`、随后有 token 或明确无 token 的异步返回。真实本地浏览器核对 F5、Ctrl+R、新标签页、登出后刷新和 390px；用户另行确认生产环境 F5、Ctrl+R、新标签页及登出后 F5 均通过，`AUTH_SESSION_PERSISTENCE_READY=yes`。浏览器只检查本站 localStorage 是否有键，不输出 token 值；URL 不含 token。真实 Provider API 不参与此回归。

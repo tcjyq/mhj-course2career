@@ -16,6 +16,7 @@ from course2career.auth_service import (
 from course2career.password_security import hash_password
 from course2career.permissions import Plan, Role
 from course2career.user_repository import SQLiteUserRepository
+from tests._fallback_support import seed_user
 
 
 @pytest.fixture
@@ -23,29 +24,23 @@ def repository(tmp_path: Path) -> SQLiteUserRepository:
     return SQLiteUserRepository(tmp_path / "test.db")
 
 
-def test_register_creates_normal_user_and_hashes_password(
+def test_emergency_fallback_disables_public_registration(
     repository: SQLiteUserRepository,
 ) -> None:
     service = AuthService(repository)
 
-    principal = service.register("student_01", "strong-pass-123")
-
-    assert principal.role == Role.USER
-    assert principal.plan == Plan.FREE
-    assert principal.user_id
-    with sqlite3.connect(repository.database_path) as connection:
-        stored_hash = connection.execute(
-            "SELECT password_hash FROM users WHERE id = ?", (principal.user_id,)
-        ).fetchone()[0]
-    assert stored_hash != "strong-pass-123"
-    assert "strong-pass-123" not in stored_hash
+    with pytest.raises(RegistrationError, match="新账户注册暂时维护中"):
+        service.register("student_01", "strong-pass-123")
+    with pytest.raises(RegistrationError, match="新账户注册暂时维护中"):
+        service.register_public("student_01", "strong-pass-123")
+    assert repository.count_users() == 0
 
 
 def test_authenticate_accepts_correct_password_and_rejects_wrong_one(
     repository: SQLiteUserRepository,
 ) -> None:
     service = AuthService(repository)
-    registered = service.register("student_01", "strong-pass-123")
+    registered = seed_user(repository, "student_01", "strong-pass-123")
 
     authenticated = service.authenticate("STUDENT_01", "strong-pass-123")
 
@@ -54,16 +49,17 @@ def test_authenticate_accepts_correct_password_and_rejects_wrong_one(
         service.authenticate("student_01", "wrong-password")
 
 
-def test_register_rejects_duplicate_username_and_weak_password(
+def test_emergency_registration_does_not_change_existing_user(
     repository: SQLiteUserRepository,
 ) -> None:
     service = AuthService(repository)
-    service.register("student_01", "strong-pass-123")
+    existing = seed_user(repository, "student_01", "strong-pass-123")
 
-    with pytest.raises(RegistrationError, match="已存在"):
+    with pytest.raises(RegistrationError, match="暂时维护中"):
         service.register("STUDENT_01", "another-pass-123")
-    with pytest.raises(RegistrationError, match="至少需要 8"):
+    with pytest.raises(RegistrationError, match="暂时维护中"):
         service.register("student_02", "short")
+    assert service.authenticate("student_01", "strong-pass-123") == existing
 
 
 def test_bootstrap_admin_creates_admin_without_storing_plaintext_password(
@@ -134,7 +130,7 @@ def test_authenticate_rate_limits_repeated_failures_per_browser_session(
     repository: SQLiteUserRepository,
 ) -> None:
     service = AuthService(repository)
-    service.register("student_01", "strong-pass-123")
+    seed_user(repository, "student_01", "strong-pass-123")
     start = datetime(2026, 7, 25, 12, tzinfo=UTC)
 
     for attempt in range(5):
@@ -185,7 +181,7 @@ def test_bootstrap_admin_refuses_to_promote_an_existing_normal_user(
     repository: SQLiteUserRepository,
 ) -> None:
     service = AuthService(repository)
-    service.register("course2career_admin", "normal-user-pass-123")
+    seed_user(repository, "course2career_admin", "normal-user-pass-123")
 
     with pytest.raises(AdminBootstrapError, match="已被普通账户占用"):
         service.ensure_bootstrap_admin("course2career_admin", "unique-admin-pass-123")

@@ -1,8 +1,12 @@
 """Explicit, ordered C08 schema migrations. No user data is logged."""
 
+from contextlib import closing
+
 from course2career.database_backend import DatabaseBackend
 
 SCHEMA_VERSION = 3
+# Emergency fallback reads the additive E1 schema without applying or undoing v4.
+MAX_COMPATIBLE_SCHEMA_VERSION = 4
 
 AUTH_SESSIONS_DDL = (
     """CREATE TABLE IF NOT EXISTS auth_sessions (
@@ -27,7 +31,7 @@ def migrate_sqlite(repository, *, target: int = SCHEMA_VERSION) -> None:
     from course2career.product_repository import SQLiteProductRepository
     from course2career.user_repository import SQLiteUserRepository
 
-    with repository._connect() as connection:
+    with closing(repository._connect()) as connection, connection:
         connection.execute("BEGIN IMMEDIATE")
         connection.execute(
             "CREATE TABLE IF NOT EXISTS schema_migrations ("
@@ -38,7 +42,7 @@ def migrate_sqlite(repository, *, target: int = SCHEMA_VERSION) -> None:
             "SELECT COALESCE(MAX(version), 0) FROM schema_migrations"
         ).fetchone()
         current = int(row[0])
-        if current > SCHEMA_VERSION:
+        if current > MAX_COMPATIBLE_SCHEMA_VERSION:
             raise RuntimeError("数据库 schema 高于当前应用支持版本。")
         steps = {
             1: SQLiteUserRepository._initialize_schema,
@@ -136,7 +140,7 @@ def migrate_postgres(backend: DatabaseBackend) -> None:
             "SELECT COALESCE(MAX(version), 0) FROM schema_migrations"
         ).fetchone()
         current = int(row[0])
-        if current > SCHEMA_VERSION:
+        if current > MAX_COMPATIBLE_SCHEMA_VERSION:
             raise RuntimeError("数据库 schema 高于当前应用支持版本。")
         if current == 0:
             for sql in POSTGRES_DDL:

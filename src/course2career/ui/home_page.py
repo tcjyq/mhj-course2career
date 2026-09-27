@@ -57,5 +57,5 @@ def render_home_page() -> None:
         st.write("希望梳理课程价值和技能证据的求职者。")
     with right:
         st.markdown("## 从哪里开始")
-        st.write("游客可以直接进入“个人分析”体验本地规则和有限AI额度。")
-        st.write("登录后可以保存历史记录，并在“AI额度”查看每日使用情况。")
+        st.write("游客可以直接进入“个人分析”体验本地规则。")
+        st.write("登录后可以保存历史记录；新账户注册与平台 AI 暂时维护。")
