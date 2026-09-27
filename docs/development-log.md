@@ -1,5 +1,9 @@
 # Course2Career 开发日志
 
+## 2026-09-27 C08 生产登录刷新失败跟进
+
+`141e1bc` 的本地浏览器回归和五项 CI 通过，但用户在 Streamlit Community Cloud 实测登录后 F5 仍成为 Guest，故生产持久登录未验收。`061ba39` 只增加布尔/固定状态诊断并通过五项 CI，用于区分 cookie 未写入和首次异步读取晚到。修复方向为一方 Streamlit v2 组件显式返回 `PENDING`/`TOKEN_PRESENT`/`NO_TOKEN`，原始随机 token 仅在浏览器同源 localStorage 保存，服务端 schema 3、哈希、撤销、版本与权限规则不变；本地结果不替代后续生产 smoke test。
+
 ## 2026-09-27 C08 生产登录持久化 hotfix
 
 生产 smoke test 确认 `st.session_state` 在浏览器重载后清空。新增 schema 3 `auth_sessions`、7 天随机 token 的服务端哈希/撤销及浏览器受限 cookie，恢复身份时实时检查用户、会话版本、角色、套餐与开发者模式。本地隔离浏览器已验证刷新、新标签页、登出和 390px；上线与 CI 结果以提交后状态为准。未改生产 Secrets、生产数据库或真实 Provider。

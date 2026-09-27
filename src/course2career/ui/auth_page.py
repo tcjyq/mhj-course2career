@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 import streamlit as st
 
 from course2career.auth_service import (
@@ -18,7 +20,6 @@ PLAN_LABELS = {
 def render_auth_page(
     principal: Principal,
     auth_service: AuthService,
-    cookie_manager=None,
 ) -> None:
     st.title("登录与账户")
     st.caption("登录后保存分析记录，并使用与你套餐对应的AI额度。")
@@ -55,13 +56,16 @@ def render_auth_page(
                     login_password,
                     attempt_scope=st.session_state.guest_session_id,
                 )
-                if cookie_manager is not None:
-                    previous = st.session_state.get("auth_session_token")
-                    if previous:
-                        auth_service.revoke_session(previous)
-                    token = auth_service.create_session(authenticated)
-                    st.session_state.pending_auth_cookie = token
-                    st.session_state.auth_session_token = token
+                previous = st.session_state.get("auth_session_token")
+                if previous:
+                    auth_service.revoke_session(previous)
+                token = auth_service.create_session(authenticated)
+                st.session_state.pending_auth_storage = {
+                    "action": "set",
+                    "nonce": uuid4().hex,
+                    "token": token,
+                }
+                st.session_state.auth_session_token = token
                 st.session_state.principal = authenticated
                 st.rerun()
             except InvalidCredentialsError as exc:
@@ -93,13 +97,16 @@ def render_auth_page(
                     register_username,
                     register_password,
                 )
-                if cookie_manager is not None:
-                    previous = st.session_state.get("auth_session_token")
-                    if previous:
-                        auth_service.revoke_session(previous)
-                    token = auth_service.create_session(registered)
-                    st.session_state.pending_auth_cookie = token
-                    st.session_state.auth_session_token = token
+                previous = st.session_state.get("auth_session_token")
+                if previous:
+                    auth_service.revoke_session(previous)
+                token = auth_service.create_session(registered)
+                st.session_state.pending_auth_storage = {
+                    "action": "set",
+                    "nonce": uuid4().hex,
+                    "token": token,
+                }
+                st.session_state.auth_session_token = token
                 st.session_state.principal = registered
                 st.rerun()
             except RegistrationError as exc:

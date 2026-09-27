@@ -212,7 +212,7 @@ course2career/
 
 登录用户完成分析后，报告会以账号归属的快照保存。刷新、重新登录或再次进入“个人分析”后，可在“最近分析”中选择并重新打开历史报告。相同时间、岗位和分数的记录仍会按唯一报告 ID 分别保留。v2.1 上线前生成的报告会以“旧版技能匹配报告”原样展示，不会伪装成五维岗位适配度。课程 Excel、完整 JD 与表单编辑内容不会被自动回填，以减少长期保存的个人和招聘数据。
 
-旧线上 SQLite 为 **disposable demo state**；C08 生产使用独立 PostgreSQL，旧 Demo 账号、历史和临时 Key 不迁移。登录后的 7 天持久会话由服务端数据库保存 token 哈希，浏览器只持有随机 cookie；刷新或重新打开页面可恢复登录，登出、密码变更与账号停用会使旧会话失效。Streamlit 的 JavaScript cookie 组件不能设置真正的 `HttpOnly`；详情见[持久化说明](docs/c08-production-persistence.md)。此 hotfix 尚待 CI 与线上 smoke test，`RELEASE_READY=no`。
+旧线上 SQLite 为 **disposable demo state**；C08 生产使用独立 PostgreSQL，旧 Demo 账号、历史和临时 Key 不迁移。登录后的 7 天持久会话由服务端数据库保存 token 哈希，浏览器的一方组件只在本地存储随机 opaque token；刷新或重新打开页面时，组件明确回报就绪后才恢复身份。登出、密码变更与账号停用会使旧会话失效。浏览器存储无法提供 `HttpOnly`，共享设备与 XSS 风险见[持久化说明](docs/c08-production-persistence.md)。本次修复仍待生产登录刷新 smoke test，`RELEASE_READY=no`。
 
 ## License
 

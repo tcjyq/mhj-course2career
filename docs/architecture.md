@@ -2,7 +2,7 @@
 
 ## C08 持久登录补充
 
-`app.py` 在新 Streamlit WebSocket 会话中读取浏览器 opaque cookie，经 `AuthService` 查询 `auth_sessions.token_hash`，核对到期/撤销/`session_version`，再用 `users` 实时恢复 Principal；已有 `session_state.principal` 继续按原逻辑刷新。SQLite 和 PostgreSQL 均执行 schema 3 的新增表迁移。登录后待下一次完整渲染写 cookie，避免 Streamlit 立即 rerun 丢弃组件命令；登出先撤销服务端会话，再删除 cookie。生产 cookie 使用 Secure、SameSite Strict、path `/`；组件 JavaScript 写入无法提供 HttpOnly，详见[持久化说明](c08-production-persistence.md)。
+`app.py` 在新 Streamlit WebSocket 会话中挂载一方 `st.components.v2` 存储组件；返回 `PENDING` 时仅显示恢复提示，不写入 Guest。组件明确返回 `TOKEN_PRESENT` 后，`AuthService` 查询 `auth_sessions.token_hash` 并核对到期、撤销和 `session_version`，再用 `users` 实时恢复 Principal；返回 `NO_TOKEN` 才成为 Guest。已有 `session_state.principal` 继续按原逻辑刷新。SQLite 和 PostgreSQL 保留 schema 3。登录后通过组件将 token 写入同源 localStorage，登出先撤销服务端会话再清理浏览器存储；旧 cookie 仅作一次性迁移读取并删除。组件无法提供 HttpOnly，详见[持久化说明](c08-production-persistence.md)。
 
 ## 1. 架构选择
 

@@ -1,3 +1,4 @@
+from urllib.parse import urlsplit
 from uuid import uuid4
 
 import streamlit as st
@@ -35,13 +36,7 @@ from course2career.provider_factory import LLMProviderFactory
 from course2career.provider_profile import ProviderProfileService
 from course2career.ui.analysis_page import render_analysis_page
 from course2career.ui.auth_page import render_auth_page
-from course2career.ui.browser_auth import (
-    clear_token,
-    cookie_manager,
-    log_restore_state,
-    read_token,
-    set_token,
-)
+from course2career.ui.browser_auth import log_restore_state, read_browser_storage
 from course2career.ui.developer_page import render_developer_page
 from course2career.ui.home_page import render_home_page
 from course2career.ui.membership_page import render_membership_page
@@ -54,6 +49,31 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 apply_product_styles()
+
+
+def show_auth_restore_pending(message: str = "正在恢复登录状态…") -> None:
+    def render_pending() -> None:
+        st.info(message)
+
+    pages = [
+        st.Page(
+            render_pending,
+            title=title,
+            url_path=path,
+            default=path == "home",
+        )
+        for title, path in (
+            ("首页", "home"),
+            ("登录", "login"),
+            ("个人分析", "analysis"),
+            ("AI额度", "quota"),
+            ("会员方案", "membership"),
+            ("我的 AI Provider", "developer"),
+            ("管理员Dashboard", "admin"),
+        )
+    ]
+    st.navigation(pages, position="hidden").run()
+    st.stop()
 
 
 @st.cache_resource
@@ -145,62 +165,74 @@ model_catalog = get_deepseek_model_catalog(
 provider_factory = LLMProviderFactory(settings, api_key_service)
 provider_factory.model_catalog = model_catalog
 
-auth_cookie_manager = cookie_manager()
-pending_auth_cookie = st.session_state.pop("pending_auth_cookie", None)
-pending_cookie_clear = st.session_state.pop("pending_cookie_clear", False)
-if pending_auth_cookie:
-    set_token(
-        auth_cookie_manager,
-        pending_auth_cookie,
-        production=settings.production_mode,
+if "auth_requested_path" not in st.session_state:
+    context_url = st.context.url
+    st.session_state.auth_requested_path = (
+        urlsplit(context_url).path.strip("/") if isinstance(context_url, str) else ""
     )
-if pending_cookie_clear:
-    clear_token(auth_cookie_manager)
+if "auth_storage_nonce" not in st.session_state:
+    st.session_state.auth_storage_nonce = uuid4().hex
+pending_storage = st.session_state.get("pending_auth_storage")
+storage_action = pending_storage["action"] if pending_storage else "read"
+storage_nonce = (
+    pending_storage["nonce"] if pending_storage else st.session_state.auth_storage_nonce
+)
+try:
+    browser_storage = read_browser_storage(
+        action=storage_action,
+        nonce=storage_nonce,
+        token=pending_storage.get("token") if pending_storage else None,
+    )
+except Exception:
+    st.error("登录状态暂时无法恢复，请刷新重试。")
+    st.stop()
+if pending_storage and browser_storage.phase != "PENDING":
+    st.session_state.pop("pending_auth_storage", None)
+    if storage_action == "set" and (
+        not browser_storage.ok or browser_storage.token != pending_storage["token"]
+    ):
+        st.warning("浏览器未能保存登录状态，刷新后可能需要重新登录。")
+elif pending_storage and storage_action == "set":
+    show_auth_restore_pending("正在保存登录状态…")
 if "principal" not in st.session_state:
-    source = None
-    if not pending_cookie_clear:
+    if pending_storage and storage_action == "clear":
+        log_restore_state(
+            browser_storage, server_session_found=False, restore_result="guest"
+        )
+        st.session_state.principal = Principal()
+    elif browser_storage.phase == "PENDING":
+        log_restore_state(
+            browser_storage, server_session_found=False, restore_result="pending"
+        )
+        show_auth_restore_pending()
+    elif browser_storage.phase == "TOKEN_PRESENT":
         try:
-            source = read_token(auth_cookie_manager)
-        except Exception:
-            pass
-    browser_token = source.token if source is not None else None
-    if browser_token:
-        try:
-            restored = auth_service.restore_session(browser_token)
+            restored = auth_service.restore_session(browser_storage.token)
         except DatabaseUnavailableError:
             st.error("开发者模式暂时不可用：持久数据库连接失败。")
             st.stop()
         if restored is None:
-            clear_token(auth_cookie_manager)
-        else:
-            st.session_state.auth_session_token = browser_token
-        st.session_state.principal = restored or Principal()
-        log_restore_state(
-            source,
-            server_session_found=restored is not None,
-            restore_result="authenticated" if restored is not None else "guest",
-        )
-    else:
-        st.session_state.principal = Principal()
-        if source is not None:
             log_restore_state(
-                source,
-                server_session_found=False,
-                restore_result="pending"
-                if not source.component_cookie_ready
-                else "guest",
+                browser_storage, server_session_found=False, restore_result="guest"
             )
-elif st.session_state.principal.role == Role.GUEST and not pending_cookie_clear:
-    # Diagnostic-only: observe whether an async component token arrives after
-    # the first run already fixed the principal as Guest.
-    try:
-        source = read_token(auth_cookie_manager)
-        found = (
-            bool(auth_service.restore_session(source.token)) if source.token else False
+            st.session_state.pending_auth_storage = {
+                "action": "clear",
+                "nonce": uuid4().hex,
+            }
+            st.session_state.principal = Principal()
+        else:
+            log_restore_state(
+                browser_storage,
+                server_session_found=True,
+                restore_result="authenticated",
+            )
+            st.session_state.auth_session_token = browser_storage.token
+            st.session_state.principal = restored
+    else:
+        log_restore_state(
+            browser_storage, server_session_found=False, restore_result="guest"
         )
-        log_restore_state(source, server_session_found=found, restore_result="guest")
-    except Exception:
-        pass
+        st.session_state.principal = Principal()
 if "guest_session_id" not in st.session_state:
     st.session_state.guest_session_id = str(uuid4())
 
@@ -211,7 +243,10 @@ if principal.role != Role.GUEST:
         st.session_state.principal = principal
     except InvalidSessionError:
         auth_service.revoke_session(st.session_state.get("auth_session_token"))
-        st.session_state.pending_cookie_clear = True
+        st.session_state.pending_auth_storage = {
+            "action": "clear",
+            "nonce": uuid4().hex,
+        }
         for state_key in (
             "principal",
             "auth_session_token",
@@ -249,7 +284,10 @@ with st.sidebar:
         st.caption("可直接体验个人分析，登录后保存记录。")
     elif st.button("退出登录", width="stretch"):
         auth_service.revoke_session(st.session_state.get("auth_session_token"))
-        st.session_state.pending_cookie_clear = True
+        st.session_state.pending_auth_storage = {
+            "action": "clear",
+            "nonce": uuid4().hex,
+        }
         for state_key in (
             "principal",
             "auth_session_token",
@@ -267,11 +305,7 @@ home_page = st.Page(
     default=True,
 )
 login_page = st.Page(
-    lambda: render_auth_page(
-        principal,
-        auth_service,
-        auth_cookie_manager,
-    ),
+    lambda: render_auth_page(principal, auth_service),
     title="登录",
     url_path="login",
 )
@@ -341,6 +375,14 @@ if principal.role == Role.ADMIN and principal.plan == Plan.ADMIN:
 
 selected_page = st.navigation(navigation, position="sidebar")
 current_page_path = selected_page.url_path
+requested_path = st.session_state.pop("auth_requested_path", None)
+if requested_path and requested_path != current_page_path:
+    for page_group in navigation.values():
+        matching_page = next(
+            (page for page in page_group if page.url_path == requested_path), None
+        )
+        if matching_page is not None:
+            st.switch_page(matching_page)
 previous_page_path = st.session_state.get("_active_page_path")
 page_slot = st.empty()
 if previous_page_path is not None and previous_page_path != current_page_path:

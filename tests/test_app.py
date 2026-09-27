@@ -239,7 +239,14 @@ def test_analysis_notice_handles_provider_without_configured_rates(
     assert any("费用未知/未配置" in item.value for item in app.caption)
 
 
-def test_app_initial_page_is_product_home() -> None:
+def test_app_initial_page_is_product_home(monkeypatch) -> None:
+    from course2career.ui import browser_auth
+
+    monkeypatch.setattr(
+        browser_auth,
+        "read_browser_storage",
+        lambda **_kwargs: browser_auth.BrowserStorageState("NO_TOKEN"),
+    )
     app = AppTest.from_file(APP_PATH).run()
 
     assert not app.exception
@@ -249,7 +256,14 @@ def test_app_initial_page_is_product_home() -> None:
     assert len(app.file_uploader) == 0
 
 
-def test_app_starts_during_legacy_settings_deployment_window() -> None:
+def test_app_starts_during_legacy_settings_deployment_window(monkeypatch) -> None:
+    from course2career.ui import browser_auth
+
+    monkeypatch.setattr(
+        browser_auth,
+        "read_browser_storage",
+        lambda **_kwargs: browser_auth.BrowserStorageState("NO_TOKEN"),
+    )
     app_path = Path("app.py").resolve().as_posix()
     app = AppTest.from_string(
         f"""
@@ -277,7 +291,14 @@ finally:
     assert app.title[0].value == "把学过的课程，翻译成求职能力"
 
 
-def test_app_starts_during_provider_factory_hot_reload_window() -> None:
+def test_app_starts_during_provider_factory_hot_reload_window(monkeypatch) -> None:
+    from course2career.ui import browser_auth
+
+    monkeypatch.setattr(
+        browser_auth,
+        "read_browser_storage",
+        lambda **_kwargs: browser_auth.BrowserStorageState("NO_TOKEN"),
+    )
     app_path = Path("app.py").resolve().as_posix()
     app = AppTest.from_string(
         f"""
