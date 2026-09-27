@@ -2,7 +2,7 @@
 
 ## 2026-09-27 C08-E1 注册防滥用与平台 AI 熔断（分支实施）
 
-设计经人工审核，在 `feature/c08-e-registration-abuse` 增加 schema v4 的三个 nullable 字段、一方随机 installation 标识、公开注册 Turnstile 服务端校验及滚动成功注册限额。System AI 在 Provider 客户端创建前原子检查个人/当前/来源/全站/绝对额度并预留；BYOK、本地规则和既有登录路径不走注册门槛。用量哈希 8 天、来源哈希 30 天后逻辑失效，并在后续相关写事务中限量清除。隔离本地 PostgreSQL 18 集群的集成与并发测试已通过；全量 Python 3.12 回归 295 通过、1 项远程恢复测试因未提供专用恢复库而跳过。官方 Turnstile 测试站点键加本地受控验证响应的真实浏览器验证了同浏览器 2 次成功注册、第 3 次拒绝、旧账户登录刷新、BYOK 入口可达和 390px 无横向溢出；登录子路由刷新仍有既有的两条 `_stcore` 相对路径 404，不影响页面使用。生产 Turnstile 配置、合并与上线均未执行，CI 状态以推送后为准。决策见 [ADR 008](decisions/008-registration-abuse-and-system-ai-fuses.md)。
+设计经人工审核，在 `feature/c08-e-registration-abuse` 增加 schema v4 的三个 nullable 字段、一方随机 installation 标识、公开注册 Turnstile 服务端校验及滚动成功注册限额。System AI 在 Provider 客户端创建前原子检查个人/当前/来源/全站/绝对额度并预留；BYOK、本地规则和既有登录路径不走注册门槛。用量哈希 8 天、来源哈希 30 天后逻辑失效，并在后续相关写事务中限量清除。隔离本地 PostgreSQL 18 集群的集成、并发与备份恢复测试已通过；全量 Python 3.12 回归 296 通过、0 跳过。官方 Turnstile 测试站点键加本地受控验证响应的真实浏览器验证了同浏览器 2 次成功注册、第 3 次拒绝、旧账户登录刷新、BYOK 入口可达和 390px 无横向溢出；登录子路由刷新仍有既有的两条 `_stcore` 相对路径 404，不影响页面使用。生产 Turnstile 配置、合并与上线均未执行，CI 状态以推送后为准。决策见 [ADR 008](decisions/008-registration-abuse-and-system-ai-fuses.md)。
 
 ## 2026-09-27 C08 生产持久登录验收与文案调整
 

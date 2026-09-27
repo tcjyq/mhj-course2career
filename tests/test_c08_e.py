@@ -406,6 +406,19 @@ def test_postgres_concurrent_last_registration_and_quota_slot():
         pytest.skip("只允许独立的 CI 本机 PostgreSQL")
     repo = PostgresProductRepository(url, allow_insecure_local_test=True)
     suffix = uuid4().hex[:12]
+    try:
+        _assert_postgres_final_slots(repo, suffix)
+    finally:
+        # Remove only this test's synthetic rows before the CI backup drill.
+        with repo._connect() as connection:
+            connection.execute(
+                "DELETE FROM users WHERE username_normalized LIKE ? "
+                "OR username_normalized LIKE ?",
+                (f"c08e_{suffix}_%", f"c08e_reg_{suffix}_%"),
+            )
+
+
+def _assert_postgres_final_slots(repo: PostgresProductRepository, suffix: str):
     # The repository accepts a hash; no plaintext marker enters the database.
     marker = hashlib.sha256(suffix.encode()).hexdigest()
     users = [_user(repo, f"c08e_{suffix}_{i}", source=marker) for i in range(2)]
