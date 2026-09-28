@@ -6,6 +6,7 @@ import os
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from urllib.parse import urlsplit
+from uuid import uuid4
 
 import httpx
 import pytest
@@ -119,9 +120,9 @@ def test_csv_dangerous_text_is_neutralized_and_bom_kept():
     assert all(row[2] == "80.0" for row in rows[1:])
 
 
-def _assert_atomic_byok(repo, monkeypatch):
+def _assert_atomic_byok(repo, monkeypatch, username="atomic_user"):
     auth = AuthService(repo)
-    user = auth.register("atomic_user", "synthetic-password-123")
+    user = auth.register(username, "synthetic-password-123")
     from course2career.byok_mode import BYOKModeService
 
     BYOKModeService(repo).set_enabled(user, True)
@@ -147,6 +148,7 @@ def _assert_atomic_byok(repo, monkeypatch):
             repo.save_provider_configuration(new_key, new_profile)
     assert keys.get_key(user, ProviderName.OPENAI) == "synthetic-old-key"
     assert profiles.get(user, ProviderName.OPENAI).model_id == "old-model"
+    return user
 
 
 def test_sqlite_byok_configuration_is_atomic(tmp_path: Path, monkeypatch):
@@ -288,33 +290,38 @@ def test_postgres_session_rate_limit_and_byok_atomicity(monkeypatch):
     if not url or urlsplit(url).hostname not in {"localhost", "127.0.0.1", "::1"}:
         pytest.skip("仅在本机合成 PostgreSQL 测试库运行")
     repo = PostgresProductRepository(url, allow_insecure_local_test=True)
-    with repo._connect() as connection:
-        connection.execute(
-            "TRUNCATE TABLE users, login_attempts, api_usage, analysis_records, "
-            "user_api_keys, user_provider_profiles, user_byok_settings "
-            "RESTART IDENTITY CASCADE"
-        )
-    _assert_atomic_byok(repo, monkeypatch)
-    auth = AuthService(repo)
-    user = auth.authenticate("atomic_user", "synthetic-password-123")
-    token = auth.create_session(user)
-    assert auth.refresh_session(user, token) == user
-    auth.revoke_session(token)
-    with pytest.raises(InvalidSessionError):
-        auth.refresh_session(user, token)
-    start = datetime(2026, 9, 29, tzinfo=UTC)
-    for index in range(auth.MAX_ACCOUNT_FAILED_LOGINS):
-        with pytest.raises(InvalidCredentialsError):
+    username = f"atomic_{uuid4().hex[:16]}"
+    try:
+        _assert_atomic_byok(repo, monkeypatch, username=username)
+        auth = AuthService(repo)
+        user = auth.authenticate(username, "synthetic-password-123")
+        token = auth.create_session(user)
+        assert auth.refresh_session(user, token) == user
+        auth.revoke_session(token)
+        with pytest.raises(InvalidSessionError):
+            auth.refresh_session(user, token)
+        start = datetime(2026, 9, 29, tzinfo=UTC)
+        for index in range(auth.MAX_ACCOUNT_FAILED_LOGINS):
+            with pytest.raises(InvalidCredentialsError):
+                auth.authenticate(
+                    username,
+                    "wrong-password",
+                    attempt_scope=f"pg-tab-{index}",
+                    now=start,
+                )
+        with pytest.raises(TooManyLoginAttemptsError):
             auth.authenticate(
-                "atomic_user",
-                "wrong-password",
-                attempt_scope=f"pg-tab-{index}",
+                username,
+                "synthetic-password-123",
+                attempt_scope="pg-new-tab",
                 now=start,
             )
-    with pytest.raises(TooManyLoginAttemptsError):
-        auth.authenticate(
-            "atomic_user",
-            "synthetic-password-123",
-            attempt_scope="pg-new-tab",
-            now=start,
-        )
+    finally:
+        # Preserve the seeded assets used by the subsequent pg_dump/restore job.
+        with repo._connect() as connection:
+            connection.execute(
+                "DELETE FROM login_attempts WHERE username_normalized = ?", (username,)
+            )
+            connection.execute(
+                "DELETE FROM users WHERE username_normalized = ?", (username,)
+            )
