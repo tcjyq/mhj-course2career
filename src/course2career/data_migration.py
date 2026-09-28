@@ -30,6 +30,7 @@ COLUMNS = {
         "created_time",
         "session_version",
         "status",
+        "registration_installation_hash",
     ),
     "login_attempts": ("id", "scope_id", "username_normalized", "attempted_time"),
     "api_usage": (
@@ -45,6 +46,8 @@ COLUMNS = {
         "cost_status",
         "status",
         "created_time",
+        "installation_hash",
+        "quota_class",
     ),
     "analysis_records": (
         "id",

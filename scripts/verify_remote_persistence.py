@@ -181,7 +181,7 @@ def seed_and_verify(url: str, cipher: APIKeyCipher) -> dict[str, int]:
     reopened = PostgresProductRepository(url)
     _verify_key(reopened, cipher)
     assert reopened.list_analyses(principal.user_id)
-    assert schema_version(reopened.backend) == 3
+    assert schema_version(reopened.backend) == 4
     return _counts(reopened)
 
 
@@ -210,7 +210,7 @@ def backup_restore(
         "user_api_keys": 1,
         "user_provider_profiles": 1,
         "user_byok_settings": 1,
-        "schema_migrations": 3,
+        "schema_migrations": 4,
     }:
         raise RuntimeError("源库不符合纯合成数据行数；拒绝备份。")
     _safe_restore_target(restore_url, expected)

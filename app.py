@@ -39,6 +39,7 @@ from course2career.ui.auth_page import render_auth_page
 from course2career.ui.browser_auth import log_restore_state, read_browser_storage
 from course2career.ui.developer_page import render_developer_page
 from course2career.ui.home_page import render_home_page
+from course2career.ui.installation import read_installation
 from course2career.ui.membership_page import render_membership_page
 from course2career.ui.quota_page import render_quota_page
 from course2career.ui.styles import apply_product_styles
@@ -109,7 +110,7 @@ settings = load_settings()
 try:
     repository = get_repository(
         settings.database_path,
-        schema_revision=7,
+        schema_revision=8,
         database_url=getattr(settings, "database_url", None),
         production_mode=getattr(settings, "production_mode", False),
     )
@@ -134,7 +135,7 @@ if admin_username or admin_password or admin_password_hash:
     except AdminBootstrapError as exc:
         st.error(f"管理员初始化失败：{exc}")
         st.stop()
-usage_service = AIUsageService(repository)
+usage_service = AIUsageService(repository, settings)
 record_service = AnalysisRecordService(repository)
 dashboard_service = AdminDashboardService(repository)
 membership_service = MembershipService(repository)
@@ -164,6 +165,7 @@ model_catalog = get_deepseek_model_catalog(
 )
 provider_factory = LLMProviderFactory(settings, api_key_service)
 provider_factory.model_catalog = model_catalog
+installation = read_installation()
 
 if "auth_requested_path" not in st.session_state:
     context_url = st.context.url
@@ -305,7 +307,7 @@ home_page = st.Page(
     default=True,
 )
 login_page = st.Page(
-    lambda: render_auth_page(principal, auth_service),
+    lambda: render_auth_page(principal, auth_service, settings, installation),
     title="登录",
     url_path="login",
 )
@@ -320,6 +322,7 @@ analysis_page = st.Page(
         st.session_state.guest_session_id,
         profile_service,
         catalog_service,
+        installation,
     ),
     title="个人分析",
     url_path="analysis",

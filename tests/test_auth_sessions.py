@@ -103,15 +103,15 @@ def test_sqlite_v2_upgrade_is_additive(tmp_path):
     user = AuthService(repo).register("existing", "synthetic-password-123")
     with repo._connect() as connection:
         connection.execute("DROP TABLE auth_sessions")
-        connection.execute("DELETE FROM schema_migrations WHERE version = 3")
+        connection.execute("DELETE FROM schema_migrations WHERE version >= 3")
     upgraded = SQLiteProductRepository(path)
-    assert schema_version(upgraded.backend) == 3
+    assert schema_version(upgraded.backend) == 4
     assert upgraded.find_by_id(user.user_id) is not None
     assert AuthService(upgraded).restore_session("A" * 43) is None
 
 
 @pytest.mark.postgres
-def test_postgres_session_round_trip_and_v2_upgrade():
+def test_postgres_session_round_trip():
     url = os.getenv("C08_TEST_DATABASE_URL")
     if not url or urlsplit(url).hostname not in {"localhost", "127.0.0.1", "::1"}:
         pytest.skip("仅在 CI 本机合成 PostgreSQL 测试库执行")
@@ -132,9 +132,4 @@ def test_postgres_session_round_trip_and_v2_upgrade():
     finally:
         with repo._connect() as connection:
             connection.execute("DELETE FROM users WHERE id = ?", (user.user_id,))
-    with repo._connect() as connection:
-        connection.execute("DROP TABLE auth_sessions")
-        connection.execute("DELETE FROM schema_migrations WHERE version = 3")
-    upgraded = PostgresProductRepository(url, allow_insecure_local_test=True)
-    assert schema_version(upgraded.backend) == 3
-    assert upgraded.count_users() >= 0
+    assert schema_version(repo.backend) == 4

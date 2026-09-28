@@ -55,6 +55,11 @@ def test_admin_overview_aggregates_users_analysis_usage_and_cost(
         provider="openai",
         daily_limit=5,
         created_time=datetime.now(UTC),
+        installation_hash="a" * 64,
+        quota_class="public_free",
+        installation_limit=10,
+        public_global_limit=100,
+        absolute_limit=120,
     )
     repository.complete_ai_call(
         usage_id,

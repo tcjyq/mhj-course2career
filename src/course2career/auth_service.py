@@ -7,12 +7,18 @@ from uuid import uuid4
 
 import psycopg
 
+from course2career.installation_identity import installation_hash
 from course2career.password_security import (
     hash_password,
     is_supported_password_hash,
     verify_password,
 )
 from course2career.permissions import Plan, Principal, Role
+from course2career.product_repository import (
+    RegistrationLimitError,
+    SQLiteProductRepository,
+)
+from course2career.turnstile import TurnstileVerifier
 from course2career.user_repository import (
     SQLiteUserRepository,
     StoredAuthSession,
@@ -53,6 +59,43 @@ class AuthService:
         self.repository = repository
 
     def register(self, username: str, password: str) -> Principal:
+        cleaned_username = self._validate_registration(username, password)
+        user = self._new_public_user(cleaned_username, password, datetime.now(UTC))
+        try:
+            self.repository.add(user)
+        except (sqlite3.IntegrityError, psycopg.IntegrityError) as exc:
+            raise RegistrationError("该用户名已存在。") from exc
+        return _to_principal(user)
+
+    def register_public(
+        self,
+        username: str,
+        password: str,
+        *,
+        installation_id: str | None,
+        turnstile_token: str | None,
+        verifier: TurnstileVerifier,
+        now: datetime | None = None,
+    ) -> Principal:
+        cleaned_username = self._validate_registration(username, password)
+        marker_hash = installation_hash(installation_id)
+        if marker_hash is None:
+            raise RegistrationError("暂时无法创建账户，请刷新后重试。")
+        verifier.validate(turnstile_token)
+        issued_at = now or datetime.now(UTC)
+        user = self._new_public_user(cleaned_username, password, issued_at)
+        if not isinstance(self.repository, SQLiteProductRepository):
+            raise RegistrationError("暂时无法创建账户，请稍后重试。")
+        try:
+            self.repository.add_public_user(user, marker_hash, now=issued_at)
+        except RegistrationLimitError as exc:
+            raise RegistrationError("当前设备近期创建的账户较多，请稍后再试。") from exc
+        except (sqlite3.IntegrityError, psycopg.IntegrityError) as exc:
+            raise RegistrationError("该用户名已存在。") from exc
+        return _to_principal(user)
+
+    @staticmethod
+    def _validate_registration(username: str, password: str) -> str:
         cleaned_username = username.strip()
         if not USERNAME_PATTERN.fullmatch(cleaned_username):
             raise RegistrationError(
@@ -62,21 +105,21 @@ class AuthService:
             raise RegistrationError("密码至少需要 8 个字符。")
         if len(password) > 128:
             raise RegistrationError("密码不能超过 128 个字符。")
+        return cleaned_username
 
-        user = StoredUser(
+    @staticmethod
+    def _new_public_user(
+        cleaned_username: str, password: str, now: datetime
+    ) -> StoredUser:
+        return StoredUser(
             id=str(uuid4()),
             username=cleaned_username,
             username_normalized=cleaned_username.casefold(),
             password_hash=hash_password(password),
             role=Role.USER,
             plan=Plan.FREE,
-            created_time=datetime.now(UTC).isoformat(),
+            created_time=now.isoformat(),
         )
-        try:
-            self.repository.add(user)
-        except (sqlite3.IntegrityError, psycopg.IntegrityError) as exc:
-            raise RegistrationError("该用户名已存在。") from exc
-        return _to_principal(user)
 
     def authenticate(
         self,

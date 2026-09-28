@@ -30,7 +30,7 @@
 - DeepSeek 默认采用 Auto-Safe：仅从官方目录中“当前可用且已通过应用验证”的模型选择。
 - C08-B1 本地实现十家主流官方 Provider Preset + Developer/Admin BYOK：OpenAI、DeepSeek、百炼、OpenRouter、SiliconFlow、Moonshot/Kimi、Zhipu/GLM、MiniMax、Google Gemini、Anthropic Claude；按 OpenAI Responses、OpenAI Chat Completions、Anthropic Messages、Gemini API 四类协议复用适配器。免费套餐系统 AI 只提供 DeepSeek；分析页只显示已配置 Key 且有模型 ID 的用户 Provider。用户 Key 使用 AES-256-GCM，BYOK 不消耗平台 system quota，端点只取受控官方 ID。新增模型仅有 fake 契约测试，真实兼容性待验证；价格未知不显示为免费。C08-D 才开放经 SSRF 防护的自定义 Provider。
 - C08-C 官方模型目录优先显示大陆六家，国际四家折叠；动态 API 和短静态官方目录均记录来源与核对日期。官方 Structured Output、目录可用性和 Course2Career 真实验证分层，UNKNOWN 不当作 0 元或不支持。缓存按用户/端点/Workspace/Key 版本隔离，支持 TTL、手动刷新与失败旧目录；B3 关闭时禁止使用缓存。DeepSeek 旧名只提示主动迁移，不自动修改 Profile。[模型发现规范](c08-model-discovery.md)。
-- C08-B2 将 `UNKNOWN`、`CONNECTED`、`SCHEMA_COMPATIBLE`、`VERIFIED`、`UNSUPPORTED` 限定为 Provider × 官方端点 × 精确模型状态。只有完整固定合成 JD 集、原文证据、usage 和返回模型均通过才能标 VERIFIED；单次连接测试最多标 Schema 兼容。Anthropic/Gemini 使用原生 schema 请求，百炼仅指定 Qwen 模型用 strict schema，DeepSeek 是 JSON object 加本地校验。解析成功但固定样例的技能或逐字证据断言失败时，记录 `FIXTURE_ASSERTION_FAILED`，不误称 schema 不兼容；脱敏逐题诊断仅写本机忽略文件。2026-09-26 仅 Bailian `cn-beijing` / `qwen3.8-flash` 与 DeepSeek `global` / `deepseek-flash` 完成 4/4 并按精确模型 VERIFIED，未通过 C08-D2 Release Gate；详见 [B2 报告](c08-provider-validation.md)。
+- C08-B2 将 `UNKNOWN`、`CONNECTED`、`SCHEMA_COMPATIBLE`、`VERIFIED`、`UNSUPPORTED` 限定为 Provider × 官方端点 × 精确模型状态。只有完整固定合成 JD 集、原文证据、usage 和返回模型均通过才能标 VERIFIED；单次连接测试最多标 Schema 兼容。Anthropic/Gemini 使用原生 schema 请求，百炼仅指定 Qwen 模型用 strict schema，DeepSeek 是 JSON object 加本地校验。解析成功但固定样例的技能或逐字证据断言失败时，记录 `FIXTURE_ASSERTION_FAILED`，不误称 schema 不兼容；脱敏逐题诊断仅写本机忽略文件。2026-09-26 仅 Bailian `cn-beijing` / `qwen3.8-flash` 与 DeepSeek `global` / `deepseek-flash` 完成 4/4 并按精确模型 VERIFIED；详见 [B2 报告](c08-provider-validation.md)。
 - 官方目录不可用时允许使用有效旧缓存或固定回退模型；未知模型不得自动上线。
 - 主模型返回模型不存在错误时，最多尝试一个已验证备用模型；限流、鉴权和服务错误不得触发跨模型重试。
 
@@ -65,13 +65,14 @@
 
 - 游客始终可以使用完整本地规则 Demo；平台已配置且启用 DeepSeek 凭证时，才显示免费套餐系统AI及其每天2次体验额度。
 - 公开注册只能创建普通用户，密码只保存scrypt哈希。
+- C08-E1 公开注册新增 Turnstile 服务端验证及独立 installation 成功注册窗口（滚动 24 小时最多 2、7 天最多 3）；缺验证或浏览器标识时仅注册与平台补贴 AI 不可用。System AI 仍按 Guest 2、Free 5、Pro/Developer 套餐 20 次/日，叠加 Free/Guest installation 10、Pro/Developer installation 20、非 Admin 全站 100、含 Admin 绝对 120 次/东八区自然日。Developer Mode 不提升平台额度；BYOK 和本地规则不消耗上述补贴额度。该分支尚未上线，见 [C08-E 设计](c08-e-registration-abuse-design.md)。
 - Free用户每天5次平台AI调用，可以保存和查看自己的分析历史。
 - Pro用户每天20次平台AI调用，并预留高级报告权限。
 - 普通登录用户可免费启用或关闭独立的开发者模式；启用后可加密保存并使用自己的 API Key，不改变 Role、Plan 或平台系统 AI 日额度。关闭后服务层拒绝新的 BYOK 配置和调用，但保留密文供重新开启后使用；Admin 和历史 Developer Role/Plan 保留访问能力。
 - API Key 提交后必须立即清空输入控件和对应会话状态，页面不得回显完整密钥。
-- Admin拥有系统状态和会员管理权限，不受平台AI日额度限制。
+- Admin拥有系统状态和会员管理权限，不受产品级平台 AI 日额度限制，但 System Key 调用仍受 120 次/日绝对安全熔断。
 - 当前不实现支付、订单、订阅和 Free/Pro 用户自助升级；开发者模式开关不属于套餐升级。
-- 管理员不受AI日额度限制，可以查看聚合系统状态。
+- 管理员可以查看聚合系统状态；其个人额度不限制管理操作。
 - 权限检查发生在服务端应用层，不修改原有评分和分析逻辑。
 
 ### 历史报告恢复
@@ -105,4 +106,4 @@
 
 ## C08-D0 生产持久化要求
 
-正式开发者 BYOK 的账号、鉴权、会话版本、开发者开关、加密 Key、Provider Profile、报告与用量必须同在持久 SQL 数据库；生产数据库失败时停用相关功能并显示安全错误，不回退临时 SQLite。生产 PostgreSQL 连接必须使用 `sslmode=verify-full`；当前线上 SQLite 定义为 disposable demo state，旧账户、历史和临时 Key 不迁移。AI 技能提取前应提示第三方 JD 传输和 BYOK 费用，未知价格显示“费用未知/未配置”；本地规则无第三方模型传输。模型缓存可丢失；项目 VERIFIED 只接受受控版本证据。D1 的 PostgreSQL CI、独立远程合成演练、备份恢复及上述两条精确模型认证已记录为通过；D2 候选状态见[报告](c08-d2-release-candidate.md)。生产资源和 Secrets 已由用户人工确认；未获合并与部署授权前不得发布。
+正式开发者 BYOK 的账号、鉴权、会话版本、开发者开关、加密 Key、Provider Profile、报告与用量必须同在持久 SQL 数据库；生产数据库失败时停用相关功能并显示安全错误，不回退临时 SQLite。生产 PostgreSQL 连接必须使用 `sslmode=verify-full`；旧线上 SQLite 定义为 disposable demo state，旧账户、历史和临时 Key 未迁移。AI 技能提取前应提示第三方 JD 传输和 BYOK 费用，未知价格显示“费用未知/未配置”；本地规则无第三方模型传输。模型缓存可丢失；项目 VERIFIED 只接受受控版本证据。D1 的 PostgreSQL CI、独立远程合成演练、备份恢复及上述两条精确模型认证已记录为通过；D2 候选状态见[报告](c08-d2-release-candidate.md)。生产 PostgreSQL 和持久登录已上线并获用户验收；C08-E1 的防滥用功能尚未合并。Cloudflare 生产 Turnstile widget 已由用户人工创建，hostname 为 `mhj-course2career.streamlit.app`；`TURNSTILE_SITE_KEY` 和 `TURNSTILE_SECRET_KEY` 已人工保存到 Streamlit Secrets，值未被读取、输出、提交或分享。生产 schema v4 迁移与真实注册/System AI smoke 尚未完成，`RELEASE_READY=no`。

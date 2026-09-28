@@ -1,8 +1,10 @@
 """Explicit, ordered C08 schema migrations. No user data is logged."""
 
+from contextlib import closing
+
 from course2career.database_backend import DatabaseBackend
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 AUTH_SESSIONS_DDL = (
     """CREATE TABLE IF NOT EXISTS auth_sessions (
@@ -17,9 +19,37 @@ AUTH_SESSIONS_DDL = (
     "CREATE INDEX IF NOT EXISTS idx_auth_sessions_user_id ON auth_sessions(user_id)",
 )
 
+ABUSE_PROTECTION_DDL = (
+    "ALTER TABLE users ADD COLUMN registration_installation_hash TEXT",
+    "ALTER TABLE api_usage ADD COLUMN installation_hash TEXT",
+    "ALTER TABLE api_usage ADD COLUMN quota_class TEXT",
+    "CREATE INDEX IF NOT EXISTS idx_users_registration_installation_time "
+    "ON users(registration_installation_hash, created_time)",
+    "CREATE INDEX IF NOT EXISTS idx_api_usage_installation_class_time "
+    "ON api_usage(installation_hash, quota_class, created_time)",
+    "CREATE INDEX IF NOT EXISTS idx_api_usage_system_day "
+    "ON api_usage(key_mode, created_time)",
+)
+
 
 def _migrate_sqlite_auth_sessions(repository, connection) -> None:
     for sql in AUTH_SESSIONS_DDL:
+        connection.execute(sql)
+
+
+def _migrate_sqlite_abuse_protection(repository, connection) -> None:
+    columns = {
+        table: {
+            row["name"]
+            for row in connection.execute(f"PRAGMA table_info({table})").fetchall()
+        }
+        for table in ("users", "api_usage")
+    }
+    for sql in ABUSE_PROTECTION_DDL:
+        if sql.startswith("ALTER TABLE"):
+            _, _, table, _, _, column, *_ = sql.split()
+            if column in columns[table]:
+                continue
         connection.execute(sql)
 
 
@@ -27,7 +57,7 @@ def migrate_sqlite(repository, *, target: int = SCHEMA_VERSION) -> None:
     from course2career.product_repository import SQLiteProductRepository
     from course2career.user_repository import SQLiteUserRepository
 
-    with repository._connect() as connection:
+    with closing(repository._connect()) as connection, connection:
         connection.execute("BEGIN IMMEDIATE")
         connection.execute(
             "CREATE TABLE IF NOT EXISTS schema_migrations ("
@@ -44,6 +74,7 @@ def migrate_sqlite(repository, *, target: int = SCHEMA_VERSION) -> None:
             1: SQLiteUserRepository._initialize_schema,
             2: SQLiteProductRepository._initialize_schema,
             3: _migrate_sqlite_auth_sessions,
+            4: _migrate_sqlite_abuse_protection,
         }
         for version in range(current + 1, target + 1):
             steps[version](repository, connection)
@@ -147,6 +178,15 @@ def migrate_postgres(backend: DatabaseBackend) -> None:
             for sql in AUTH_SESSIONS_DDL:
                 connection.execute(sql)
             connection.execute("INSERT INTO schema_migrations(version) VALUES (3)")
+            current = 3
+        if current == 3:
+            for sql in ABUSE_PROTECTION_DDL:
+                connection.execute(
+                    sql.replace("ADD COLUMN", "ADD COLUMN IF NOT EXISTS")
+                    if sql.startswith("ALTER TABLE")
+                    else sql
+                )
+            connection.execute("INSERT INTO schema_migrations(version) VALUES (4)")
         elif current < SCHEMA_VERSION:
             raise RuntimeError("不支持未知 PostgreSQL schema 升级路径。")
 

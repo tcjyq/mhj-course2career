@@ -3,11 +3,15 @@ from datetime import UTC, datetime
 from pydantic import BaseModel, ConfigDict
 
 from course2career.byok_mode import require_current_byok_access
+from course2career.config import Settings
+from course2career.installation_identity import installation_hash
 from course2career.llm_provider import LLMUsage
 from course2career.models import AdaptabilityReport, AnalysisReport
 from course2career.permissions import (
     Permission,
+    Plan,
     Principal,
+    Role,
     authorize,
     daily_ai_limit,
 )
@@ -45,8 +49,11 @@ class SystemStatus(BaseModel):
 class AIUsageService:
     """在任何真实模型调用前执行权限和日额度检查。"""
 
-    def __init__(self, repository: SQLiteProductRepository) -> None:
+    def __init__(
+        self, repository: SQLiteProductRepository, settings: Settings | None = None
+    ) -> None:
         self.repository = repository
+        self.settings = settings or Settings()
 
     def start_call(
         self,
@@ -55,12 +62,33 @@ class AIUsageService:
         model: str,
         guest_session_id: str | None = None,
         provider: str = "openai",
+        installation_id: str | None = None,
     ) -> str:
         if key_mode == "user":
             require_current_byok_access(principal, self.repository)
         else:
             authorize(principal, Permission.USE_SYSTEM_AI)
         limit = daily_ai_limit(principal, key_mode)
+        marker_hash = (
+            installation_hash(installation_id) if key_mode == "system" else None
+        )
+        if (
+            key_mode == "system"
+            and principal.role != Role.ADMIN
+            and marker_hash is None
+        ):
+            raise QuotaExceededError("暂时无法使用平台 AI，请刷新页面后重试。")
+        quota_class = None
+        installation_limit = None
+        if key_mode == "system":
+            if principal.role == Role.ADMIN:
+                quota_class = "admin"
+            elif principal.role == Role.GUEST or principal.plan == Plan.FREE:
+                quota_class = "public_free"
+                installation_limit = self.settings.public_free_installation_daily_limit
+            else:
+                quota_class = "assigned_20"
+                installation_limit = self.settings.assigned_20_installation_daily_limit
         if principal.user_id is None and not guest_session_id:
             raise ValueError("游客调用必须提供匿名会话标识。")
         try:
@@ -72,6 +100,19 @@ class AIUsageService:
                 provider=provider,
                 daily_limit=limit,
                 created_time=datetime.now(UTC),
+                installation_hash=marker_hash,
+                quota_class=quota_class,
+                installation_limit=installation_limit,
+                public_global_limit=(
+                    self.settings.public_system_ai_daily_limit
+                    if key_mode == "system"
+                    else None
+                ),
+                absolute_limit=(
+                    self.settings.system_credential_absolute_daily_limit
+                    if key_mode == "system"
+                    else None
+                ),
             )
         except QuotaConflictError as exc:
             raise QuotaExceededError(

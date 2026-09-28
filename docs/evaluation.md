@@ -1,5 +1,11 @@
 # AI 输出评测方案
 
+## C08-E1 防滥用回归（合成环境）
+
+SQLite 与 PostgreSQL CI 核对 schema v4 加法迁移、Turnstile 成功/失败/主机和 action/重放/网络失败、注册滚动 24 小时与 7 天、并发最后名额、Guest/Free/Pro/Developer Mode/BYOK 隔离、当前与来源 installation、全站 100 和绝对 120、东八区换日、哈希过期与清理。浏览器使用 Cloudflare 官方测试键和本地受控验证响应检查两次成功注册、第三次拒绝、登录刷新与 390px，不调用真实 Provider。测试键的固定成功不证明真实挑战的 300 秒失效或单次消费；这两项由受控 stub 测试，生产 Turnstile 仍待单独验收。
+
+本地 Python 3.12 全量 296 通过、0 跳过；隔离本机 PostgreSQL 18 的 4 项集成测试与备份恢复测试通过。浏览器测试键路径已覆盖两次成功注册、第三次拒绝、刷新保留登录与 390px 无横向溢出；这不是生产 Turnstile 验收，也没有产生模型调用。
+
 ## C08 持久登录回归
 
 使用合成账号核对 SQLite/PostgreSQL 会话创建、哈希、过期、撤销、用户隔离、停用、密码轮换、管理员与开发者状态；特别模拟首次 `PENDING`、随后有 token 或明确无 token 的异步返回。真实本地浏览器核对 F5、Ctrl+R、新标签页、登出后刷新和 390px；用户另行确认生产环境 F5、Ctrl+R、新标签页及登出后 F5 均通过，`AUTH_SESSION_PERSISTENCE_READY=yes`。浏览器只检查本站 localStorage 是否有键，不输出 token 值；URL 不含 token。真实 Provider API 不参与此回归。

@@ -1,7 +1,7 @@
 from dataclasses import replace
 
 from course2career.api_key_service import APIKeyNotFoundError, APIKeyService
-from course2career.config import Settings
+from course2career.config import SYSTEM_AI_HARD_MAX_OUTPUT_TOKENS, Settings
 from course2career.key_encryption import KeyDecryptionError
 from course2career.llm_client import OpenAIJDClient
 from course2career.llm_provider import LLMProvider, ProviderName
@@ -37,6 +37,33 @@ class LLMProviderFactory:
             stale_seconds=getattr(settings, "deepseek_model_stale_seconds", 86400),
         )
 
+    def validate_system_selection(
+        self,
+        principal: Principal,
+        provider: ProviderName,
+        model: str,
+        endpoint_id: str | None = None,
+    ) -> None:
+        """Reject unsupported system selections without touching a Provider network."""
+        try:
+            preset = get_provider_preset(provider, self.settings)
+            preset.endpoint(endpoint_id or preset.selected_endpoint_id)
+        except ValueError as exc:
+            raise ProviderError(str(exc)) from exc
+        if (
+            not model
+            or len(model) > 128
+            or preset.system_key_setting is None
+            or model != preset.configured_model(self.settings)
+        ):
+            raise ProviderError("系统模型选择无效。")
+        if principal.plan == Plan.FREE and provider != ProviderName.DEEPSEEK:
+            raise ProviderError("免费套餐的系统AI仅使用 DeepSeek。")
+        if not self.settings.system_ai_enabled:
+            raise ProviderError("系统AI当前已暂停，请使用本地规则模式。")
+        if not getattr(self.settings, preset.system_key_setting):
+            raise ProviderError("平台模型暂时不可用。")
+
     def create(
         self,
         principal: Principal,
@@ -68,7 +95,18 @@ class LLMProviderFactory:
                 openai_api_key=api_key,
                 openai_model=model,
             )
-            return OpenAIJDClient(provider_settings)
+            return OpenAIJDClient(
+                provider_settings,
+                max_output_tokens=(
+                    min(
+                        1500,
+                        SYSTEM_AI_HARD_MAX_OUTPUT_TOKENS,
+                        self.settings.system_ai_max_output_tokens,
+                    )
+                    if key_mode == "system"
+                    else 1500
+                ),
+            )
         if provider == ProviderName.DEEPSEEK:
             try:
                 selection = self.model_catalog.resolve(
@@ -87,8 +125,14 @@ class LLMProviderFactory:
                 api_key=api_key,
                 model=selection.primary_model,
                 fallback_models=selection.fallback_models,
-                max_output_tokens=getattr(
-                    self.settings, "deepseek_max_output_tokens", 1500
+                max_output_tokens=(
+                    min(
+                        self.settings.deepseek_max_output_tokens,
+                        SYSTEM_AI_HARD_MAX_OUTPUT_TOKENS,
+                        self.settings.system_ai_max_output_tokens,
+                    )
+                    if key_mode == "system"
+                    else self.settings.deepseek_max_output_tokens
                 ),
                 timeout_seconds=self.settings.openai_timeout_seconds,
             )

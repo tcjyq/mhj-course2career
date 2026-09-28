@@ -219,3 +219,42 @@ def test_factory_creates_new_byok_provider_without_network(
         if provider == ProviderName.BAILIAN
         else "https://openrouter.ai/api/v1"
     )
+
+
+def test_system_provider_output_is_capped_without_raising_lower_limit() -> None:
+    principal = Principal()
+    factory = LLMProviderFactory(
+        Settings(
+            deepseek_api_key="synthetic-key",
+            deepseek_model_mode="pinned",
+            deepseek_max_output_tokens=5000,
+            system_ai_max_output_tokens=4096,
+        )
+    )
+    factory.validate_system_selection(
+        principal, ProviderName.DEEPSEEK, "deepseek-flash"
+    )
+    provider = factory.create(
+        principal,
+        provider=ProviderName.DEEPSEEK,
+        key_mode="system",
+        model="deepseek-flash",
+    )
+    assert provider.max_output_tokens == 4096
+    with pytest.raises(ProviderError, match="选择无效"):
+        factory.validate_system_selection(
+            principal, ProviderName.DEEPSEEK, "unconfigured-model"
+        )
+    lower = LLMProviderFactory(
+        Settings(
+            deepseek_api_key="synthetic-key",
+            deepseek_model_mode="pinned",
+            deepseek_max_output_tokens=900,
+        )
+    ).create(
+        principal,
+        provider=ProviderName.DEEPSEEK,
+        key_mode="system",
+        model="deepseek-flash",
+    )
+    assert lower.max_output_tokens == 900
