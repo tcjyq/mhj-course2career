@@ -2,7 +2,7 @@
 
 ## 当前定位
 
-当前版本适合本地运行、作品集演示和受控测试。开放系统 AI 能力前，应先完成限流、真实 Token/费用统计、权限会话失效和全局预算熔断。
+当前版本已在 Streamlit Community Cloud 运行，C08-E1 核心生产 smoke 已通过（`RELEASE_READY=yes`）。Admin、已认证 Developer Mode 与 BYOK 的生产手工回归仍为 `MANUAL_PENDING`。本分支为发布后的缺陷修复候选，合并前不得把分支测试当成生产验收。[发布记录](c08-e1-production-release.md)。
 
 同一次部署同时修改入口文件和业务模块时，Streamlit 可能短暂保留旧模块缓存。入口层的依赖注入应兼容该热重载窗口；若页面出现构造函数参数不一致错误，应先等待部署完成并重启应用，而不是修改 Secrets。
 
@@ -65,23 +65,23 @@ ADMIN_PASSWORD_HASH = "生成的scrypt哈希"
 
 初始化是幂等的：数据库中已经存在管理员时不会重复创建，也不会重置密码。如果配置的用户名已被普通账户占用，应用会拒绝自动提权并提示更换用户名。所有者管理员权限不能通过 Dashboard 授予其他用户。
 
-Streamlit Community Cloud 的本地 SQLite 文件不保证永久保存。保留管理员 Secrets，可以在运行环境重建后重新创建管理员。不要把真实密码或哈希提交到 `.env.example`、README、GitHub Issue、日志或聊天记录。
+旧 Streamlit Community Cloud SQLite 文件不保证永久保存；当前生产数据位于独立 PostgreSQL。保留管理员 Secrets 不等于备份用户数据。不要把真实密码或哈希提交到 `.env.example`、README、GitHub Issue、日志或聊天记录。
 
 ### 作品集 Demo 的数据边界
 
-当前 Streamlit Community Cloud 的 SQLite 明确定义为 **disposable demo state**，不保证持久性。未设置 `COURSE2CAREER_DATABASE_PATH` 时，旧部署使用 `instance/course2career.db`；这不是对线上数据量或备份状态的核验。C08 发布使用全新、独立的 production PostgreSQL：旧 Demo 账号、历史和临时 Key 不迁移，用户需在新库重新注册及配置。不会执行生产 SQLite 自动迁移，也不进行 SQLite → PostgreSQL 在线切换。
+旧 Streamlit Community Cloud 的 SQLite 明确定义为 **disposable demo state**，不保证持久性。未设置 `COURSE2CAREER_DATABASE_PATH` 时，旧部署使用 `instance/course2career.db`；这不是对线上数据量或备份状态的核验。C08 已使用全新、独立的 production PostgreSQL：旧 Demo 账号、历史和临时 Key 未迁移，用户需在新库重新注册及配置。不会执行生产 SQLite 自动迁移，也不进行 SQLite → PostgreSQL 在线切换。
 
 初始化采用幂等建表及管理员初始化逻辑；保留管理员 Secrets 不等于备份全部账户、报告或额度记录。C01—C07 没有 SQLite 表结构迁移，只有报告 JSON 新增可选 `sources`、`task`、`completion_criteria` 字段：新版本可读取旧快照，基线版本的严格模型会拒绝含新字段的快照。代码回退与数据恢复必须分别处理，不能直接覆盖或删除生产数据库。
 
 C08-B1 的 SQLite schema 升级只适用于本地或保留旧数据的显式 SQLite 实例；C08 生产使用全新 PostgreSQL，启动时不会读取或迁移线上 SQLite。独立的 `scripts/migrate_sqlite_to_postgres.py` 需要操作员显式给出已审查快照和 `--acknowledge-source-data`，不属于生产启动路径。本轮不会运行该工具处理线上数据。
 
-C08-D0 分支已加入 PostgreSQL 持久路径与合成数据迁移；D1 的 Draft PR 只用于 CI。公开演示目前仍使用旧 SQLite；即使 feature 分支通过 CI，也不能据此认为线上数据已迁移。[持久化设计与数据分类](c08-production-persistence.md)。
+C08-D0/D1 是当时的准备阶段；当前公开演示使用独立 PostgreSQL，schema v4 已通过生产 smoke。旧 SQLite 数据未迁移。[持久化设计与数据分类](c08-production-persistence.md)。
 
 ### 生产运行时与发布门槛
 
 2026-09-22 用户确认当前 Community Cloud Python 为 3.14，Sharing 为 Public and searchable。仓库、README 链接和入口文件与 `tcjyq/mhj-course2career` / `main` / `app.py` 高度一致，但平台内部绑定无法从当前授权渠道直接读取；不能把仓库结构或公开 HTTP 200 当作绑定证明。
 
-发布流程为 release branch → PR CI → 经授权合入 main → Streamlit smoke test → Showcase。CI 保留 Python 3.11／3.12，并覆盖生产使用的 3.14；本地 Windows 测试不替代远端 Linux CI 或生产验收。`requires-python >=3.11` 与 Ruff 的 `py311` 目标保留最低支持版本，不限制使用 3.14。依赖安装使用原有固定版本，不通过取消 pin 规避兼容问题。
+修复发布流程为隔离分支 → Draft PR CI → 经授权合入 main → Streamlit smoke test。CI 保留 Python 3.11／3.12，并覆盖生产使用的 3.14；本地 Windows 测试不替代远端 Linux CI 或生产验收。`requires-python >=3.11` 与 Ruff 的 `py311` 目标保留最低支持版本，不限制使用 3.14。依赖安装使用原有固定版本，不通过取消 pin 规避兼容问题。
 
 Community Cloud 可随绑定分支更新而自动更新应用，因此合入 main 属于潜在生产变更，不能在 PR CI 通过前直接推送 main。当前发布候选及各环境实际验证结果见 [发布复核记录](optimization-review.md)。
 
@@ -114,9 +114,9 @@ Streamlit Community Cloud 中应将应用 Sharing 设为 **Public**。不要把�
 6. 公开页面提供隐私说明和第三方模型数据传输提示。
 7. 检查管理员页能够刷新模型目录，且未知模型不会进入 Auto-Safe 选择结果。
 
-## C08-D0/D1 生产 PostgreSQL 准备
+## 当前生产 PostgreSQL 契约与回退
 
-正式启用 BYOK 前，在 Community Cloud 根级 Secrets 中配置 `COURSE2CAREER_ENV="production"`、`DATABASE_URL="postgresql://USER:PASSWORD@HOST/DB?sslmode=verify-full"` 与长期保存的 `COURSE2CAREER_KEY_ENCRYPTION_KEY`。示例仅为占位值；实际凭证不能进入仓库、截图、日志或聊天。此 URL 必须指向独立 production PostgreSQL，不能使用 `C2C_TEST_DATABASE_URL`、`C2C_TEST_RESTORE_DATABASE_URL` 或 D1 测试库。生产入口只接受 `sslmode=verify-full`，并在连接时显式使用依赖包 certifi 的 CA bundle 校验证书和主机名；即使 URL 暂含 `sslrootcert=system`，连接参数也会覆盖它，无需把 CA 内容写入 Secrets。缺 URL、TLS 配置不合格或连接失败时应用停止，不回退 SQLite。`.env` 和 `.streamlit/secrets.toml` 已忽略。
+当前 BYOK 生产环境已配置 Community Cloud 根级 `COURSE2CAREER_ENV=production`、独立 PostgreSQL 的 `DATABASE_URL` 与长期保存的 `COURSE2CAREER_KEY_ENCRYPTION_KEY`；仅记录配置名称，不读取其值。配置模板中的 URL 只是占位示例，实际凭证不能进入仓库、截图、日志或聊天。生产 URL 不能指向 `C2C_TEST_DATABASE_URL`、`C2C_TEST_RESTORE_DATABASE_URL` 或 D1 测试库。生产入口只接受 `sslmode=verify-full`，并在连接时显式使用依赖包 certifi 的 CA bundle 校验证书和主机名；即使 URL 暂含 `sslrootcert=system`，连接参数也会覆盖它，无需把 CA 内容写入 Secrets。缺 URL、TLS 配置不合格或连接失败时应用停止，不回退 SQLite。`.env` 和 `.streamlit/secrets.toml` 已忽略。
 
 生产数据库应启用托管备份并限定权限。主密钥与数据库备份分开保存，重部署必须保持同一值；程序不会自动生成替代主密钥。D1 的[备份恢复操作说明](c08-backup-restore-runbook.md)及远程演练仅针对独立合成测试库，不代表生产备份已配置。D1 PostgreSQL CI、远程合成库、备份恢复及两款精确 Provider 模型认证已通过；D2 候选审查与生产 Secrets 配置已由用户人工确认完成。PR #2、#3 均已合并；C08-E1 生产 schema v4、注册、本地规则、认证持久化及 System DeepSeek 核心 smoke 已通过，`RELEASE_READY=yes`。证据与仍待手工回归的旧路径见[生产发布记录](c08-e1-production-release.md)。
 

@@ -1,5 +1,9 @@
 # AI 输出评测方案
 
+## 发布后缺陷修复候选（2026-09-29）
+
+当前生产 E1 smoke 的结论保持不变；A01—A08 的隔离修复及本地/CI 回归另见[修复报告](post-release-production-bug-fix-report-20260929.md)。候选分支测试不等于生产复测，不扩展 Provider 精确认证或已执行的人工回归范围。
+
 ## C08-E1 生产 smoke（2026-09-28）
 
 PR #3 已合入 main，五项 CI 成功。生产 schema v4、真实 Turnstile widget 与注册、登录持久化、本地规则均通过。经页面的一次逻辑 System DeepSeek 提交成功提取 2 项技能；只读核对恰好一条新增 `api_usage`，状态 `success`、模型 `deepseek-flash`、`quota_class=public_free`，Guest/installation/公开全局/绝对桶均只增加 1。Provider 内部 HTTP 尝试次数及 fallback 使用情况未安全观测。生产测试账号密码曾泄露到任务工具日志，后续凭证哈希轮换、会话版本递增与全部未撤销会话清零，事件记为 `contained`，旧密码未重试。Admin、已认证 Developer Mode、BYOK 生产手工回归仍为非阻断 `MANUAL_PENDING`；证据与边界见[生产发布记录](c08-e1-production-release.md)。
