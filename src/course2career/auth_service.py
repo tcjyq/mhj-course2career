@@ -37,7 +37,7 @@ class InvalidCredentialsError(ValueError):
 
 
 class TooManyLoginAttemptsError(InvalidCredentialsError):
-    """同一浏览器会话中的登录失败次数过多。"""
+    """短时间内的登录失败次数过多。"""
 
 
 class InvalidSessionError(ValueError):
@@ -52,6 +52,7 @@ class AuthService:
     """注册和认证应用服务；公开注册只能创建普通用户。"""
 
     MAX_FAILED_LOGINS = 5
+    MAX_ACCOUNT_FAILED_LOGINS = 20
     LOGIN_WINDOW = timedelta(minutes=15)
     SESSION_LIFETIME = timedelta(days=7)
 
@@ -131,14 +132,17 @@ class AuthService:
     ) -> Principal:
         normalized_username = username.strip().casefold()
         attempted_time = now or datetime.now(UTC)
-        if (
-            attempt_scope
-            and self.repository.count_recent_failed_logins(
+        if attempt_scope and (
+            self.repository.count_recent_failed_logins(
                 attempt_scope,
                 normalized_username,
                 attempted_time - self.LOGIN_WINDOW,
             )
             >= self.MAX_FAILED_LOGINS
+            or self.repository.count_recent_failed_logins_for_username(
+                normalized_username, attempted_time - self.LOGIN_WINDOW
+            )
+            >= self.MAX_ACCOUNT_FAILED_LOGINS
         ):
             raise TooManyLoginAttemptsError("登录尝试次数过多，请稍后再试。")
 
@@ -156,7 +160,7 @@ class AuthService:
                 )
             raise InvalidCredentialsError("用户名或密码错误。")
         if attempt_scope:
-            self.repository.clear_failed_logins(attempt_scope, normalized_username)
+            self.repository.clear_failed_logins_for_username(normalized_username)
         return _to_principal(user, byok_enabled=self._byok_enabled(user.id))
 
     def refresh_principal(self, principal: Principal) -> Principal:
@@ -208,6 +212,17 @@ class AuthService:
             )
         except InvalidSessionError:
             return None
+
+    def refresh_session(self, principal: Principal, token: str | None) -> Principal:
+        """Recheck the server-side token on every authenticated rerun."""
+        current = self.restore_session(token)
+        if (
+            current is None
+            or current.user_id != principal.user_id
+            or current.session_version != principal.session_version
+        ):
+            raise InvalidSessionError("登录状态已失效，请重新登录。")
+        return current
 
     def revoke_session(self, token: str | None) -> None:
         if _valid_token(token):

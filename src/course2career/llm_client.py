@@ -20,6 +20,7 @@ class OpenAIJDClient:
         settings: Settings,
         sdk_client: Any | None = None,
         max_output_tokens: int = 1500,
+        max_retries: int | None = None,
     ) -> None:
         if not settings.openai_api_key:
             raise LLMClientError("未配置 OPENAI_API_KEY，无法启用 AI 分析模式。")
@@ -36,6 +37,7 @@ class OpenAIJDClient:
             sdk_client = OpenAI(
                 api_key=settings.openai_api_key,
                 timeout=settings.openai_timeout_seconds,
+                **({"max_retries": max_retries} if max_retries is not None else {}),
                 http_client=DefaultHttpxClient(follow_redirects=False),
             )
         self.client = sdk_client

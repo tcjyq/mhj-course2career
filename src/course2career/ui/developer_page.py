@@ -139,11 +139,15 @@ def render_developer_page(
                 raise ValueError("业务空间 ID 格式无效。")
             if not new_key and provider not in keys:
                 raise ValueError("请先填写该供应商的 API Key。")
-            if new_key:
-                api_key_service.save_key(principal, provider, new_key)
-            profile_service.save(
+            key = (
+                api_key_service.prepare_key(principal, provider, new_key)
+                if new_key
+                else None
+            )
+            profile = profile_service.prepare_profile(
                 principal, provider, endpoint_id, model_id, workspace_id
             )
+            profile_service.repository.save_provider_configuration(key, profile)
             st.session_state.pop(f"provider_connection_{provider.value}", None)
             st.session_state[feedback_key] = "配置已保存；模型仍须真实验证。"
         except (PermissionDeniedError, ValueError) as exc:

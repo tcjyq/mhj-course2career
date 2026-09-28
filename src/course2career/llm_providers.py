@@ -37,6 +37,7 @@ class OpenAICompatibleChatProvider:
         sdk_client: Any | None = None,
         max_output_tokens: int = 1500,
         structured_strategy: StructuredOutputStrategy | None = None,
+        max_retries: int | None = None,
     ) -> None:
         if not api_key or not model or not model.strip() or len(model) > 200:
             raise ProviderError("模型或开发者API Key配置无效。")
@@ -60,6 +61,7 @@ class OpenAICompatibleChatProvider:
                 api_key=api_key,
                 base_url=endpoint,
                 timeout=timeout_seconds,
+                **({"max_retries": max_retries} if max_retries is not None else {}),
                 http_client=DefaultHttpxClient(follow_redirects=False),
             )
         self.client = sdk_client
@@ -153,6 +155,7 @@ class DeepSeekProvider:
         max_output_tokens: int = 1500,
         timeout_seconds: float = 30,
         sdk_client: Any | None = None,
+        max_retries: int | None = None,
     ) -> None:
         if not api_key:
             raise ProviderError("未配置 DeepSeek API Key。")
@@ -176,6 +179,7 @@ class DeepSeekProvider:
                 api_key=api_key,
                 base_url=DEEPSEEK_BASE_URL,
                 timeout=timeout_seconds,
+                **({"max_retries": max_retries} if max_retries is not None else {}),
                 http_client=DefaultHttpxClient(follow_redirects=False),
             )
         self.client = sdk_client

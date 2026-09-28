@@ -78,6 +78,7 @@ def render_analysis_page(
     st.caption("课程、个人经历、岗位要求、五维适配度和能力路线集中在一个流程中。")
 
     render_demo_cases()
+    analysis_epoch = st.session_state.get("analysis_form_epoch", 0)
 
     with st.container(border=True):
         st.markdown("## 1. 导入课程信息")
@@ -90,6 +91,7 @@ def render_analysis_page(
         )
         uploaded_file = st.file_uploader(
             "上传课程Excel",
+            key=f"c2c_analysis_{analysis_epoch}_course_file",
             type=[".xlsx"],
             help="必填字段：课程名称、学分、成绩、课程类别、自评掌握程度（1到5）。",
             max_upload_size=5,
@@ -149,6 +151,7 @@ def render_analysis_page(
         st.markdown("## 3. 提取岗位技能")
         jd_text = st.text_area(
             "目标岗位JD",
+            key=f"c2c_analysis_{analysis_epoch}_jd",
             height=220,
             max_chars=12_000,
             placeholder="粘贴岗位名称、岗位职责和任职要求。",

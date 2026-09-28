@@ -166,6 +166,7 @@ def _create_deepseek_client(api_key: str, timeout_seconds: float) -> Any:
         api_key=api_key,
         base_url=DEEPSEEK_BASE_URL,
         timeout=timeout_seconds,
+        max_retries=0,
         http_client=DefaultHttpxClient(follow_redirects=False),
     )
 

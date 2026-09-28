@@ -42,7 +42,9 @@ def test_factory_creates_provider_from_system_environment_keys() -> None:
 
     assert isinstance(openai_provider, OpenAIJDClient)
     assert openai_provider.model_name == "test-openai-model"
+    assert openai_provider.client.max_retries == 0
     assert isinstance(deepseek_provider, DeepSeekProvider)
+    assert deepseek_provider.client.max_retries == 0
 
 
 def test_factory_uses_decrypted_developer_key(tmp_path: Path) -> None:
