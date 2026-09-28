@@ -1,5 +1,7 @@
 # C08-D2 Release Candidate Report
 
+> 本文保存 2026-09-26 的候选审查状态，文中的 Draft、待合并与 `RELEASE_READY=no` 均为当时事实。当前 C08-E1 已发布，最新状态与生产 smoke 见[生产发布记录](c08-e1-production-release.md)。
+
 日期：2026-09-26（北京时间）。范围：Draft [PR #2](https://github.com/tcjyq/mhj-course2career/pull/2) 的 `feature/c08-multi-provider`。这是作品集/公共 Demo 的 Pre-Release Blocker Closure，不是上线批准。本轮没有真实 Provider API 请求，没有合并、部署或修改生产 Secrets/数据库。
 
 ## 结论与状态

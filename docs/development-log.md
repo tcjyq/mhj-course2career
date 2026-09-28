@@ -1,6 +1,14 @@
 # Course2Career 开发日志
 
-## 2026-09-27 C08-E1 注册防滥用与平台 AI 熔断（分支实施）
+## 2026-09-28 C08-E1 生产发布与最终 smoke
+
+[PR #3](https://github.com/tcjyq/mhj-course2career/pull/3) 已合并，merge/main SHA `f8f99406d04948ff227354394c4344ab7f75753b`；[main CI run 36411890289](https://github.com/tcjyq/mhj-course2career/actions/runs/36411890289) 五项作业成功。Streamlit 已运行 E1，生产 schema v4、真实 Turnstile widget 与注册、登录持久化、本地规则均通过。授权的一次逻辑 System DeepSeek 页面提交提取 2 项技能；只读核对仅新增一条 `system / deepseek / deepseek-flash / public_free / success` 用量，Guest、installation、公开全局和绝对桶各从 0 增至 1。Provider 内部 fallback/重试次数未安全观测，不推断为单次 HTTP 请求。生产 Secret 值未写入文档。
+
+生产注册 smoke 的一次性测试账号密码曾出现在任务工具日志；事件保留，不能写成从未发生。随后仅针对该唯一账号在单个事务中替换为无人知晓的随机凭证哈希、递增会话版本并撤销未撤销会话；提交后只读核验目标唯一、哈希已替换、版本递增、未撤销会话为 0，`TEST_ACCOUNT_CREDENTIAL_INCIDENT=contained`。账号仍为 active，旧密码未从日志取回重试，故 `OLD_PASSWORD_REJECTED=NOT_RETESTED`。没有删除注册审计、用量或安全记录。
+
+v4 兼容回退分支 `fallback/c08-e-v4-compatible` 保留在 `7fd7ae90f21df862802f404614f66ccd4555eb27`。Admin、已认证 Developer Mode、BYOK 的生产手工回归均为非 E1 阻断的 `MANUAL_PENDING`，不是 PASS。`PRODUCTION_SMOKE_READY=yes`、`RELEASE_READY=yes`；完整范围与证据见[生产发布记录](c08-e1-production-release.md)。
+
+## 2026-09-27 C08-E1 注册防滥用与平台 AI 熔断（当时的分支记录）
 
 设计经人工审核，在 `feature/c08-e-registration-abuse` 增加 schema v4 的三个 nullable 字段、一方随机 installation 标识、公开注册 Turnstile 服务端校验及滚动成功注册限额。System AI 在 Provider 客户端创建前原子检查个人/当前/来源/全站/绝对额度并预留；BYOK、本地规则和既有登录路径不走注册门槛。用量哈希 8 天、来源哈希 30 天后逻辑失效，并在后续相关写事务中限量清除。隔离本地 PostgreSQL 18 集群的集成、并发与备份恢复测试已通过；全量 Python 3.12 回归 296 通过、0 跳过。官方 Turnstile 测试站点键加本地受控验证响应的真实浏览器验证了同浏览器 2 次成功注册、第 3 次拒绝、旧账户登录刷新、BYOK 入口可达和 390px 无横向溢出；登录子路由刷新仍有既有的两条 `_stcore` 相对路径 404，不影响页面使用。Cloudflare 生产 Turnstile widget 已由用户人工创建，精确 hostname 为 `mhj-course2career.streamlit.app`；`TURNSTILE_SITE_KEY` 和 `TURNSTILE_SECRET_KEY` 已人工保存到 Streamlit Secrets，值未被读取、输出、提交或分享。E1 仍为 Draft，尚未合并或部署；生产 schema v4 迁移、真实注册与 System AI smoke 均未执行，`RELEASE_READY=no`。本次文档状态提交的 CI 状态以推送后结果为准。决策见 [ADR 008](decisions/008-registration-abuse-and-system-ai-fuses.md)。
 

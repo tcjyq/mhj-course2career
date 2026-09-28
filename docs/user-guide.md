@@ -93,7 +93,7 @@ Course2Career 会把你的课程、教育背景、项目、实习和成长条件
 
 ## 账户与 AI 额度
 
-C08-E1 分支中的新注册需要先完成页面验证；同一浏览器近期创建账户过多时，页面会提示稍后再试。浏览器不能使用本站存储或验证服务暂不可用时，新注册与平台 System AI 会暂停；既有账号登录、本地规则和已授权的自带 Key 仍可使用。该规则尚未部署，线上状态以实际版本为准。
+现在新注册需要先完成页面验证；同一浏览器近期创建账户过多时，页面会提示稍后再试。浏览器不能使用本站存储或验证服务暂不可用时，新注册与平台 System AI 会暂停；既有账号登录、本地规则和已授权的自带 Key 仍可使用。C08-E1 已在生产上线，验证范围见[发布记录](c08-e1-production-release.md)。
 
 平台 AI 除个人额度外，还按当前浏览器与注册来源共享 installation 额度：Free/Guest 池 10 次/日，Pro/Developer 套餐池 20 次/日。全站非 Admin 100 次/日，含 Admin 的 System Key 绝对 120 次/日。达到共享上限时，即使个人页面显示仍有剩余额度，本次平台调用也可能被拒绝；可用本地规则继续。开发者模式开关不提高原套餐平台额度。
 
@@ -172,4 +172,4 @@ C08-E1 分支中的新注册需要先完成页面验证；同一浏览器近期�
 
 ## 开发者模式数据保存状态
 
-旧线上 SQLite 是 **disposable demo state**；旧 Demo 账号、历史和临时 Key 未迁入独立生产 PostgreSQL。当前生产数据库连接失败时，应用显示安全错误并停止，不会保存到临时 SQLite。连接测试只说明当前账号的一次调用结果，不代表该模型已获项目 VERIFIED 认证；项目仅对 Bailian `qwen3.8-flash`（北京端点）及 DeepSeek `deepseek-flash`（global 端点）有精确认证。C08-E1 的新注册保护仍待部署与生产验收。
+旧线上 SQLite 是 **disposable demo state**；旧 Demo 账号、历史和临时 Key 未迁入独立生产 PostgreSQL。当前生产数据库连接失败时，应用显示安全错误并停止，不会保存到临时 SQLite。连接测试只说明当前账号的一次调用结果，不代表该模型已获项目 VERIFIED 认证；项目仅对 Bailian `qwen3.8-flash`（北京端点）及 DeepSeek `deepseek-flash`（global 端点）有精确认证。C08-E1 新注册保护与 System AI 核心生产 smoke 已通过；Admin、已认证 Developer Mode 和 BYOK 的生产手工回归仍待执行。

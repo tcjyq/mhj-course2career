@@ -1,6 +1,6 @@
 # C08-D2 Pre-Release Audit
 
-> 这是 2026-09-26 的审计基线，以下“阻断项”记录当时的发现，不代表最新开放状态。用户随后决定旧线上 SQLite 为 disposable demo state，C08 从全新独立生产 PostgreSQL 开始；本轮关闭结果及仍需人工完成的生产步骤以 [C08-D2 Release Candidate Report](c08-d2-release-candidate.md) 为准。
+> 这是 2026-09-26 的审计基线，以下“阻断项”记录当时的发现，不代表最新开放状态。用户随后决定旧线上 SQLite 为 disposable demo state，C08 从全新独立生产 PostgreSQL 开始；D2 候选关闭结果见 [C08-D2 Release Candidate Report](c08-d2-release-candidate.md)，当前 C08-E1 已发布，最新状态见[生产发布记录](c08-e1-production-release.md)。
 
 审计日期：2026-09-26（北京时间）。范围为 `feature/c08-multi-provider` 的 `6ec815f2f07ea89fb82796d3f3bbbcadd8e88325`、[PR #2](https://github.com/tcjyq/mhj-course2career/pull/2)、仓库代码和现有文档。审计只读取远端 PR/CI；没有重新调用真实 Provider API，没有连接或修改生产数据库、Secrets，也没有合并或部署。
 

@@ -65,7 +65,7 @@
 
 - 游客始终可以使用完整本地规则 Demo；平台已配置且启用 DeepSeek 凭证时，才显示免费套餐系统AI及其每天2次体验额度。
 - 公开注册只能创建普通用户，密码只保存scrypt哈希。
-- C08-E1 公开注册新增 Turnstile 服务端验证及独立 installation 成功注册窗口（滚动 24 小时最多 2、7 天最多 3）；缺验证或浏览器标识时仅注册与平台补贴 AI 不可用。System AI 仍按 Guest 2、Free 5、Pro/Developer 套餐 20 次/日，叠加 Free/Guest installation 10、Pro/Developer installation 20、非 Admin 全站 100、含 Admin 绝对 120 次/东八区自然日。Developer Mode 不提升平台额度；BYOK 和本地规则不消耗上述补贴额度。该分支尚未上线，见 [C08-E 设计](c08-e-registration-abuse-design.md)。
+- C08-E1 公开注册新增 Turnstile 服务端验证及独立 installation 成功注册窗口（滚动 24 小时最多 2、7 天最多 3）；缺验证或浏览器标识时仅注册与平台补贴 AI 不可用。System AI 仍按 Guest 2、Free 5、Pro/Developer 套餐 20 次/日，叠加 Free/Guest installation 10、Pro/Developer installation 20、非 Admin 全站 100、含 Admin 绝对 120 次/东八区自然日。Developer Mode 不提升平台额度；BYOK 和本地规则不消耗上述补贴额度。该能力已在生产上线，见 [C08-E 设计](c08-e-registration-abuse-design.md)与[发布记录](c08-e1-production-release.md)。
 - Free用户每天5次平台AI调用，可以保存和查看自己的分析历史。
 - Pro用户每天20次平台AI调用，并预留高级报告权限。
 - 普通登录用户可免费启用或关闭独立的开发者模式；启用后可加密保存并使用自己的 API Key，不改变 Role、Plan 或平台系统 AI 日额度。关闭后服务层拒绝新的 BYOK 配置和调用，但保留密文供重新开启后使用；Admin 和历史 Developer Role/Plan 保留访问能力。
@@ -106,4 +106,4 @@
 
 ## C08-D0 生产持久化要求
 
-正式开发者 BYOK 的账号、鉴权、会话版本、开发者开关、加密 Key、Provider Profile、报告与用量必须同在持久 SQL 数据库；生产数据库失败时停用相关功能并显示安全错误，不回退临时 SQLite。生产 PostgreSQL 连接必须使用 `sslmode=verify-full`；旧线上 SQLite 定义为 disposable demo state，旧账户、历史和临时 Key 未迁移。AI 技能提取前应提示第三方 JD 传输和 BYOK 费用，未知价格显示“费用未知/未配置”；本地规则无第三方模型传输。模型缓存可丢失；项目 VERIFIED 只接受受控版本证据。D1 的 PostgreSQL CI、独立远程合成演练、备份恢复及上述两条精确模型认证已记录为通过；D2 候选状态见[报告](c08-d2-release-candidate.md)。生产 PostgreSQL 和持久登录已上线并获用户验收；C08-E1 的防滥用功能尚未合并。Cloudflare 生产 Turnstile widget 已由用户人工创建，hostname 为 `mhj-course2career.streamlit.app`；`TURNSTILE_SITE_KEY` 和 `TURNSTILE_SECRET_KEY` 已人工保存到 Streamlit Secrets，值未被读取、输出、提交或分享。生产 schema v4 迁移与真实注册/System AI smoke 尚未完成，`RELEASE_READY=no`。
+正式开发者 BYOK 的账号、鉴权、会话版本、开发者开关、加密 Key、Provider Profile、报告与用量必须同在持久 SQL 数据库；生产数据库失败时停用相关功能并显示安全错误，不回退临时 SQLite。生产 PostgreSQL 连接必须使用 `sslmode=verify-full`；旧线上 SQLite 定义为 disposable demo state，旧账户、历史和临时 Key 未迁移。AI 技能提取前应提示第三方 JD 传输和 BYOK 费用，未知价格显示“费用未知/未配置”；本地规则无第三方模型传输。模型缓存可丢失；项目 VERIFIED 只接受受控版本证据。D1 的 PostgreSQL CI、独立远程合成演练、备份恢复及上述两条精确模型认证已记录为通过；D2 候选状态见[报告](c08-d2-release-candidate.md)。生产 PostgreSQL 与持久登录已上线并获验收。C08-E1 已合并、运行 schema v4，真实注册与 System DeepSeek smoke 均通过，`RELEASE_READY=yes`；未执行的 Admin、已认证 Developer Mode、BYOK 生产手工回归仍为非阻断的 `MANUAL_PENDING`。发布证据见[记录](c08-e1-production-release.md)。

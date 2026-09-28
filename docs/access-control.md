@@ -15,7 +15,7 @@
 
 公开注册只能创建`user + Free`。Developer和Admin身份不能由注册表单选择。套餐变更必须经过服务端`MembershipService`，当前仅管理员能够执行。
 
-C08-E1 分支中，公开注册还必须通过 Turnstile 服务端校验和同一 installation 的成功注册限额：滚动 24 小时 2 个、7 天 3 个。认证会话与 installation 标识相互独立；既有账号登录不受此门槛影响。见 [ADR 008](decisions/008-registration-abuse-and-system-ai-fuses.md)。
+C08-E1 生产版本中，公开注册还必须通过 Turnstile 服务端校验和同一 installation 的成功注册限额：滚动 24 小时 2 个、7 天 3 个。认证会话与 installation 标识相互独立；既有账号登录不受此门槛影响。见 [ADR 008](decisions/008-registration-abuse-and-system-ai-fuses.md)和[生产发布记录](c08-e1-production-release.md)。
 
 ## 请求链路
 

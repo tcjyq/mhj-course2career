@@ -14,7 +14,7 @@ Course2Career 面向准备实习和校招的大学生，将课程、教育背景
 
 招聘展示先访问稳定 Showcase；Streamlit Live Demo 支持游客以“本地规则”完成完整核心流程，无需注册或平台 AI Key。平台未配置模型凭证时，应用不会显示“系统AI”选项。
 
-C08-E1 分支已实现公开注册防滥用：Turnstile 验证、同浏览器 installation 的成功注册窗口、平台 AI 的 installation 与全站调用熔断。Cloudflare 生产 widget 已由用户人工创建，hostname 为 `mhj-course2career.streamlit.app`；`TURNSTILE_SITE_KEY` 和 `TURNSTILE_SECRET_KEY` 已由用户人工保存到 Streamlit Secrets，值未被读取、输出、提交或分享。此分支仍为 Draft、尚未合并；生产 schema v4 迁移和真实注册/System AI smoke 均未完成，`RELEASE_READY=no`。线上体验以已部署版本为准。规则与限制见 [C08-E 设计](docs/c08-e-registration-abuse-design.md)。
+C08-E1 已在生产上线：公开注册使用 Turnstile 与 installation 成功注册窗口，平台 System AI 叠加 installation、公开全局和绝对调用熔断。生产 schema v4、真实注册及一次逻辑 System DeepSeek smoke 均已通过；`RELEASE_READY=yes`。规则与证据见 [C08-E 设计](docs/c08-e-registration-abuse-design.md)及[生产发布记录](docs/c08-e1-production-release.md)。Admin、已认证 Developer Mode 与 BYOK 的生产手工回归仍为 `MANUAL_PENDING`，不是 PASS。
 
 ![Course2Career 首页](screenshots/home.png)
 
@@ -214,7 +214,7 @@ course2career/
 
 登录用户完成分析后，报告会以账号归属的快照保存。刷新、重新登录或再次进入“个人分析”后，可在“最近分析”中选择并重新打开历史报告。相同时间、岗位和分数的记录仍会按唯一报告 ID 分别保留。v2.1 上线前生成的报告会以“旧版技能匹配报告”原样展示，不会伪装成五维岗位适配度。课程 Excel、完整 JD 与表单编辑内容不会被自动回填，以减少长期保存的个人和招聘数据。
 
-旧线上 SQLite 为 **disposable demo state**；C08 生产使用独立 PostgreSQL，旧 Demo 账号、历史和临时 Key 不迁移。登录后的 7 天持久会话由服务端数据库保存 token 哈希，浏览器的一方组件只在本地存储随机 opaque token；刷新或重新打开页面时，组件明确回报就绪后才恢复身份。登出、密码变更与账号停用会使旧会话失效。浏览器存储无法提供 `HttpOnly`，共享设备与 XSS 风险见[持久化说明](docs/c08-production-persistence.md)。用户已确认生产环境 F5、Ctrl+R、新标签页与登出后 F5 均通过，`AUTH_SESSION_PERSISTENCE_READY=yes`；整体 `RELEASE_READY=no`。
+旧线上 SQLite 为 **disposable demo state**；C08 生产使用独立 PostgreSQL，旧 Demo 账号、历史和临时 Key 不迁移。登录后的 7 天持久会话由服务端数据库保存 token 哈希，浏览器的一方组件只在本地存储随机 opaque token；刷新或重新打开页面时，组件明确回报就绪后才恢复身份。登出、密码变更与账号停用会使旧会话失效。浏览器存储无法提供 `HttpOnly`，共享设备与 XSS 风险见[持久化说明](docs/c08-production-persistence.md)。用户已确认生产环境 F5、Ctrl+R、新标签页与登出后 F5 均通过，`AUTH_SESSION_PERSISTENCE_READY=yes`；E1 发布状态见[生产发布记录](docs/c08-e1-production-release.md)。
 
 ## License
 

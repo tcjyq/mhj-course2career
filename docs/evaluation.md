@@ -1,10 +1,14 @@
 # AI 输出评测方案
 
+## C08-E1 生产 smoke（2026-09-28）
+
+PR #3 已合入 main，五项 CI 成功。生产 schema v4、真实 Turnstile widget 与注册、登录持久化、本地规则均通过。经页面的一次逻辑 System DeepSeek 提交成功提取 2 项技能；只读核对恰好一条新增 `api_usage`，状态 `success`、模型 `deepseek-flash`、`quota_class=public_free`，Guest/installation/公开全局/绝对桶均只增加 1。Provider 内部 HTTP 尝试次数及 fallback 使用情况未安全观测。生产测试账号密码曾泄露到任务工具日志，后续凭证哈希轮换、会话版本递增与全部未撤销会话清零，事件记为 `contained`，旧密码未重试。Admin、已认证 Developer Mode、BYOK 生产手工回归仍为非阻断 `MANUAL_PENDING`；证据与边界见[生产发布记录](c08-e1-production-release.md)。
+
 ## C08-E1 防滥用回归（合成环境）
 
-SQLite 与 PostgreSQL CI 核对 schema v4 加法迁移、Turnstile 成功/失败/主机和 action/重放/网络失败、注册滚动 24 小时与 7 天、并发最后名额、Guest/Free/Pro/Developer Mode/BYOK 隔离、当前与来源 installation、全站 100 和绝对 120、东八区换日、哈希过期与清理。浏览器使用 Cloudflare 官方测试键和本地受控验证响应检查两次成功注册、第三次拒绝、登录刷新与 390px，不调用真实 Provider。测试键的固定成功不证明真实挑战的 300 秒失效或单次消费；这两项由受控 stub 测试，生产 Turnstile 仍待单独验收。
+SQLite 与 PostgreSQL CI 核对 schema v4 加法迁移、Turnstile 成功/失败/主机和 action/重放/网络失败、注册滚动 24 小时与 7 天、并发最后名额、Guest/Free/Pro/Developer Mode/BYOK 隔离、当前与来源 installation、全站 100 和绝对 120、东八区换日、哈希过期与清理。浏览器使用 Cloudflare 官方测试键和本地受控验证响应检查两次成功注册、第三次拒绝、登录刷新与 390px；该合成阶段未调用真实 Provider。测试键的固定成功不证明真实挑战的 300 秒失效或单次消费；这两项由受控 stub 测试。随后真实生产 widget 与注册 smoke 已单独通过，不能反推所有失败场景都做过生产破坏性测试。
 
-本地 Python 3.12 全量 296 通过、0 跳过；隔离本机 PostgreSQL 18 的 4 项集成测试与备份恢复测试通过。浏览器测试键路径已覆盖两次成功注册、第三次拒绝、刷新保留登录与 390px 无横向溢出；这不是生产 Turnstile 验收，也没有产生模型调用。
+当时本地 Python 3.12 全量 296 通过、0 跳过；隔离本机 PostgreSQL 18 的 4 项集成测试与备份恢复测试通过。浏览器测试键路径已覆盖两次成功注册、第三次拒绝、刷新保留登录与 390px 无横向溢出；这组本地证据本身不是生产 Turnstile 验收，也没有产生模型调用。生产验收另见上节。
 
 ## C08 持久登录回归
 

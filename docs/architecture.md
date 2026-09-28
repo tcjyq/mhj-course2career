@@ -1,6 +1,6 @@
 # 系统架构
 
-## C08-E1 注册与平台补贴保护（分支实施，未上线）
+## C08-E1 注册与平台补贴保护（生产已上线）
 
 `ui/installation.py` 由独立的一方组件生成/读取 32 字节随机标识；认证 token 与 installation 不共用。`ui/turnstile_widget.py` 只在公开注册页显示挑战，`turnstile.py` 在服务端验证 success、精确 hostname 与 `register` action。`AuthService.register_public()` 先验证挑战，再做密码哈希；仓储在同一 SQLite `BEGIN IMMEDIATE` 或 PostgreSQL advisory 锁事务内清理过期来源哈希、统计滚动窗口并插入用户。Schema v4 只给 `users` 和 `api_usage` 增加三个 nullable 字段及查询索引，旧数据不回填。
 
@@ -12,7 +12,7 @@ System AI 经 `LLMProviderFactory.validate_system_selection()` 做无网络的�
 
 ## 1. 架构选择
 
-项目使用单体Streamlit与`src`布局。`app.py`负责产品外壳、会话身份和动态导航，`ui/`页面负责输入与展示；领域模块负责校验、证据映射、岗位适配度、硬门槛和导出；权限与仓储层负责用户、额度和历史。旧线上 Demo SQLite 已作为 disposable demo state 丢弃；C08 生产使用独立 PostgreSQL，生产登录持久化已获用户验收。C08-E1 的防滥用变更仍只在本分支。B2 显式验证脚本将解析/结构异常与解析后的固定业务断言失败分开归类；成功解析的固定题目（包括通过和断言失败）写逐题脱敏诊断到 `outputs/c08-provider-validation/fixture_diagnostics.json`，受控认证仍只来自完整通过的模型级记录。
+项目使用单体Streamlit与`src`布局。`app.py`负责产品外壳、会话身份和动态导航，`ui/`页面负责输入与展示；领域模块负责校验、证据映射、岗位适配度、硬门槛和导出；权限与仓储层负责用户、额度和历史。旧线上 Demo SQLite 已作为 disposable demo state 丢弃；C08 生产使用独立 PostgreSQL，生产登录持久化已获用户验收。C08-E1 的防滥用变更已合入 main 并在生产运行。B2 显式验证脚本将解析/结构异常与解析后的固定业务断言失败分开归类；成功解析的固定题目（包括通过和断言失败）写逐题脱敏诊断到 `outputs/c08-provider-validation/fixture_diagnostics.json`，受控认证仍只来自完整通过的模型级记录。
 
 ```mermaid
 flowchart LR
@@ -134,7 +134,7 @@ flowchart LR
 
 ## 5. 后续演进
 
-GitHub 定时任务每日读取官方目录，发现未知模型时创建一次待验证 Issue，不自动改白名单。C08-D1 已完成 PostgreSQL 独立 CI、远程合成库与备份恢复验证；D2 候选审查见[报告](c08-d2-release-candidate.md)，之后生产已切换至独立 PostgreSQL，登录刷新验收通过。C08-E1 生产 Turnstile widget 与 Streamlit Secrets 配置已由用户人工确认，精确 hostname 为 `mhj-course2career.streamlit.app`；未读取、输出、提交或分享 Secret 值。E1 尚未合并，生产 schema v4 迁移与独立 smoke 仍待完成，`RELEASE_READY=no`。用户量增长后可考虑增加独立 API 服务。评分模型若要用于更广泛的人群，需要建立人工标注案例和公平性审查，不能直接使用录用结果训练成“录用概率”。
+GitHub 定时任务每日读取官方目录，发现未知模型时创建一次待验证 Issue，不自动改白名单。C08-D1 已完成 PostgreSQL 独立 CI、远程合成库与备份恢复验证；D2 候选审查见[报告](c08-d2-release-candidate.md)，之后生产已切换至独立 PostgreSQL，登录刷新验收通过。C08-E1 生产 Turnstile widget 与 Streamlit Secrets 配置已由用户人工确认，精确 hostname 为 `mhj-course2career.streamlit.app`；本次发布记录不包含 Secret 值。E1 已合并、运行 schema v4，注册与 System AI 生产 smoke 均通过，`RELEASE_READY=yes`；证据与未执行的旧路径手工回归见[生产发布记录](c08-e1-production-release.md)。用户量增长后可考虑增加独立 API 服务。评分模型若要用于更广泛的人群，需要建立人工标注案例和公平性审查，不能直接使用录用结果训练成“录用概率”。
 
 ## 6. 招聘 Showcase 静态边界
 
