@@ -12,6 +12,10 @@ from course2career.models import (
 )
 
 
+def _profile_key(name: str) -> str:
+    return f"c2c_analysis_{st.session_state.get('analysis_form_epoch', 0)}_{name}"
+
+
 def render_candidate_profile_form() -> tuple[CandidateProfile, JobRequirements]:
     """收集 v2.1 所需的教育、项目、实习与成长信息。"""
 
@@ -37,7 +41,7 @@ def render_candidate_profile_form() -> tuple[CandidateProfile, JobRequirements]:
             **availability,
         ),
         JobRequirements(
-            minimum_degree=st.session_state.get("c2c_minimum_degree"),
+            minimum_degree=st.session_state.get(_profile_key("minimum_degree")),
             **requirement_values,
         ),
     )
@@ -45,7 +49,9 @@ def render_candidate_profile_form() -> tuple[CandidateProfile, JobRequirements]:
 
 def _render_education() -> EducationProfile | None:
     with st.expander("教育与学术背景", expanded=True):
-        include = st.checkbox("纳入教育背景评估", value=True)
+        include = st.checkbox(
+            "纳入教育背景评估", value=True, key=_profile_key("education")
+        )
         if not include:
             return None
         left, right = st.columns(2)
@@ -54,14 +60,18 @@ def _render_education() -> EducationProfile | None:
             list(DegreeLevel),
             index=2,
             format_func=lambda item: item.value,
+            key=_profile_key("degree"),
         )
         institution = right.selectbox(
             "院校类型",
             list(InstitutionTier),
             index=list(InstitutionTier).index(InstitutionTier.PUBLIC_UNDERGRADUATE),
             format_func=lambda item: item.value,
+            key=_profile_key("institution"),
         )
-        major = st.text_input("专业", placeholder="例如：信息管理与信息系统").strip()
+        major = st.text_input(
+            "专业", placeholder="例如：信息管理与信息系统", key=_profile_key("major")
+        ).strip()
         core_average = st.number_input(
             "目标岗位相关核心课程平均分",
             min_value=0.0,
@@ -69,13 +79,14 @@ def _render_education() -> EducationProfile | None:
             value=0.0,
             step=1.0,
             help="不知道时可填0，系统会将该项视为未提供。",
+            key=_profile_key("core_average"),
         )
         st.selectbox(
             "岗位最低学历要求",
             [None, *DegreeLevel],
             index=0,
             format_func=lambda item: "未明确" if item is None else item.value,
-            key="c2c_minimum_degree",
+            key=_profile_key("minimum_degree"),
         )
         if not major:
             return None
@@ -92,41 +103,54 @@ def _render_projects() -> list[ProjectExperience] | None:
         state = st.selectbox(
             "项目填写状态",
             ["暂未填写", "目前没有项目", "填写项目"],
-            key="c2c_project_state",
+            key=_profile_key("project_state"),
         )
         if state == "暂未填写":
             return None
         if state == "目前没有项目":
             return []
-        count = st.number_input("项目数量", min_value=1, max_value=3, value=1, step=1)
+        count = st.number_input(
+            "项目数量",
+            min_value=1,
+            max_value=3,
+            value=1,
+            step=1,
+            key=_profile_key("project_count"),
+        )
         projects: list[ProjectExperience] = []
         for index in range(int(count)):
             st.markdown(f"**项目 {index + 1}**")
-            name = st.text_input("项目名称", key=f"c2c_project_name_{index}").strip()
+            name = st.text_input(
+                "项目名称", key=_profile_key(f"project_name_{index}")
+            ).strip()
             skills = _split_skills(
                 st.text_input(
                     "使用技能（逗号分隔）",
-                    key=f"c2c_project_skills_{index}",
+                    key=_profile_key(f"project_skills_{index}"),
                     placeholder="Python, 大模型API, 测试",
                 )
             )
             relevance = st.slider(
-                "岗位相关性", 0, 100, 70, key=f"c2c_project_relevance_{index}"
+                "岗位相关性", 0, 100, 70, key=_profile_key(f"project_relevance_{index}")
             )
             completeness = st.slider(
-                "项目完整度", 0, 100, 70, key=f"c2c_project_completeness_{index}"
+                "项目完整度",
+                0,
+                100,
+                70,
+                key=_profile_key(f"project_completeness_{index}"),
             )
             technical_depth = st.slider(
-                "技术深度", 0, 100, 65, key=f"c2c_project_depth_{index}"
+                "技术深度", 0, 100, 65, key=_profile_key(f"project_depth_{index}")
             )
             ownership = st.slider(
-                "个人贡献", 0, 100, 80, key=f"c2c_project_ownership_{index}"
+                "个人贡献", 0, 100, 80, key=_profile_key(f"project_ownership_{index}")
             )
             verifiability = st.slider(
-                "可验证性", 0, 100, 70, key=f"c2c_project_verify_{index}"
+                "可验证性", 0, 100, 70, key=_profile_key(f"project_verify_{index}")
             )
             iteration = st.slider(
-                "迭代记录", 0, 100, 60, key=f"c2c_project_iteration_{index}"
+                "迭代记录", 0, 100, 60, key=_profile_key(f"project_iteration_{index}")
             )
             if name:
                 projects.append(
@@ -149,24 +173,33 @@ def _render_internships() -> list[InternshipExperience] | None:
         state = st.selectbox(
             "实习填写状态",
             ["暂未填写", "目前没有实习", "填写实习"],
-            key="c2c_internship_state",
+            key=_profile_key("internship_state"),
         )
         if state == "暂未填写":
             return None
         if state == "目前没有实习":
             return []
-        count = st.number_input("实习数量", min_value=1, max_value=3, value=1, step=1)
+        count = st.number_input(
+            "实习数量",
+            min_value=1,
+            max_value=3,
+            value=1,
+            step=1,
+            key=_profile_key("internship_count"),
+        )
         internships: list[InternshipExperience] = []
         for index in range(int(count)):
             st.markdown(f"**实习 {index + 1}**")
-            name = st.text_input("实习岗位", key=f"c2c_internship_name_{index}").strip()
+            name = st.text_input(
+                "实习岗位", key=_profile_key(f"internship_name_{index}")
+            ).strip()
             company = st.text_input(
-                "实习企业", key=f"c2c_internship_company_{index}"
+                "实习企业", key=_profile_key(f"internship_company_{index}")
             ).strip()
             skills = _split_skills(
                 st.text_input(
                     "实习技能（逗号分隔）",
-                    key=f"c2c_internship_skills_{index}",
+                    key=_profile_key(f"internship_skills_{index}"),
                     placeholder="数据处理, 业务理解, Excel",
                 )
             )
@@ -175,20 +208,24 @@ def _render_internships() -> list[InternshipExperience] | None:
                 0,
                 100,
                 60,
-                key=f"c2c_internship_relevance_{index}",
+                key=_profile_key(f"internship_relevance_{index}"),
             )
             work_depth = st.slider(
-                "工作深度", 0, 100, 60, key=f"c2c_internship_depth_{index}"
+                "工作深度", 0, 100, 60, key=_profile_key(f"internship_depth_{index}")
             )
             outcomes = st.slider(
-                "成果可验证性", 0, 100, 60, key=f"c2c_internship_outcomes_{index}"
+                "成果可验证性",
+                0,
+                100,
+                60,
+                key=_profile_key(f"internship_outcomes_{index}"),
             )
             employer_signal = st.slider(
                 "企业与行业说服力",
                 0,
                 100,
                 60,
-                key=f"c2c_internship_signal_{index}",
+                key=_profile_key(f"internship_signal_{index}"),
             )
             duration = st.number_input(
                 "持续月数",
@@ -196,7 +233,7 @@ def _render_internships() -> list[InternshipExperience] | None:
                 max_value=60.0,
                 value=2.0,
                 step=0.5,
-                key=f"c2c_internship_duration_{index}",
+                key=_profile_key(f"internship_duration_{index}"),
             )
             if name and company:
                 internships.append(
@@ -216,14 +253,36 @@ def _render_internships() -> list[InternshipExperience] | None:
 
 def _render_potential() -> PotentialProfile | None:
     with st.expander("学习潜力与就业条件"):
-        include = st.checkbox("纳入成长潜力评估", value=False)
+        include = st.checkbox(
+            "纳入成长潜力评估", value=False, key=_profile_key("potential")
+        )
         if not include:
             return None
-        learning_distance = st.slider("现有基础到目标岗位的学习可达性", 0, 100, 65)
-        growth = st.slider("最近6—12个月成长速度", 0, 100, 70)
-        readiness = st.slider("求职准备度", 0, 100, 60)
-        motivation = st.slider("对目标岗位的持续投入意愿", 0, 100, 75)
-        city = st.slider("意向城市岗位机会与个人灵活度", 0, 100, 65)
+        learning_distance = st.slider(
+            "现有基础到目标岗位的学习可达性",
+            0,
+            100,
+            65,
+            key=_profile_key("learning_distance"),
+        )
+        growth = st.slider(
+            "最近6—12个月成长速度", 0, 100, 70, key=_profile_key("growth")
+        )
+        readiness = st.slider("求职准备度", 0, 100, 60, key=_profile_key("readiness"))
+        motivation = st.slider(
+            "对目标岗位的持续投入意愿",
+            0,
+            100,
+            75,
+            key=_profile_key("motivation"),
+        )
+        city = st.slider(
+            "意向城市岗位机会与个人灵活度",
+            0,
+            100,
+            65,
+            key=_profile_key("city"),
+        )
         return PotentialProfile(
             learning_distance=learning_distance,
             growth_trajectory=growth,
@@ -236,7 +295,9 @@ def _render_potential() -> PotentialProfile | None:
 def _render_hard_requirements() -> tuple[dict[str, object], dict[str, object]]:
     with st.expander("到岗条件与岗位硬门槛"):
         st.caption("只填写JD明确写出的限制；0或留空表示岗位没有明确要求。")
-        include_availability = st.checkbox("填写我的到岗条件", value=False)
+        include_availability = st.checkbox(
+            "填写我的到岗条件", value=False, key=_profile_key("availability")
+        )
         if include_availability:
             graduation_year = st.number_input(
                 "我的毕业年份",
@@ -244,9 +305,15 @@ def _render_hard_requirements() -> tuple[dict[str, object], dict[str, object]]:
                 max_value=2100,
                 value=2027,
                 step=1,
+                key=_profile_key("graduation_year"),
             )
             available_days = st.number_input(
-                "每周可到岗天数", min_value=0, max_value=7, value=4, step=1
+                "每周可到岗天数",
+                min_value=0,
+                max_value=7,
+                value=4,
+                step=1,
+                key=_profile_key("available_days"),
             )
             available_months = st.number_input(
                 "可连续实习月数",
@@ -254,8 +321,13 @@ def _render_hard_requirements() -> tuple[dict[str, object], dict[str, object]]:
                 max_value=60.0,
                 value=3.0,
                 step=0.5,
+                key=_profile_key("available_months"),
             )
-            preferred_cities = _split_skills(st.text_input("意向城市（逗号分隔）"))
+            preferred_cities = _split_skills(
+                st.text_input(
+                    "意向城市（逗号分隔）", key=_profile_key("preferred_cities")
+                )
+            )
         else:
             graduation_year = None
             available_days = None
@@ -268,6 +340,7 @@ def _render_hard_requirements() -> tuple[dict[str, object], dict[str, object]]:
             max_value=2100,
             value=0,
             step=1,
+            key=_profile_key("required_year"),
         )
         minimum_days = st.number_input(
             "JD要求每周最少到岗天数（0表示未明确）",
@@ -275,6 +348,7 @@ def _render_hard_requirements() -> tuple[dict[str, object], dict[str, object]]:
             max_value=7,
             value=0,
             step=1,
+            key=_profile_key("minimum_days"),
         )
         minimum_months = st.number_input(
             "JD要求最少连续实习月数（0表示未明确）",
@@ -282,12 +356,16 @@ def _render_hard_requirements() -> tuple[dict[str, object], dict[str, object]]:
             max_value=60.0,
             value=0.0,
             step=0.5,
+            key=_profile_key("minimum_months"),
         )
-        work_city = st.text_input("JD工作城市（留空表示未明确）").strip()
+        work_city = st.text_input(
+            "JD工作城市（留空表示未明确）", key=_profile_key("work_city")
+        ).strip()
         major_keywords = _split_skills(
             st.text_input(
                 "JD明确限制的专业关键词（逗号分隔）",
                 placeholder="计算机, 软件工程",
+                key=_profile_key("major_keywords"),
             )
         )
 

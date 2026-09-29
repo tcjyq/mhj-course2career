@@ -472,8 +472,12 @@ class SQLiteProductRepository(SQLiteUserRepository):
 
     def upsert_api_key(self, key: StoredAPIKey) -> None:
         with self._connect() as connection:
-            connection.execute(
-                """
+            self._write_api_key(connection, key)
+
+    @staticmethod
+    def _write_api_key(connection, key: StoredAPIKey) -> None:
+        connection.execute(
+            """
                 INSERT INTO user_api_keys (
                     user_id, provider, encrypted_key, nonce,
                     last_four, updated_time
@@ -484,15 +488,15 @@ class SQLiteProductRepository(SQLiteUserRepository):
                     last_four = excluded.last_four,
                     updated_time = excluded.updated_time
                 """,
-                (
-                    key.user_id,
-                    key.provider,
-                    key.encrypted_key,
-                    key.nonce,
-                    key.last_four,
-                    key.updated_time,
-                ),
-            )
+            (
+                key.user_id,
+                key.provider,
+                key.encrypted_key,
+                key.nonce,
+                key.last_four,
+                key.updated_time,
+            ),
+        )
 
     def get_api_key(self, user_id: str, provider: str) -> StoredAPIKey | None:
         with self._connect() as connection:
@@ -546,8 +550,12 @@ class SQLiteProductRepository(SQLiteUserRepository):
 
     def upsert_provider_profile(self, profile: StoredProviderProfile) -> None:
         with self._connect() as connection:
-            connection.execute(
-                """
+            self._write_provider_profile(connection, profile)
+
+    @staticmethod
+    def _write_provider_profile(connection, profile: StoredProviderProfile) -> None:
+        connection.execute(
+            """
                 INSERT INTO user_provider_profiles (
                     user_id, provider, endpoint_id, model_id,
                     created_time, updated_time, workspace_id
@@ -558,16 +566,30 @@ class SQLiteProductRepository(SQLiteUserRepository):
                     updated_time = excluded.updated_time,
                     workspace_id = excluded.workspace_id
                 """,
-                (
-                    profile.user_id,
-                    profile.provider,
-                    profile.endpoint_id,
-                    profile.model_id,
-                    profile.created_time,
-                    profile.updated_time,
-                    profile.workspace_id,
-                ),
-            )
+            (
+                profile.user_id,
+                profile.provider,
+                profile.endpoint_id,
+                profile.model_id,
+                profile.created_time,
+                profile.updated_time,
+                profile.workspace_id,
+            ),
+        )
+
+    def save_provider_configuration(
+        self, key: StoredAPIKey | None, profile: StoredProviderProfile
+    ) -> None:
+        """Commit a BYOK key and its selected profile together."""
+        if key is not None and (key.user_id, key.provider) != (
+            profile.user_id,
+            profile.provider,
+        ):
+            raise ValueError("API Key 与 Provider 配置不匹配。")
+        with self._connect() as connection:
+            if key is not None:
+                self._write_api_key(connection, key)
+            self._write_provider_profile(connection, profile)
 
     def get_provider_profile(
         self, user_id: str, provider: str

@@ -97,6 +97,7 @@ class LLMProviderFactory:
             )
             return OpenAIJDClient(
                 provider_settings,
+                max_retries=0 if key_mode == "system" else None,
                 max_output_tokens=(
                     min(
                         1500,
@@ -123,6 +124,7 @@ class LLMProviderFactory:
                 raise ProviderError(str(exc)) from exc
             return DeepSeekProvider(
                 api_key=api_key,
+                max_retries=0 if key_mode == "system" else None,
                 model=selection.primary_model,
                 fallback_models=selection.fallback_models,
                 max_output_tokens=(

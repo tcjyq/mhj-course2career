@@ -39,6 +39,7 @@ from course2career.ui.auth_page import render_auth_page
 from course2career.ui.browser_auth import log_restore_state, read_browser_storage
 from course2career.ui.developer_page import render_developer_page
 from course2career.ui.home_page import render_home_page
+from course2career.ui.identity_state import clear_identity_state
 from course2career.ui.installation import read_installation
 from course2career.ui.membership_page import render_membership_page
 from course2career.ui.quota_page import render_quota_page
@@ -167,11 +168,12 @@ provider_factory = LLMProviderFactory(settings, api_key_service)
 provider_factory.model_catalog = model_catalog
 installation = read_installation()
 
-if "auth_requested_path" not in st.session_state:
+if not st.session_state.get("auth_initial_path_captured"):
     context_url = st.context.url
     st.session_state.auth_requested_path = (
         urlsplit(context_url).path.strip("/") if isinstance(context_url, str) else ""
     )
+    st.session_state.auth_initial_path_captured = True
 if "auth_storage_nonce" not in st.session_state:
     st.session_state.auth_storage_nonce = uuid4().hex
 pending_storage = st.session_state.get("pending_auth_storage")
@@ -241,10 +243,13 @@ if "guest_session_id" not in st.session_state:
 principal: Principal = st.session_state.principal
 if principal.role != Role.GUEST:
     try:
-        principal = auth_service.refresh_principal(principal)
+        principal = auth_service.refresh_session(
+            principal, st.session_state.get("auth_session_token")
+        )
         st.session_state.principal = principal
     except InvalidSessionError:
         auth_service.revoke_session(st.session_state.get("auth_session_token"))
+        clear_identity_state(st.session_state)
         st.session_state.pending_auth_storage = {
             "action": "clear",
             "nonce": uuid4().hex,
@@ -252,9 +257,6 @@ if principal.role != Role.GUEST:
         for state_key in (
             "principal",
             "auth_session_token",
-            "job_analysis",
-            "analysis_report",
-            "legacy_analysis_report",
         ):
             st.session_state.pop(state_key, None)
         st.warning("登录状态已失效，请重新登录。")
@@ -286,6 +288,7 @@ with st.sidebar:
         st.caption("可直接体验个人分析，登录后保存记录。")
     elif st.button("退出登录", width="stretch"):
         auth_service.revoke_session(st.session_state.get("auth_session_token"))
+        clear_identity_state(st.session_state)
         st.session_state.pending_auth_storage = {
             "action": "clear",
             "nonce": uuid4().hex,
@@ -293,9 +296,6 @@ with st.sidebar:
         for state_key in (
             "principal",
             "auth_session_token",
-            "job_analysis",
-            "analysis_report",
-            "legacy_analysis_report",
         ):
             st.session_state.pop(state_key, None)
         st.rerun()
@@ -379,7 +379,8 @@ if principal.role == Role.ADMIN and principal.plan == Plan.ADMIN:
 selected_page = st.navigation(navigation, position="sidebar")
 current_page_path = selected_page.url_path
 requested_path = st.session_state.pop("auth_requested_path", None)
-if requested_path and requested_path != current_page_path:
+identity_just_cleared = st.session_state.pop("identity_just_cleared", False)
+if requested_path and requested_path != current_page_path and not identity_just_cleared:
     for page_group in navigation.values():
         matching_page = next(
             (page for page in page_group if page.url_path == requested_path), None
@@ -388,6 +389,11 @@ if requested_path and requested_path != current_page_path:
             st.switch_page(matching_page)
 previous_page_path = st.session_state.get("_active_page_path")
 page_slot = st.empty()
+if identity_just_cleared:
+    page_slot.empty()
+    with page_slot.container():
+        render_home_page()
+    st.stop()
 if previous_page_path is not None and previous_page_path != current_page_path:
     page_slot.empty()
     st.session_state._active_page_path = current_page_path

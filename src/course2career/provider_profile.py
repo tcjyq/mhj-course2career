@@ -43,6 +43,20 @@ class ProviderProfileService:
         model_id: str,
         workspace_id: str | None = None,
     ) -> StoredProviderProfile:
+        profile = self.prepare_profile(
+            principal, provider, endpoint_id, model_id, workspace_id
+        )
+        self.repository.upsert_provider_profile(profile)
+        return profile
+
+    def prepare_profile(
+        self,
+        principal: Principal,
+        provider: ProviderName,
+        endpoint_id: str,
+        model_id: str,
+        workspace_id: str | None = None,
+    ) -> StoredProviderProfile:
         require_current_byok_access(principal, self.repository)
         if principal.user_id is None:
             raise PermissionError("登录后才能管理 Provider。")
@@ -66,7 +80,6 @@ class ProviderProfileService:
             updated_time=now,
             workspace_id=cleaned_workspace,
         )
-        self.repository.upsert_provider_profile(profile)
         return profile
 
     def get(

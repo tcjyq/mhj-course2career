@@ -41,6 +41,21 @@ class APIKeyService:
         api_key: str,
         validator: Callable[[str], None] | None = None,
     ) -> APIKeyMetadata:
+        key = self.prepare_key(principal, provider, api_key, validator)
+        self.repository.upsert_api_key(key)
+        return APIKeyMetadata(
+            provider=provider,
+            last_four=key.last_four,
+            updated_time=key.updated_time,
+        )
+
+    def prepare_key(
+        self,
+        principal: Principal,
+        provider: ProviderName,
+        api_key: str,
+        validator: Callable[[str], None] | None = None,
+    ) -> StoredAPIKey:
         require_current_byok_access(principal, self.repository)
         user_id = _require_user_id(principal)
         cleaned_key = api_key.strip()
@@ -50,18 +65,11 @@ class APIKeyService:
             validator(cleaned_key)
         encrypted = self.cipher.encrypt(cleaned_key, user_id=user_id, provider=provider)
         updated_time = datetime.now(UTC).isoformat()
-        self.repository.upsert_api_key(
-            StoredAPIKey(
-                user_id=user_id,
-                provider=provider.value,
-                encrypted_key=encrypted.ciphertext,
-                nonce=encrypted.nonce,
-                last_four=cleaned_key[-4:],
-                updated_time=updated_time,
-            )
-        )
-        return APIKeyMetadata(
-            provider=provider,
+        return StoredAPIKey(
+            user_id=user_id,
+            provider=provider.value,
+            encrypted_key=encrypted.ciphertext,
+            nonce=encrypted.nonce,
             last_four=cleaned_key[-4:],
             updated_time=updated_time,
         )

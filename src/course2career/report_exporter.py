@@ -145,11 +145,21 @@ def export_skill_matches_csv(
         courses = "、".join(evidence.course_name for evidence in match.evidences)
         writer.writerow(
             [
-                match.skill_name,
+                _spreadsheet_text(match.skill_name),
                 match.importance.value,
                 f"{match.support_score:.1f}",
                 match.status.value,
-                courses,
+                _spreadsheet_text(courses),
             ]
         )
     return output.getvalue().encode("utf-8-sig")
+
+
+def _spreadsheet_text(value: str) -> str:
+    """Keep untrusted text as text when opened by a spreadsheet application."""
+    if value and (
+        value[0] in "=+-@\t\r\n＝＋－＠"
+        or value.lstrip().startswith(("=", "+", "-", "@"))
+    ):
+        return "'" + value
+    return value

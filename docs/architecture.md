@@ -8,7 +8,7 @@ System AI 经 `LLMProviderFactory.validate_system_selection()` 做无网络的�
 
 ## C08 持久登录补充
 
-`app.py` 在新 Streamlit WebSocket 会话中挂载一方 `st.components.v2` 存储组件；返回 `PENDING` 时仅显示恢复提示，不写入 Guest。组件明确返回 `TOKEN_PRESENT` 后，`AuthService` 查询 `auth_sessions.token_hash` 并核对到期、撤销和 `session_version`，再用 `users` 实时恢复 Principal；返回 `NO_TOKEN` 才成为 Guest。已有 `session_state.principal` 继续按原逻辑刷新。`auth_sessions` 于 schema 3 引入，C08-E1 整体 schema 为 4。登录后通过组件将 token 写入同源 localStorage，登出先撤销服务端会话再清理浏览器存储；旧 cookie 仅作一次性迁移读取并删除。组件无法提供 HttpOnly，详见[持久化说明](c08-production-persistence.md)。
+`app.py` 在新 Streamlit WebSocket 会话中挂载一方 `st.components.v2` 存储组件；返回 `PENDING` 时仅显示恢复提示，不写入 Guest。组件明确返回 `TOKEN_PRESENT` 后，`AuthService` 查询 `auth_sessions.token_hash` 并核对到期、撤销和 `session_version`，再用 `users` 实时恢复 Principal；返回 `NO_TOKEN` 才成为 Guest。已有登录 Principal 每次交互仍复核服务端 token、用户状态与版本；撤销、过期或数据库失败均安全停止授权路径。`auth_sessions` 于 schema 3 引入，C08-E1 整体 schema 为 4。登录后通过组件将 token 写入同源 localStorage，登出先撤销服务端会话再清理浏览器存储；旧 cookie 仅作一次性迁移读取并删除。组件无法提供 HttpOnly，详见[持久化说明](c08-production-persistence.md)。
 
 ## 1. 架构选择
 

@@ -61,9 +61,9 @@ Course2Career
 - 学习建议按缺口优先级列出至多 8 项任务，每项提供交付物和验收标准；无缺口不强行生成任务。
 - DeepSeek Auto-Safe 在分析页展示优先顺序，在管理员页提供缓存状态和手动刷新；任何页面都不展示 API Key。
 - C08-B1 开发者页展示十家受控官方预设；C08-B3 让普通登录用户通过独立开关进入 Provider Hub，不改变套餐。分析页仅在获得 BYOK 权限且已保存 Key 和模型 ID 时显示“开发者API Key”，并只列该账户已配置的 Provider。未验证模型显示明确提示；免费套餐系统AI只显示 DeepSeek。预设可配置不等于真实模型验证通过；不提供任意自定义端点输入。
-- C08-B2 卡片保持单行状态说明：未配置／已配置、连接后“API 可连接”、单次 JobAnalysis 成功后“Schema 兼容”、完整固定集通过后才显示“✓ Course2Career 已验证”。模型状态按端点和精确 ID 隔离；连接失败仅显示脱敏错误，不删除 Key。逐题诊断只在本机忽略文件记录，不增加界面元素或截图；feature 分支中仅 Bailian `qwen3.8-flash`（北京端点）与 DeepSeek `deepseek-flash`（global 端点）已获精确认证。线上未部署，B1 的未配置截图仍对应未配置状态。
+- C08-B2 卡片保持单行状态说明：未配置／已配置、连接后“API 可连接”、单次 JobAnalysis 成功后“Schema 兼容”、完整固定集通过后才显示“✓ Course2Career 已验证”。模型状态按端点和精确 ID 隔离；连接失败仅显示脱敏错误，不删除 Key。逐题诊断只在本机忽略文件记录，不增加界面元素或截图；仅 Bailian `qwen3.8-flash`（北京端点）与 DeepSeek `deepseek-flash`（global 端点）已获精确认证。B1 的未配置截图只记录当时的合成状态，不代表当前线上状态。
 - C08-B1 的 [390px 本地浏览器截图](../screenshots/c08-b1-developer-mobile.png) 使用隔离假账号与未配置卡片状态；截图不包含真实密钥。截图只证明该视口的页面排版，不替代真人审阅或真实供应商验证。
-- C08-B3 的 [390px 开发者模式截图](../screenshots/c08-b3-developer-mobile.png) 使用隔离账号及假 Key，展示普通 Free 用户启用后的 Hub 和脱敏末四位；该视口 `scrollWidth=390`，没有整体横向溢出。强制刷新会丢失 Streamlit 会话，需要重新登录后读取持久化开关。
+- C08-B3 的 [390px 开发者模式截图](../screenshots/c08-b3-developer-mobile.png) 使用隔离账号及假 Key，展示普通 Free 用户启用后的 Hub 和脱敏末四位；该视口 `scrollWidth=390`，没有整体横向溢出。截图产生时尚无持久登录；当前 F5/新标签恢复已通过生产 smoke，但本修复分支的跨标签撤销与身份敏感输入清理仍需合并后验收。
 - C08-C Provider Hub 将大陆六家放在首组、国际四家放在折叠区。卡片呈现目录数量与上次成功时间、官方 Structured Output、Course2Career 验证、上下文及可核实价格；手动刷新失败标过期，不隐藏已有模型。百炼业务空间 ID 仅用于对应区域官方目录。分析页优先排序大陆已验证／官方能力合格／未验证模型，UNKNOWN 明示风险，UNSUPPORTED 默认不列出；仍允许用户在明确警告下尝试未验证模型。[目录细节](c08-model-discovery.md)。
 - C08-C 的 [390px Provider Hub 截图](../screenshots/c08-c-developer-mobile.png) 与 [Kimi 目录卡片截图](../screenshots/c08-c-kimi-mobile.png) 使用隔离假账号和假 Key；浏览器测得 `scrollWidth=innerWidth=390`，可见目录状态、脱敏末四位、价格和模型选择。截图不是实际 API 兼容性证据。
 - 页面切换必须清除上一页内容；真实浏览器回归需覆盖“首页 → 个人分析”且确认首页流程区不再显示。

@@ -91,6 +91,7 @@ def test_login_waits_for_browser_write_before_showing_authenticated_ui(
         ],
     )
     app.session_state.principal = user
+    app.session_state.auth_session_token = token
     app.session_state.pending_auth_storage = {
         "action": "set",
         "nonce": "write-confirmation",

@@ -1,5 +1,9 @@
 # Course2Career 开发日志
 
+## 2026-09-29 发布后生产同类缺陷修复候选
+
+基于 [2026-09-28 审计](post-release-production-bug-audit-20260928.md)，在独立 `fix/post-release-production-audit` 分支修复 A01—A08：已有 WebSocket 会话复核服务端 token、System AI 禁用 SDK 自动重试、身份切换清理分析输入、CSV 文本防公式、账号维度短窗口登录限流、BYOK Key/Profile 原子保存，以及配置模板和当前部署说明。合成测试、浏览器与剩余风险见[修复报告](post-release-production-bug-fix-report-20260929.md)。这仍是待审候选，不能据此宣称生产已部署或旧路径手工回归已通过。
+
 ## 2026-09-28 C08-E1 生产发布与最终 smoke
 
 [PR #3](https://github.com/tcjyq/mhj-course2career/pull/3) 已合并，merge/main SHA `f8f99406d04948ff227354394c4344ab7f75753b`；[main CI run 36411890289](https://github.com/tcjyq/mhj-course2career/actions/runs/36411890289) 五项作业成功。Streamlit 已运行 E1，生产 schema v4、真实 Turnstile widget 与注册、登录持久化、本地规则均通过。授权的一次逻辑 System DeepSeek 页面提交提取 2 项技能；只读核对仅新增一条 `system / deepseek / deepseek-flash / public_free / success` 用量，Guest、installation、公开全局和绝对桶各从 0 增至 1。Provider 内部 fallback/重试次数未安全观测，不推断为单次 HTTP 请求。生产 Secret 值未写入文档。

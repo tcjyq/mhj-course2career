@@ -133,6 +133,17 @@ class SQLiteUserRepository:
             ).fetchone()[0]
         return int(count)
 
+    def count_recent_failed_logins_for_username(
+        self, username_normalized: str, since: datetime
+    ) -> int:
+        with self._connect() as connection:
+            count = connection.execute(
+                "SELECT COUNT(*) FROM login_attempts "
+                "WHERE username_normalized = ? AND attempted_time >= ?",
+                (username_normalized, since.isoformat()),
+            ).fetchone()[0]
+        return int(count)
+
     def record_failed_login(
         self,
         scope_id: str,
@@ -157,6 +168,13 @@ class SQLiteUserRepository:
                 WHERE scope_id = ? AND username_normalized = ?
                 """,
                 (scope_id, username_normalized),
+            )
+
+    def clear_failed_logins_for_username(self, username_normalized: str) -> None:
+        with self._connect() as connection:
+            connection.execute(
+                "DELETE FROM login_attempts WHERE username_normalized = ?",
+                (username_normalized,),
             )
 
     def update_membership(self, user_id: str, role: Role, plan: Plan) -> bool:
