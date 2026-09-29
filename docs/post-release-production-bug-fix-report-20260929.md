@@ -2,7 +2,7 @@
 
 ## 范围与状态
 
-基线是 `main` 的 `31cbb0bad399012040a63b8c854ab37fd5bdb279`，修复仅在 `fix/post-release-production-audit` 候选分支。原始问题、复现和证据边界见 [2026-09-28 审计](post-release-production-bug-audit-20260928.md)。本次没有接触生产数据库、Secrets、真实 Provider 或 Cloudflare 生产 Siteverify，也没有合并或部署。生产 E1 的 `RELEASE_READY=yes` 是已发布基线的历史结论；本候选仍需 PR 审查与发布后复测。
+修复基线是当时 `main` 的 `31cbb0bad399012040a63b8c854ab37fd5bdb279`，原始问题、复现和证据边界见 [2026-09-28 审计](post-release-production-bug-audit-20260928.md)。A01—A08 已由 [PR #4](https://github.com/tcjyq/mhj-course2career/pull/4) 合并；截至本次收尾，`main` 为 `83aba82d9fc37826fb331ffcb164ef26e7119d31`。候选实现阶段未接触生产数据库、Secrets、真实 Provider 或 Cloudflare 生产 Siteverify；其后的生产验收见下文。生产 E1 的发布结论和本轮发布后修复结论分别记录，不互相替代。
 
 按实际安全/隐私影响、可触发性和依赖关系重新排序：`FIX_ORDER=A01 → A03 → A05 → A02 → A06 → A04 → A07 → A08`。A01、A03 是 P1；A02、A04、A05、A06 是 P2；A07、A08 是 P3。A02 的 SDK 默认重试会增加外部请求，但现有 100/120 是**逻辑调用**额度，不足以证明生产重复计费，因此从原 P1 调整为 P2。A07 的示例配置导致本地启动失败，不直接暴露生产凭证，也调整为 P3。A05 的短时暴力尝试风险比 A02 更直接，且共享认证存储路径，先修。顺序表示处理依赖，不表示所有 P2 风险相同。
 
@@ -27,6 +27,22 @@
 - 首轮 PR CI 的 PostgreSQL 3.12 集成步骤通过，但随后备份恢复资产断言失败：新增的 PG 测试清空/增加了与既有备份恢复用例共用的合成库数据。这是测试隔离缺陷，并非生产数据变化。已改为唯一合成账号并在 `finally` 中只清理本用例创建的行，不再 `TRUNCATE` 共用库。[修正后 CI run 36455373024](https://github.com/tcjyq/mhj-course2career/actions/runs/36455373024) 的 quality 3.11/3.12/3.14 与 PostgreSQL 集成加备份恢复 3.12/3.14 均成功（5/5）。
 - 对 15 类模式重新检索与追踪：1 登录/session、2 `dict_row`、3 SQLite/PostgreSQL、4 TLS/网络、5 Provider retry/fallback、6 Streamlit rerun、7 认证与限流、8 Turnstile、9 System quota、10 migration/rollback、11 Secret/log、12 原子性、13 浏览器信任/XSS、14 文件/导出/输入、15 配置/文档漂移。未发现本次修复新增的 P0/P1/P2/P3 确认缺陷；此为代码审计结论，不代替生产监控或渗透测试。原有 localStorage token 不能 HttpOnly、Turnstile 不能阻止人工滥用、100/120 非货币上限、旧路径人工回归待做等边界仍在。
 
+## 合并、部署与生产验收
+
+- [PR #4](https://github.com/tcjyq/mhj-course2career/pull/4) 以 merge commit `e87441f7e6f5817d60568f9f55db0a166f5edf6a` 合入 A01—A08；[main CI 36520167767](https://github.com/tcjyq/mhj-course2career/actions/runs/36520167767) 五项成功。首次线上 A04 下载仍是旧行为，因此未把“main 已合并”当作“生产已更新”。
+- [PR #5](https://github.com/tcjyq/mhj-course2career/pull/5) 仅用 `app.py` 注释尝试普通部署刷新；合并后线上 A04 仍显示旧行为。[PR #6](https://github.com/tcjyq/mhj-course2career/pull/6) 只给 `requirements.txt` 增加一行注释，不改变依赖或 `-e .`，用于触发依赖文件重新部署。其 merge/main SHA 为 `83aba82d9fc37826fb331ffcb164ef26e7119d31`；[main CI 36529178686](https://github.com/tcjyq/mhj-course2career/actions/runs/36529178686) 五项成功。无法直接查看 Cloud 的重装日志，但等待后在全新浏览器会话运行合成本地规则分析，下载的原始 CSV 含 `'=1+1 Excel训练`，证明生产进程实际执行了 A04 新代码。
+- 生产 System AI 仅做一次 Guest/DeepSeek 逻辑提交，页面成功提取技能；生产库只读计数显示当日 `api_usage` 从 0 增至 1，唯一新行状态为 `success`、`quota_class=public_free`，Guest、installation、公开全局与绝对 System 计数均从 0 增至 1。没有人工重试或读取系统 API Key。这证明逻辑预留只有一条，不声称 Provider 层绝对只有一个 HTTP 请求。
+- 隔离自动化浏览器中的生产 Turnstile 返回验证失败，未创建测试账号，也未绕过验证。Cloudflare [测试指南](https://developers.cloudflare.com/turnstile/troubleshooting/testing/)说明自动化浏览器可能被识别为机器人，并要求使用独立测试环境的测试键；生产键未替换。因此这次自动化注册受阻不记为产品失败，也不把未执行的账号路径记为生产 PASS。
+
+| 修复 | 代码与自动化结论 | 尚待人工生产验证 |
+| --- | --- | --- |
+| A01 会话撤销 | `FIXED`；自动化与合成真实浏览器双标签测试通过 | `A01_PRODUCTION_MANUAL_SMOKE=MANUAL_PENDING` |
+| A03 输入隔离 | `FIXED`；自动化与合成真实浏览器 A→Guest→B 测试通过 | `A03_PRODUCTION_MANUAL_SMOKE=MANUAL_PENDING` |
+| A05 登录限流 | `FIXED`；SQLite 测试与 PostgreSQL CI 通过 | `A05_PRODUCTION_MANUAL_SMOKE=MANUAL_PENDING` |
+| A06 BYOK 原子保存 | `FIXED`；SQLite 故障注入与 PostgreSQL CI 通过 | `BYOK_REAL_PROVIDER_SMOKE=MANUAL_PENDING` |
+
+已知范围内没有未修复 P0/P1、生产数据损坏、认证绕过、费用失控或 schema 故障的证据。此前 E1 一次性测试账号的密码泄露事件仍如[生产发布记录](c08-e1-production-release.md)所述保留为 `contained`，不能称为从未发生；本轮没有发现新的生产 Secret 泄露。以上是现有 CI、生产行为与已记录事件的结论，不代表未执行的人工路径已通过，也不代替持续监控。
+
 ## 关键参考
 
 - [Streamlit Session State 与 WebSocket 生命周期](https://docs.streamlit.io/develop/api-reference/caching-and-state/st.session_state)、[widget 清理规则](https://docs.streamlit.io/develop/concepts/architecture/widget-behavior)、[页面切换 API](https://docs.streamlit.io/develop/api-reference/navigation/st.switch_page)：支持 A01/A03 的 rerun 和 widget 边界判断。
@@ -35,6 +51,6 @@
 - [OWASP Authentication Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html)：支持 A05 的短时节流和统一错误策略。
 - [psycopg 3 事务文档](https://www.psycopg.org/psycopg3/docs/basic/transactions.html)、[Python sqlite3 事务控制](https://docs.python.org/3/library/sqlite3.html#transaction-control)：支持 A06 的单连接事务边界。
 
-## 合并判断
+## 最终发布判断
 
-本报告记录的是候选分支修复和可复查证据。只有最终检查与 PR 五项 CI 全绿、差异无敏感内容、审阅人接受上述残余边界后，才能把 `SAFE_TO_MERGE` 标为 yes；本任务不合并 PR。生产上线后仍需另做 A01/A03/BYOK 的非破坏性 smoke，不把本地合成测试说成线上通过。
+`KNOWN_P0=0`、`KNOWN_P1_BLOCKERS=0`、`KNOWN_PRODUCTION_BLOCKERS=0`。A04 与 System AI 的关键生产行为已验证，PR #4 的修复代码已在生产执行；上表人工生产验证项保留为非阻断的 `MANUAL_PENDING`。据此，本轮 `POST_RELEASE_FIX_READY=yes`、`RELEASE_READY=yes`；不把待测项写成 PASS，也不继续创建部署刷新 PR 或新增功能。

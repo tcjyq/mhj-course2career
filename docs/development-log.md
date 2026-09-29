@@ -1,8 +1,12 @@
 # Course2Career 开发日志
 
-## 2026-09-29 发布后生产同类缺陷修复候选
+## 2026-09-29 发布后生产同类缺陷修复与发布收尾
 
-基于 [2026-09-28 审计](post-release-production-bug-audit-20260928.md)，在独立 `fix/post-release-production-audit` 分支修复 A01—A08：已有 WebSocket 会话复核服务端 token、System AI 禁用 SDK 自动重试、身份切换清理分析输入、CSV 文本防公式、账号维度短窗口登录限流、BYOK Key/Profile 原子保存，以及配置模板和当前部署说明。合成测试、浏览器与剩余风险见[修复报告](post-release-production-bug-fix-report-20260929.md)。这仍是待审候选，不能据此宣称生产已部署或旧路径手工回归已通过。
+基于 [2026-09-28 审计](post-release-production-bug-audit-20260928.md)，[PR #4](https://github.com/tcjyq/mhj-course2career/pull/4) 合入 A01—A08：已有 WebSocket 会话复核服务端 token、System AI 禁用 SDK 自动重试、身份切换清理分析输入、CSV 文本防公式、账号维度短窗口登录限流、BYOK Key/Profile 原子保存，以及配置模板和当前部署说明。合并 SHA `e87441f7e6f5817d60568f9f55db0a166f5edf6a`，main CI 五项成功。合成自动化与真实浏览器结果、剩余边界见[修复报告](post-release-production-bug-fix-report-20260929.md)。
+
+线上一度仍输出未转义 CSV。[PR #5](https://github.com/tcjyq/mhj-course2career/pull/5) 的 `app.py` 注释刷新后旧行为未变；[PR #6](https://github.com/tcjyq/mhj-course2career/pull/6) 仅给 `requirements.txt` 增加无安装影响的注释以触发依赖文件重新部署。当前 main `83aba82d9fc37826fb331ffcb164ef26e7119d31` 的 [CI 36529178686](https://github.com/tcjyq/mhj-course2career/actions/runs/36529178686) 五项成功；全新浏览器会话下载的合成原始 CSV 包含 `'=1+1 Excel训练`，证明线上已执行 A04 新代码。一次 Guest System AI 逻辑提交成功，仅新增一条成功的 `api_usage`，Guest、installation、公开全局和绝对 System 计数各由 0 增至 1，没有人工重试。
+
+隔离自动化浏览器未通过生产 Turnstile；按 [Cloudflare 官方测试说明](https://developers.cloudflare.com/turnstile/troubleshooting/testing/)，自动化浏览器可能被识别为机器人，测试键应留在测试环境。本次未创建账号、绕过验证或更改生产配置。A01、A03、A05、A06 均为 `FIXED`；`A01_PRODUCTION_MANUAL_SMOKE`、`A03_PRODUCTION_MANUAL_SMOKE`、`A05_PRODUCTION_MANUAL_SMOKE`、`BYOK_REAL_PROVIDER_SMOKE` 均为非阻断 `MANUAL_PENDING`，不是 PASS 或 FAIL。已知未修复 P0/P1 与生产阻断项为 0，`POST_RELEASE_FIX_READY=yes`、`RELEASE_READY=yes`。E1 一次性测试账号凭证事件仍保留为 `contained`，不抹去历史。
 
 ## 2026-09-28 C08-E1 生产发布与最终 smoke
 
