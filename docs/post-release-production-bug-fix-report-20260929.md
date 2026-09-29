@@ -23,7 +23,7 @@
 
 - 本地 Python 3.12 虚拟环境完整 pytest 为 **302 passed、6 skipped**；Ruff lint、Ruff format（105 个文件）、`git diff --check` 均通过。原 `main` 审计基线为 291 通过、5 个本机 PostgreSQL 标记用例跳过；新增的 PostgreSQL A01/A05/A06 测试是第 6 个跳过项，须由 PR 的 PostgreSQL 3.12/3.14 CI 实跑。当前 Windows 环境没有可用的 Docker/Podman/本机 PostgreSQL 测试实例，不连接生产或远程测试库补数。
 - 本地真实浏览器仅使用合成账号、合成 JD 和 SQLite：登录、F5、新标签、双标签登出、A→Guest→B 的未保存输入隔离、本地规则分析、CSV 实际下载均已验证；合成 B 登录后可打开并启用 Developer Mode。该本地服务没有加密主密钥，故页面按既有安全逻辑阻止保存 BYOK Key，未进行真实 BYOK/Provider 调用。浏览器仍见两个既有 `_stcore` 子路由 404，与原审计相同。此项不是生产浏览器 smoke。
-- System AI 页面在无平台 Key 的本地合成环境不能展示可调用选项；现有 AppTest 使用合成配置检查页面与配额路径。不得把这项记为真实浏览器 System AI 通过。没有任何真实 Provider API 请求。
+- 另起一个本地合成服务，仅注入**假**平台 Key 并使用固定模型模式；真实浏览器确认“系统AI”可选、DeepSeek 与固定 `deepseek-flash`、第三方传输提示及费用未知提示正常渲染。没有点击生成，也没有任何真实 Provider API 请求。这只是页面渲染回归，不是生产 System AI smoke；生成顺序和额度另由自动化用例覆盖。
 - 首轮 PR CI 的 PostgreSQL 3.12 集成步骤通过，但随后备份恢复资产断言失败：新增的 PG 测试清空/增加了与既有备份恢复用例共用的合成库数据。这是测试隔离缺陷，并非生产数据变化。已改为唯一合成账号并在 `finally` 中只清理本用例创建的行，不再 `TRUNCATE` 共用库。[修正后 CI run 36455373024](https://github.com/tcjyq/mhj-course2career/actions/runs/36455373024) 的 quality 3.11/3.12/3.14 与 PostgreSQL 集成加备份恢复 3.12/3.14 均成功（5/5）。
 - 对 15 类模式重新检索与追踪：1 登录/session、2 `dict_row`、3 SQLite/PostgreSQL、4 TLS/网络、5 Provider retry/fallback、6 Streamlit rerun、7 认证与限流、8 Turnstile、9 System quota、10 migration/rollback、11 Secret/log、12 原子性、13 浏览器信任/XSS、14 文件/导出/输入、15 配置/文档漂移。未发现本次修复新增的 P0/P1/P2/P3 确认缺陷；此为代码审计结论，不代替生产监控或渗透测试。原有 localStorage token 不能 HttpOnly、Turnstile 不能阻止人工滥用、100/120 非货币上限、旧路径人工回归待做等边界仍在。
 
