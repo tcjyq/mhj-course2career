@@ -1,3 +1,4 @@
+# Deployment refresh marker: 2026-09-29 post-PR4
 from urllib.parse import urlsplit
 from uuid import uuid4
 
