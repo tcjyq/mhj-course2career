@@ -46,6 +46,7 @@ from course2career.permissions import (
     Role,
     authorize,
 )
+from course2career.provider_display import ProviderDisplayView, provider_display_view
 from course2career.provider_factory import LLMProviderFactory
 from course2career.provider_profile import ProviderProfileService
 from course2career.provider_registry import (
@@ -73,6 +74,38 @@ def render_analysis_page(
     profile_service: ProviderProfileService | None = None,
     catalog_service: ModelCatalogService | None = None,
     installation: InstallationState | None = None,
+) -> None:
+    with provider_display_view(
+        principal, api_key_service, profile_service
+    ) as display_view:
+        _render_analysis_page(
+            principal,
+            settings,
+            provider_factory,
+            usage_service,
+            record_service,
+            api_key_service,
+            guest_session_id,
+            profile_service,
+            catalog_service,
+            installation,
+            display_view=display_view,
+        )
+
+
+def _render_analysis_page(
+    principal: Principal,
+    settings: Settings,
+    provider_factory: LLMProviderFactory,
+    usage_service: AIUsageService,
+    record_service: AnalysisRecordService,
+    api_key_service: APIKeyService | None,
+    guest_session_id: str,
+    profile_service: ProviderProfileService | None = None,
+    catalog_service: ModelCatalogService | None = None,
+    installation: InstallationState | None = None,
+    *,
+    display_view: ProviderDisplayView | None,
 ) -> None:
     st.title("个人分析")
     st.caption("课程、个人经历、岗位要求、五维适配度和能力路线集中在一个流程中。")
@@ -173,7 +206,11 @@ def render_analysis_page(
         if system_providers:
             analysis_modes.append("系统AI")
         byok_providers = configured_byok_providers(
-            principal, api_key_service, profile_service, catalog_service
+            principal,
+            api_key_service,
+            profile_service,
+            catalog_service,
+            display_view=display_view,
         )
         if byok_providers:
             analysis_modes.append("开发者API Key")
@@ -208,7 +245,11 @@ def render_analysis_page(
                 settings
             )
             if analysis_mode == "开发者API Key" and profile_service is not None:
-                profile = profile_service.get(principal, selected_provider)
+                profile = (
+                    display_view.profiles.get(selected_provider)
+                    if display_view is not None
+                    else profile_service.get(principal, selected_provider)
+                )
                 if profile is not None:
                     selected_model = profile.model_id
                     selected_endpoint_id = profile.endpoint_id
@@ -219,6 +260,7 @@ def render_analysis_page(
                     selected_endpoint_id
                     or get_provider_preset(selected_provider).selected_endpoint_id,
                     workspace_id=profile.workspace_id if profile is not None else None,
+                    display_view=display_view,
                 )
                 if snapshot is not None:
                     with st.expander("查看该供应商全部已发现模型"):
@@ -264,6 +306,7 @@ def render_analysis_page(
                         workspace_id=profile.workspace_id
                         if profile is not None
                         else None,
+                        display_view=display_view,
                     )
                     if catalog_service is not None
                     else model_capability(
@@ -819,19 +862,31 @@ def configured_byok_providers(
     api_key_service: APIKeyService | None,
     profile_service: ProviderProfileService | None,
     catalog_service: ModelCatalogService | None = None,
+    *,
+    display_view: ProviderDisplayView | None = None,
 ) -> tuple[ProviderName, ...]:
     if api_key_service is None:
         return ()
     try:
         authorize(principal, Permission.USE_OWN_API_KEY)
-        saved = {item.provider for item in api_key_service.list_keys(principal)}
+        if display_view is not None:
+            display_view.require_owner(principal)
+        saved = (
+            set(display_view.keys)
+            if display_view is not None
+            else {item.provider for item in api_key_service.list_keys(principal)}
+        )
         profiles = (
-            {
-                ProviderName(item.provider): item
-                for item in profile_service.list(principal)
-            }
-            if profile_service is not None
-            else {}
+            display_view.profiles
+            if display_view is not None
+            else (
+                {
+                    ProviderName(item.provider): item
+                    for item in profile_service.list(principal)
+                }
+                if profile_service is not None
+                else {}
+            )
         )
     except PermissionDeniedError:
         return ()
@@ -854,6 +909,7 @@ def configured_byok_providers(
                 endpoint,
                 model,
                 workspace_id=profile.workspace_id if profile is not None else None,
+                display_view=display_view,
             )
             if catalog_service is not None
             else model_capability(provider, model, endpoint)

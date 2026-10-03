@@ -1,5 +1,11 @@
 # C08-C 模型发现、能力与价格目录
 
+## 2026-10-04 展示路径性能候选（未部署）
+
+`peek()`、`selected_model()` 可接收当前 render 的 `ProviderDisplayView`，复用同 Provider 的 Key updated_time 与账户 profile。目录 cache key 中 user / Provider / endpoint / workspace / Key version 均保留；轮换或删除 Key 后下一 render 不命中旧目录。view 退出即失效，不能跨账号。未提供 view 的既有调用保持实时权限与 Key-version 读取。
+
+`discover_models()`、远程目录刷新、真实 client 与 AI 请求不接受该展示 view，仍进行原有持久权限检查；没有修改 Provider 协议、模型兼容、模型 ID 或真实认证。静态官方目录展示继续走原安全门禁。见[性能报告](performance-fix-20261004.md)。
+
 状态：2026-09-24 本地分支实现，未发布。大陆主流六家优先显示；国际四家置于折叠区。Provider Preset 声明接入协议和目录策略，目录适配层解析官方响应，`ModelCapability` 合并官方元数据与按 Provider × endpoint × exact model 保存的 B2 验证记录。官方列出模型或宣称 JSON 能力均不自动升级为 `VERIFIED`。
 
 ## 使用流程

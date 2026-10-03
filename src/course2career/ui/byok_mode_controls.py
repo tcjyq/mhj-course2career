@@ -11,6 +11,7 @@ def render_byok_mode_controls(
     service: BYOKModeService | None,
     *,
     key_prefix: str,
+    enabled_for_display: bool | None = None,
 ) -> bool:
     st.write("使用你自己的大模型 API Key，不会消耗平台 AI 调用额度。")
     st.caption(
@@ -26,7 +27,11 @@ def render_byok_mode_controls(
     if service is None:
         st.warning("开发者模式暂时不可用。")
         return False
-    enabled = service.is_enabled(principal)
+    enabled = (
+        service.is_enabled(principal)
+        if enabled_for_display is None
+        else enabled_for_display
+    )
     if enabled:
         st.success("开发者模式已启用；原平台套餐和系统 AI 额度保持不变。")
         if st.button("关闭开发者模式", key=f"{key_prefix}_disable_byok"):

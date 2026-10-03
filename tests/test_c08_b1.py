@@ -508,6 +508,8 @@ render_developer_page(principal, keys, None)
 def test_developer_card_add_update_delete_and_reload(tmp_path: Path) -> None:
     database_path = (tmp_path / "card.db").as_posix()
     source = f'''
+import streamlit as st
+from course2career.auth_service import AuthService
 from course2career.api_key_service import APIKeyService
 from course2career.key_encryption import APIKeyCipher
 from course2career.permissions import Plan, Principal, Role
@@ -520,7 +522,13 @@ if repository.find_by_id("developer") is None:
         "developer", "developer", "developer", "unused",
         Role.DEVELOPER, Plan.DEVELOPER, "2026-09-23T00:00:00+00:00"
     ))
-principal = Principal(role=Role.DEVELOPER, plan=Plan.DEVELOPER, user_id="developer")
+principal = Principal(
+    role=Role.DEVELOPER, plan=Plan.DEVELOPER, user_id="developer", session_version=1
+)
+if "auth_session_token" not in st.session_state:
+    st.session_state.auth_session_token = AuthService(repository).create_session(
+        principal
+    )
 keys = APIKeyService(repository, APIKeyCipher(bytes(range(32))))
 render_developer_page(principal, keys, None)
 '''

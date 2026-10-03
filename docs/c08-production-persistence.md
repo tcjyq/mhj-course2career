@@ -1,5 +1,11 @@
 # C08-D0/D1 生产持久化与发布门槛
 
+## 2026-10-04 连接与 session 性能候选（未部署）
+
+PostgreSQL 使用独立 `psycopg_pool` 3.3.3 包提供的线程安全借还，每 cached backend 最多 4 连接、16 个等待者、8 秒 acquisition timeout、60 秒空闲收缩、30 分钟连接寿命。生产 TLS 始终 verify-full + certifi，DB 故障 fail-closed，无 SQLite fallback。每次借出先做健康检查，异常或未提交归还须 rollback，坏连接替换，关闭 / GC / 正常退出释放池资源。
+
+初始 token restore 后同一脚本不重复 refresh；后续脚本仍实时查询 session / user，服务端撤销和角色变化仍生效。双标签 logout 在下次交互失效；静止页不主动推送刷新。恢复、TLS mock、回滚、耗尽和并发合成回归见[本轮报告](performance-fix-20261004.md)，不替代生产验收。
+
 日期：2026-09-24。基线：C08-C `c669b74fc09293b137a1a35a9e0d777d4cbda9b7`；D0 `607f93a0815f825be0c80cc62ac45d0644e072e5`。D1 仅验证 feature 分支；没有合入或部署。
 
 ## SQLite 完整清单

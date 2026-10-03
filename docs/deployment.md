@@ -1,5 +1,11 @@
 # 部署说明
 
+## 2026-10-04 性能候选部署边界
+
+本轮尚未合并或部署，`RELEASE_READY=no`，`PRODUCTION_UNVERIFIED`。部署依赖仅新增 `psycopg_pool==3.3.3`，不要因此改 Secrets、schema 或其它依赖。pool 默认每缓存 backend 4 连接；Cloud 多进程 / 副本连接预算按池数计算。min 0、idle 60 秒，首次进入 / 空闲后访问仍可能建连；不能把本地 warm 零新连接当作永远零连接。
+
+生产保持 certifi CA + verify-full，网络失败不回退 SQLite；显式 close / 正常退出 finalizer 关闭后台资源。合并部署须另行授权，届时验证远程 TLS、多会话 / 空闲恢复及真实线上性能。依赖理由、事务回归和 benchmark 见[性能报告](performance-fix-20261004.md)。
+
 ## 当前定位
 
 当前版本已在 Streamlit Community Cloud 运行，C08-E1 核心生产 smoke 已通过（`RELEASE_READY=yes`）。Admin、已认证 Developer Mode 与 BYOK 的生产手工回归仍为 `MANUAL_PENDING`。本分支为发布后的缺陷修复候选，合并前不得把分支测试当成生产验收。[发布记录](c08-e1-production-release.md)。

@@ -79,7 +79,7 @@ def test_account_login_limit_survives_new_websocket_scope(tmp_path):
     assert repo.count_recent_failed_logins_for_username("alice", start) == 0
 
 
-def test_logout_clears_analysis_only_and_requests_home():
+def test_logout_clears_identity_data_and_requests_home():
     state = {
         "principal": Principal(),
         "auth_storage_nonce": "synthetic-nonce",
@@ -90,6 +90,10 @@ def test_logout_clears_analysis_only_and_requests_home():
         "c2c_project_name_0": "private project",
         "c2c_internship_company_0": "private company",
         "c2c_minimum_degree": "private degree",
+        "provider_model_openai_0": "private model preference",
+        "provider_secret_openai_0": "private unsaved form input",
+        "provider_feedback_openai": "private feedback",
+        "model_catalog_service": "private catalog",
     }
     clear_identity_state(state)
     assert not any("private" in str(value) for value in state.values())
