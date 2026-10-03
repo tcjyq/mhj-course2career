@@ -10,4 +10,5 @@ pandas==3.0.3
 pydantic==2.13.4
 python-dotenv==1.2.2
 psycopg[binary]==3.3.2
+psycopg_pool==3.3.3
 streamlit==1.60.0

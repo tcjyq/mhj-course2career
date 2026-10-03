@@ -199,6 +199,7 @@ if pending_storage and browser_storage.phase != "PENDING":
         st.warning("暂时无法保持登录，刷新后可能需要重新登录。")
 elif pending_storage and storage_action == "set":
     show_auth_restore_pending("正在全力加载…")
+principal_restored_this_run = False
 if "principal" not in st.session_state:
     if pending_storage and storage_action == "clear":
         log_restore_state(
@@ -233,6 +234,7 @@ if "principal" not in st.session_state:
             )
             st.session_state.auth_session_token = browser_storage.token
             st.session_state.principal = restored
+            principal_restored_this_run = True
     else:
         log_restore_state(
             browser_storage, server_session_found=False, restore_result="guest"
@@ -242,7 +244,7 @@ if "guest_session_id" not in st.session_state:
     st.session_state.guest_session_id = str(uuid4())
 
 principal: Principal = st.session_state.principal
-if principal.role != Role.GUEST:
+if principal.role != Role.GUEST and not principal_restored_this_run:
     try:
         principal = auth_service.refresh_session(
             principal, st.session_state.get("auth_session_token")
@@ -397,10 +399,12 @@ if identity_just_cleared:
     st.stop()
 if previous_page_path is not None and previous_page_path != current_page_path:
     page_slot.empty()
-    st.session_state._active_page_path = current_page_path
-    st.rerun()
 st.session_state._active_page_path = current_page_path
-with page_slot.container():
+# A route/identity-specific block replaces old content without another script run.
+page_body_key = (
+    f"page_{current_page_path}_{st.session_state.get('analysis_form_epoch', 0)}"
+)
+with page_slot.container(key=page_body_key):
     try:
         selected_page.run()
     except DatabaseUnavailableError:

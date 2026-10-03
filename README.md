@@ -2,6 +2,8 @@
 
 > 面向大学生的可解释岗位适配度评估助手
 
+**2026-10-04 性能修复候选（未部署）：** 普通 BYOK Provider 导航在可比本地三次 warm run 中由 58 SQL / 58 新连接 / 2 轮执行降至 8 / 0 / 1，Python 中位数 2383 → 149 ms。展示数据只在当前 render 复用，敏感动作仍重新验证；新增有界 PostgreSQL pool，保留生产 TLS。该候选 `RELEASE_READY=no`，下文既有生产发布记录不代表本优化上线。见[完整实施与安全回归报告](docs/performance-fix-20261004.md)。
+
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.60-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io/)
 [![License](https://img.shields.io/badge/License-MIT-243F37)](LICENSE)

@@ -1,4 +1,4 @@
-"""Clear only per-identity analysis state when an identity ends."""
+"""Clear per-identity analysis and Provider display state when an identity ends."""
 
 ANALYSIS_STATE_KEYS = (
     "job_analysis",
@@ -14,8 +14,11 @@ def clear_identity_state(state) -> None:
     for key in tuple(state.keys()):
         if (
             key in ANALYSIS_STATE_KEYS
-            or key.startswith(("c2c_analysis_", "c2c_project_", "c2c_internship_"))
+            or key.startswith(
+                ("c2c_analysis_", "c2c_project_", "c2c_internship_", "provider_")
+            )
             or key == "c2c_minimum_degree"
+            or key == "model_catalog_service"
         ):
             state.pop(key, None)
     state["analysis_form_epoch"] = state.get("analysis_form_epoch", 0) + 1

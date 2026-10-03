@@ -1,5 +1,11 @@
 # Course2Career 产品需求
 
+## 性能修复候选验收（2026-10-04，未部署）
+
+普通页面导航只执行一轮正常脚本；身份清理、存储握手、无效会话与登录跳转可执行必要重跑。Developer / Analysis 的账户 Provider 展示数据仅在同一用户、同一 render 复用，不能授权任何密钥操作、client、AI 请求或目录远程刷新。下一轮仍复核 session；Key 更新 / 删除仍通过 version 失效目录缓存。账号切换清理分析及 Provider 输入。
+
+PostgreSQL 连接借还必须有界、健康检查、异常回滚、坏连接恢复，生产 verify-full / certifi 与 fail-closed 不降低。每场景至少三次 warm run 同时报 SQL、新连接、script runs、Python ms；本地与线上验收分开。实际结果和限制见[性能报告](performance-fix-20261004.md)，本候选 `RELEASE_READY=no`。
+
 ## C08 生产登录会话补充
 
 用户名/密码验证后，服务端生成 7 天随机 opaque token，只在 `auth_sessions` 保存 SHA-256 哈希；浏览器一方组件只保存原始 token，不保存密码、用户名、角色、套餐或 Key。新 Streamlit 会话必须区分浏览器存储未就绪、明确无 token 和有 token；未就绪时不得固定 Guest。刷新和重新打开标签页应恢复登录；已有 WebSocket 在每次交互时也必须复核 token 的撤销、到期、用户状态和会话版本。登出后清除身份敏感分析输入，并在身份切换期间隐藏上一身份的页面内容；其他标签页在下次交互时失效。角色、套餐与开发者模式从数据库实时读取。生产仍只用 PostgreSQL，连接失败安全停止。

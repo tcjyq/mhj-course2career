@@ -553,6 +553,8 @@ def test_developer_api_key_input_is_cleared_after_save(tmp_path: Path) -> None:
     database_path = (tmp_path / "developer-key-clear.db").as_posix()
     app = AppTest.from_string(
         f"""
+import streamlit as st
+from course2career.auth_service import AuthService
 from course2career.api_key_service import APIKeyService
 from course2career.key_encryption import APIKeyCipher
 from course2career.permissions import Plan, Principal, Role
@@ -578,7 +580,12 @@ developer = Principal(
     plan=Plan.DEVELOPER,
     user_id="developer-test",
     username="developer",
+    session_version=1,
 )
+if "auth_session_token" not in st.session_state:
+    st.session_state.auth_session_token = AuthService(repository).create_session(
+        developer
+    )
 render_developer_page(
     developer,
     APIKeyService(repository, APIKeyCipher(bytes(range(32)))),
@@ -600,6 +607,8 @@ render_developer_page(
     )
     assert new_secret_input.value == ""
     assert new_secret_input.key != original_widget_key
+    repository = SQLiteProductRepository(database_path)
+    assert repository.get_api_key("developer-test", ProviderName.DEEPSEEK) is not None
 
 
 def test_quota_and_membership_pages_render(tmp_path: Path) -> None:

@@ -1,5 +1,11 @@
 # AI 输出评测方案
 
+## 性能修复候选（2026-10-04，未部署）
+
+本轮只测性能与权限回归，不产生模型请求。Python 3.12 全量 330 passed、1 skipped（restore DB 环境未设置）；独立 PostgreSQL 集成 13 passed，随后合成备份 / 恢复与恢复校验通过，补齐该跳过项。真实本地浏览器 7 组安全检查通过，普通 18 次导航均一轮；Ruff / 格式 / diff 门禁通过。
+
+同 main 可比三次 warm run：Developer 58 → 8 SQL、58 → 0 新连接、2 → 1 轮，Python median 2382.98 → 148.95 ms；规则整页 1440.23 → 221.32 ms。空查询健康检查仍有成本，0 新连接只适用于 warm 动作。各阶段原始样本、身份隔离、revoke、Key version、pool 事务与生产未知边界见[专项实施报告](performance-fix-20261004.md)。`RELEASE_READY=no`，其它章节历史生产结果不代表本性能候选已部署。
+
 ## 发布后缺陷修复候选（2026-09-29）
 
 当前生产 E1 smoke 的结论保持不变；A01—A08 的隔离修复及本地/CI 回归另见[修复报告](post-release-production-bug-fix-report-20260929.md)。候选分支测试不等于生产复测，不扩展 Provider 精确认证或已执行的人工回归范围。

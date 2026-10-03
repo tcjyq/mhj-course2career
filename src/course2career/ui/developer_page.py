@@ -5,6 +5,7 @@ from collections.abc import Callable
 import streamlit as st
 
 from course2career.api_key_service import APIKeyMetadata, APIKeyService
+from course2career.auth_service import AuthService
 from course2career.byok_mode import BYOKModeService, is_legacy_byok_principal
 from course2career.llm_provider import ProviderName
 from course2career.model_capability import (
@@ -24,6 +25,7 @@ from course2career.permissions import (
 )
 from course2career.product_repository import StoredProviderProfile
 from course2career.provider_connection import test_provider_connection
+from course2career.provider_display import ProviderDisplayView, provider_display_view
 from course2career.provider_factory import LLMProviderFactory
 from course2career.provider_profile import (
     WORKSPACE_ID_PATTERN,
@@ -47,11 +49,40 @@ def render_developer_page(
     byok_mode_service: BYOKModeService | None = None,
     catalog_service: ModelCatalogService | None = None,
 ) -> None:
+    if api_key_service is not None and profile_service is None:
+        profile_service = ProviderProfileService(api_key_service.repository)
+    with provider_display_view(
+        principal, api_key_service, profile_service
+    ) as display_view:
+        _render_developer_page(
+            principal,
+            api_key_service,
+            configuration_error,
+            profile_service,
+            provider_factory,
+            byok_mode_service,
+            catalog_service,
+            display_view=display_view,
+        )
+
+
+def _render_developer_page(
+    principal: Principal,
+    api_key_service: APIKeyService | None,
+    configuration_error: str | None,
+    profile_service: ProviderProfileService | None = None,
+    provider_factory: LLMProviderFactory | None = None,
+    byok_mode_service: BYOKModeService | None = None,
+    catalog_service: ModelCatalogService | None = None,
+    *,
+    display_view: ProviderDisplayView | None,
+) -> None:
     active = (
         principal.role != Role.GUEST
         and principal.user_id is not None
         and (
-            is_legacy_byok_principal(principal)
+            display_view is not None
+            or is_legacy_byok_principal(principal)
             or (
                 byok_mode_service is not None
                 and byok_mode_service.is_enabled(principal)
@@ -61,11 +92,21 @@ def render_developer_page(
     st.title("我的 AI Provider" if active else "开发者模式")
     if not active:
         st.write("连接你自己的大模型 API，模型费用由你的 API 服务商账户承担。")
-        render_byok_mode_controls(principal, byok_mode_service, key_prefix="developer")
+        render_byok_mode_controls(
+            principal,
+            byok_mode_service,
+            key_prefix="developer",
+            enabled_for_display=True if display_view is not None else None,
+        )
         return
     st.caption("使用自己的 API Key；保存后只显示末四位。新增预设尚需真实模型验证。")
     st.markdown("## 开发者模式")
-    render_byok_mode_controls(principal, byok_mode_service, key_prefix="developer")
+    render_byok_mode_controls(
+        principal,
+        byok_mode_service,
+        key_prefix="developer",
+        enabled_for_display=True if display_view is not None else None,
+    )
     try:
         authorize(principal, Permission.CONFIGURE_OWN_API_KEY)
     except PermissionDeniedError:
@@ -81,10 +122,8 @@ def render_developer_page(
         api_key_service.repository
     )
     presets = ui_provider_presets()
-    keys = {item.provider: item for item in api_key_service.list_keys(principal)}
-    profiles = {
-        ProviderName(item.provider): item for item in profile_service.list(principal)
-    }
+    keys = display_view.keys if display_view is not None else {}
+    profiles = display_view.profiles if display_view is not None else {}
     configured = sum(
         preset.provider_id in keys
         and bool(
@@ -139,13 +178,18 @@ def render_developer_page(
                 raise ValueError("业务空间 ID 格式无效。")
             if not new_key and provider not in keys:
                 raise ValueError("请先填写该供应商的 API Key。")
+            # Streamlit callbacks precede the entry's session check. Revalidate
+            # here; the prior render's display view never authorizes a mutation.
+            current = AuthService(api_key_service.repository).refresh_session(
+                principal, st.session_state.get("auth_session_token")
+            )
             key = (
-                api_key_service.prepare_key(principal, provider, new_key)
+                api_key_service.prepare_key(current, provider, new_key)
                 if new_key
                 else None
             )
             profile = profile_service.prepare_profile(
-                principal, provider, endpoint_id, model_id, workspace_id
+                current, provider, endpoint_id, model_id, workspace_id
             )
             profile_service.repository.save_provider_configuration(key, profile)
             st.session_state.pop(f"provider_connection_{provider.value}", None)
@@ -168,6 +212,7 @@ def render_developer_page(
                 provider_factory,
                 catalog_service,
                 save_provider,
+                display_view,
             )
 
     st.markdown("## 大陆主流 Provider")
@@ -193,6 +238,7 @@ def _render_provider_card(
     provider_factory: LLMProviderFactory | None,
     catalog_service: ModelCatalogService | None,
     save_provider: Callable[[ProviderName, str, str, str, int, str, str | None], None],
+    display_view: ProviderDisplayView | None,
 ) -> None:
     provider = preset.provider_id
     name = provider.value
@@ -211,11 +257,18 @@ def _render_provider_card(
                 == DiscoveryStrategy.STATIC_OFFICIAL_CATALOG
             ):
                 snapshot = catalog_service.discover_models(
-                    principal, provider, selected_endpoint, workspace_id=workspace_id
+                    principal,
+                    provider,
+                    selected_endpoint,
+                    workspace_id=workspace_id,
                 )
             else:
                 snapshot = catalog_service.peek(
-                    principal, provider, selected_endpoint, workspace_id=workspace_id
+                    principal,
+                    provider,
+                    selected_endpoint,
+                    workspace_id=workspace_id,
+                    display_view=display_view,
                 )
         except (CatalogError, PermissionDeniedError):
             pass
@@ -242,6 +295,7 @@ def _render_provider_card(
                 selected_endpoint,
                 selected_model,
                 workspace_id=workspace_id,
+                display_view=display_view,
             )
             if catalog_service is not None
             else model_capability(provider, selected_model, selected_endpoint)

@@ -20,6 +20,7 @@ from course2career.model_capability import (
     model_capability,
 )
 from course2career.permissions import Principal
+from course2career.provider_display import ProviderDisplayView
 from course2career.provider_profile import MODEL_ID_PATTERN, WORKSPACE_ID_PATTERN
 from course2career.provider_registry import (
     DiscoveryStrategy,
@@ -296,14 +297,19 @@ class ModelCatalogService:
         preset: ProviderPreset,
         endpoint_id: str,
         workspace_id: str | None,
+        display_view: ProviderDisplayView | None = None,
     ) -> tuple[str, str, str, str, str] | None:
         if principal.user_id is None:
             return None
         version = "static"
         if preset.model_discovery_strategy != DiscoveryStrategy.STATIC_OFFICIAL_CATALOG:
-            stored = self.api_keys.repository.get_api_key(
-                principal.user_id, preset.provider_id.value
-            )
+            if display_view is not None:
+                display_view.require_owner(principal)
+                stored = display_view.keys.get(preset.provider_id)
+            else:
+                stored = self.api_keys.repository.get_api_key(
+                    principal.user_id, preset.provider_id.value
+                )
             if stored is None:
                 return None
             version = stored.updated_time
@@ -322,11 +328,17 @@ class ModelCatalogService:
         endpoint_id: str,
         *,
         workspace_id: str | None = None,
+        display_view: ProviderDisplayView | None = None,
     ) -> CatalogSnapshot | None:
-        require_current_byok_access(principal, self.api_keys.repository)
+        if display_view is None:
+            require_current_byok_access(principal, self.api_keys.repository)
+        else:
+            display_view.require_owner(principal)
         preset = get_provider_preset(provider)
         preset.endpoint(endpoint_id)
-        key = self._cache_key(principal, preset, endpoint_id, workspace_id)
+        key = self._cache_key(
+            principal, preset, endpoint_id, workspace_id, display_view
+        )
         entry = self._cache.get(key) if key is not None else None
         if entry is None:
             return None
@@ -781,10 +793,18 @@ class ModelCatalogService:
         model_id: str,
         *,
         workspace_id: str | None = None,
+        display_view: ProviderDisplayView | None = None,
     ) -> ModelCapability:
-        require_current_byok_access(principal, self.api_keys.repository)
+        if display_view is None:
+            require_current_byok_access(principal, self.api_keys.repository)
+        else:
+            display_view.require_owner(principal)
         snapshot = self.peek(
-            principal, provider, endpoint_id, workspace_id=workspace_id
+            principal,
+            provider,
+            endpoint_id,
+            workspace_id=workspace_id,
+            display_view=display_view,
         )
         if snapshot is not None:
             found = next(

@@ -1,0 +1,1167 @@
+{
+  "baseline-verified": {
+    "byok_user_developer_navigation": {
+      "sql": [
+        58,
+        58,
+        58
+      ],
+      "checkouts": [
+        58,
+        58,
+        58
+      ],
+      "physical_connects": [
+        58,
+        58,
+        58
+      ],
+      "health_checks": [
+        0,
+        0,
+        0
+      ],
+      "runs": [
+        2,
+        2,
+        2
+      ],
+      "ms": [
+        2145.96,
+        2382.98,
+        2439.05
+      ],
+      "median_ms": 2382.98
+    },
+    "byok_user_analysis_navigation": {
+      "sql": [
+        39,
+        39,
+        39
+      ],
+      "checkouts": [
+        39,
+        39,
+        39
+      ],
+      "physical_connects": [
+        39,
+        39,
+        39
+      ],
+      "health_checks": [
+        0,
+        0,
+        0
+      ],
+      "runs": [
+        2,
+        2,
+        2
+      ],
+      "ms": [
+        1604.34,
+        1342.09,
+        1389.93
+      ],
+      "median_ms": 1389.93
+    },
+    "byok_user_analysis_demo": {
+      "sql": [
+        36,
+        36,
+        36
+      ],
+      "checkouts": [
+        36,
+        36,
+        36
+      ],
+      "physical_connects": [
+        36,
+        36,
+        36
+      ],
+      "health_checks": [
+        0,
+        0,
+        0
+      ],
+      "runs": [
+        1,
+        1,
+        1
+      ],
+      "ms": [
+        1475.3,
+        1440.23,
+        1192.57
+      ],
+      "median_ms": 1440.23
+    },
+    "user_quota_navigation": {
+      "sql": [
+        7,
+        7,
+        7
+      ],
+      "checkouts": [
+        7,
+        7,
+        7
+      ],
+      "physical_connects": [
+        7,
+        7,
+        7
+      ],
+      "health_checks": [
+        0,
+        0,
+        0
+      ],
+      "runs": [
+        2,
+        2,
+        2
+      ],
+      "ms": [
+        306.15,
+        245.57,
+        248.35
+      ],
+      "median_ms": 248.35
+    },
+    "user_membership_navigation": {
+      "sql": [
+        7,
+        7,
+        7
+      ],
+      "checkouts": [
+        7,
+        7,
+        7
+      ],
+      "physical_connects": [
+        7,
+        7,
+        7
+      ],
+      "health_checks": [
+        0,
+        0,
+        0
+      ],
+      "runs": [
+        2,
+        2,
+        2
+      ],
+      "ms": [
+        247.64,
+        231.94,
+        286.95
+      ],
+      "median_ms": 247.64
+    },
+    "guest_login_navigation": {
+      "sql": [
+        0,
+        0,
+        0
+      ],
+      "checkouts": [
+        0,
+        0,
+        0
+      ],
+      "physical_connects": [
+        0,
+        0,
+        0
+      ],
+      "health_checks": [
+        0,
+        0,
+        0
+      ],
+      "runs": [
+        2,
+        2,
+        2
+      ],
+      "ms": [
+        29.26,
+        37.93,
+        35.02
+      ],
+      "median_ms": 35.02
+    },
+    "byok_user_F5": {
+      "sql": [
+        10,
+        10,
+        10
+      ],
+      "checkouts": [
+        10,
+        10,
+        10
+      ],
+      "physical_connects": [
+        10,
+        10,
+        10
+      ],
+      "health_checks": [
+        0,
+        0,
+        0
+      ],
+      "runs": [
+        3,
+        3,
+        3
+      ],
+      "ms": [
+        342.95,
+        383.14,
+        368.5
+      ],
+      "median_ms": 368.5
+    }
+  },
+  "display-verified": {
+    "byok_user_developer_navigation": {
+      "sql": [
+        11,
+        11,
+        11
+      ],
+      "checkouts": [
+        11,
+        11,
+        11
+      ],
+      "physical_connects": [
+        11,
+        11,
+        11
+      ],
+      "health_checks": [
+        0,
+        0,
+        0
+      ],
+      "runs": [
+        2,
+        2,
+        2
+      ],
+      "ms": [
+        497.99,
+        703.35,
+        523.86
+      ],
+      "median_ms": 523.86
+    },
+    "byok_user_analysis_navigation": {
+      "sql": [
+        10,
+        10,
+        10
+      ],
+      "checkouts": [
+        10,
+        10,
+        10
+      ],
+      "physical_connects": [
+        10,
+        10,
+        10
+      ],
+      "health_checks": [
+        0,
+        0,
+        0
+      ],
+      "runs": [
+        2,
+        2,
+        2
+      ],
+      "ms": [
+        483.52,
+        443.22,
+        456.03
+      ],
+      "median_ms": 456.03
+    },
+    "byok_user_analysis_demo": {
+      "sql": [
+        7,
+        7,
+        7
+      ],
+      "checkouts": [
+        7,
+        7,
+        7
+      ],
+      "physical_connects": [
+        7,
+        7,
+        7
+      ],
+      "health_checks": [
+        0,
+        0,
+        0
+      ],
+      "runs": [
+        1,
+        1,
+        1
+      ],
+      "ms": [
+        442.97,
+        411.54,
+        438.56
+      ],
+      "median_ms": 438.56
+    },
+    "user_quota_navigation": {
+      "sql": [
+        7,
+        7,
+        7
+      ],
+      "checkouts": [
+        7,
+        7,
+        7
+      ],
+      "physical_connects": [
+        7,
+        7,
+        7
+      ],
+      "health_checks": [
+        0,
+        0,
+        0
+      ],
+      "runs": [
+        2,
+        2,
+        2
+      ],
+      "ms": [
+        304.82,
+        293.76,
+        277.96
+      ],
+      "median_ms": 293.76
+    },
+    "user_membership_navigation": {
+      "sql": [
+        7,
+        7,
+        7
+      ],
+      "checkouts": [
+        7,
+        7,
+        7
+      ],
+      "physical_connects": [
+        7,
+        7,
+        7
+      ],
+      "health_checks": [
+        0,
+        0,
+        0
+      ],
+      "runs": [
+        2,
+        2,
+        2
+      ],
+      "ms": [
+        263.67,
+        305.3,
+        279.9
+      ],
+      "median_ms": 279.9
+    },
+    "guest_login_navigation": {
+      "sql": [
+        0,
+        0,
+        0
+      ],
+      "checkouts": [
+        0,
+        0,
+        0
+      ],
+      "physical_connects": [
+        0,
+        0,
+        0
+      ],
+      "health_checks": [
+        0,
+        0,
+        0
+      ],
+      "runs": [
+        2,
+        2,
+        2
+      ],
+      "ms": [
+        26.77,
+        41.22,
+        42.28
+      ],
+      "median_ms": 41.22
+    },
+    "byok_user_F5": {
+      "sql": [
+        7,
+        10,
+        7
+      ],
+      "checkouts": [
+        7,
+        10,
+        7
+      ],
+      "physical_connects": [
+        7,
+        10,
+        7
+      ],
+      "health_checks": [
+        0,
+        0,
+        0
+      ],
+      "runs": [
+        2,
+        3,
+        2
+      ],
+      "ms": [
+        266.68,
+        906.25,
+        275.93
+      ],
+      "median_ms": 275.93
+    }
+  },
+  "pool": {
+    "byok_user_developer_navigation": {
+      "sql": [
+        11,
+        11,
+        11
+      ],
+      "checkouts": [
+        11,
+        11,
+        11
+      ],
+      "physical_connects": [
+        0,
+        0,
+        0
+      ],
+      "health_checks": [
+        11,
+        11,
+        11
+      ],
+      "runs": [
+        2,
+        2,
+        2
+      ],
+      "ms": [
+        188.49,
+        193.73,
+        181.38
+      ],
+      "median_ms": 188.49
+    },
+    "byok_user_analysis_navigation": {
+      "sql": [
+        10,
+        10,
+        10
+      ],
+      "checkouts": [
+        10,
+        10,
+        10
+      ],
+      "physical_connects": [
+        0,
+        0,
+        0
+      ],
+      "health_checks": [
+        10,
+        10,
+        10
+      ],
+      "runs": [
+        2,
+        2,
+        2
+      ],
+      "ms": [
+        155.83,
+        135.76,
+        150.36
+      ],
+      "median_ms": 150.36
+    },
+    "byok_user_analysis_demo": {
+      "sql": [
+        7,
+        7,
+        7
+      ],
+      "checkouts": [
+        7,
+        7,
+        7
+      ],
+      "physical_connects": [
+        0,
+        0,
+        0
+      ],
+      "health_checks": [
+        7,
+        7,
+        7
+      ],
+      "runs": [
+        1,
+        1,
+        1
+      ],
+      "ms": [
+        216.31,
+        249.25,
+        239.99
+      ],
+      "median_ms": 239.99
+    },
+    "user_quota_navigation": {
+      "sql": [
+        7,
+        7,
+        7
+      ],
+      "checkouts": [
+        7,
+        7,
+        7
+      ],
+      "physical_connects": [
+        0,
+        0,
+        0
+      ],
+      "health_checks": [
+        7,
+        7,
+        7
+      ],
+      "runs": [
+        2,
+        2,
+        2
+      ],
+      "ms": [
+        86.07,
+        56.07,
+        52.83
+      ],
+      "median_ms": 56.07
+    },
+    "user_membership_navigation": {
+      "sql": [
+        7,
+        7,
+        7
+      ],
+      "checkouts": [
+        7,
+        7,
+        7
+      ],
+      "physical_connects": [
+        0,
+        0,
+        0
+      ],
+      "health_checks": [
+        7,
+        7,
+        7
+      ],
+      "runs": [
+        2,
+        2,
+        2
+      ],
+      "ms": [
+        45.75,
+        59.96,
+        55.36
+      ],
+      "median_ms": 55.36
+    },
+    "guest_login_navigation": {
+      "sql": [
+        0,
+        0,
+        0
+      ],
+      "checkouts": [
+        0,
+        0,
+        0
+      ],
+      "physical_connects": [
+        0,
+        0,
+        0
+      ],
+      "health_checks": [
+        0,
+        0,
+        0
+      ],
+      "runs": [
+        2,
+        2,
+        2
+      ],
+      "ms": [
+        35.85,
+        47.44,
+        40.94
+      ],
+      "median_ms": 40.94
+    },
+    "byok_user_F5": {
+      "sql": [
+        10,
+        7,
+        7
+      ],
+      "checkouts": [
+        10,
+        7,
+        7
+      ],
+      "physical_connects": [
+        0,
+        0,
+        0
+      ],
+      "health_checks": [
+        10,
+        7,
+        7
+      ],
+      "runs": [
+        3,
+        2,
+        2
+      ],
+      "ms": [
+        94.37,
+        66.89,
+        66.04
+      ],
+      "median_ms": 66.89
+    }
+  },
+  "navigation": {
+    "byok_user_developer_navigation": {
+      "sql": [
+        8,
+        8,
+        8
+      ],
+      "checkouts": [
+        8,
+        8,
+        8
+      ],
+      "physical_connects": [
+        0,
+        0,
+        0
+      ],
+      "health_checks": [
+        8,
+        8,
+        8
+      ],
+      "runs": [
+        1,
+        1,
+        1
+      ],
+      "ms": [
+        150.2,
+        125.28,
+        165.95
+      ],
+      "median_ms": 150.2
+    },
+    "byok_user_analysis_navigation": {
+      "sql": [
+        7,
+        7,
+        7
+      ],
+      "checkouts": [
+        7,
+        7,
+        7
+      ],
+      "physical_connects": [
+        0,
+        0,
+        0
+      ],
+      "health_checks": [
+        7,
+        7,
+        7
+      ],
+      "runs": [
+        1,
+        1,
+        1
+      ],
+      "ms": [
+        133.4,
+        98.82,
+        118.09
+      ],
+      "median_ms": 118.09
+    },
+    "byok_user_analysis_demo": {
+      "sql": [
+        7,
+        7,
+        7
+      ],
+      "checkouts": [
+        7,
+        7,
+        7
+      ],
+      "physical_connects": [
+        0,
+        0,
+        0
+      ],
+      "health_checks": [
+        7,
+        7,
+        7
+      ],
+      "runs": [
+        1,
+        1,
+        1
+      ],
+      "ms": [
+        202.73,
+        175.45,
+        209.25
+      ],
+      "median_ms": 202.73
+    },
+    "user_quota_navigation": {
+      "sql": [
+        4,
+        4,
+        4
+      ],
+      "checkouts": [
+        4,
+        4,
+        4
+      ],
+      "physical_connects": [
+        0,
+        0,
+        0
+      ],
+      "health_checks": [
+        4,
+        4,
+        4
+      ],
+      "runs": [
+        1,
+        1,
+        1
+      ],
+      "ms": [
+        52.43,
+        28.28,
+        35.42
+      ],
+      "median_ms": 35.42
+    },
+    "user_membership_navigation": {
+      "sql": [
+        4,
+        4,
+        4
+      ],
+      "checkouts": [
+        4,
+        4,
+        4
+      ],
+      "physical_connects": [
+        0,
+        0,
+        0
+      ],
+      "health_checks": [
+        4,
+        4,
+        4
+      ],
+      "runs": [
+        1,
+        1,
+        1
+      ],
+      "ms": [
+        37.09,
+        50.22,
+        37.37
+      ],
+      "median_ms": 37.37
+    },
+    "guest_login_navigation": {
+      "sql": [
+        0,
+        0,
+        0
+      ],
+      "checkouts": [
+        0,
+        0,
+        0
+      ],
+      "physical_connects": [
+        0,
+        0,
+        0
+      ],
+      "health_checks": [
+        0,
+        0,
+        0
+      ],
+      "runs": [
+        1,
+        1,
+        1
+      ],
+      "ms": [
+        18.77,
+        31.26,
+        21.57
+      ],
+      "median_ms": 21.57
+    },
+    "byok_user_F5": {
+      "sql": [
+        10,
+        7,
+        10
+      ],
+      "checkouts": [
+        10,
+        7,
+        10
+      ],
+      "physical_connects": [
+        0,
+        0,
+        0
+      ],
+      "health_checks": [
+        10,
+        7,
+        10
+      ],
+      "runs": [
+        4,
+        2,
+        3
+      ],
+      "ms": [
+        125.8,
+        72.97,
+        75.0
+      ],
+      "median_ms": 75.0
+    }
+  },
+  "restore": {
+    "byok_user_developer_navigation": {
+      "sql": [
+        8,
+        8,
+        8
+      ],
+      "checkouts": [
+        8,
+        8,
+        8
+      ],
+      "physical_connects": [
+        0,
+        0,
+        0
+      ],
+      "health_checks": [
+        8,
+        8,
+        8
+      ],
+      "runs": [
+        1,
+        1,
+        1
+      ],
+      "ms": [
+        145.81,
+        152.7,
+        148.95
+      ],
+      "median_ms": 148.95
+    },
+    "byok_user_analysis_navigation": {
+      "sql": [
+        7,
+        7,
+        7
+      ],
+      "checkouts": [
+        7,
+        7,
+        7
+      ],
+      "physical_connects": [
+        0,
+        0,
+        0
+      ],
+      "health_checks": [
+        7,
+        7,
+        7
+      ],
+      "runs": [
+        1,
+        1,
+        1
+      ],
+      "ms": [
+        125.39,
+        114.78,
+        133.8
+      ],
+      "median_ms": 125.39
+    },
+    "byok_user_analysis_demo": {
+      "sql": [
+        7,
+        7,
+        7
+      ],
+      "checkouts": [
+        7,
+        7,
+        7
+      ],
+      "physical_connects": [
+        0,
+        0,
+        0
+      ],
+      "health_checks": [
+        7,
+        7,
+        7
+      ],
+      "runs": [
+        1,
+        1,
+        1
+      ],
+      "ms": [
+        204.64,
+        221.32,
+        230.89
+      ],
+      "median_ms": 221.32
+    },
+    "user_quota_navigation": {
+      "sql": [
+        4,
+        4,
+        4
+      ],
+      "checkouts": [
+        4,
+        4,
+        4
+      ],
+      "physical_connects": [
+        0,
+        0,
+        0
+      ],
+      "health_checks": [
+        4,
+        4,
+        4
+      ],
+      "runs": [
+        1,
+        1,
+        1
+      ],
+      "ms": [
+        35.57,
+        33.7,
+        33.65
+      ],
+      "median_ms": 33.7
+    },
+    "user_membership_navigation": {
+      "sql": [
+        4,
+        4,
+        4
+      ],
+      "checkouts": [
+        4,
+        4,
+        4
+      ],
+      "physical_connects": [
+        0,
+        0,
+        0
+      ],
+      "health_checks": [
+        4,
+        4,
+        4
+      ],
+      "runs": [
+        1,
+        1,
+        1
+      ],
+      "ms": [
+        33.87,
+        35.77,
+        35.9
+      ],
+      "median_ms": 35.77
+    },
+    "guest_login_navigation": {
+      "sql": [
+        0,
+        0,
+        0
+      ],
+      "checkouts": [
+        0,
+        0,
+        0
+      ],
+      "physical_connects": [
+        0,
+        0,
+        0
+      ],
+      "health_checks": [
+        0,
+        0,
+        0
+      ],
+      "runs": [
+        1,
+        1,
+        1
+      ],
+      "ms": [
+        20.61,
+        28.33,
+        22.6
+      ],
+      "median_ms": 22.6
+    },
+    "byok_user_F5": {
+      "sql": [
+        7,
+        4,
+        4
+      ],
+      "checkouts": [
+        7,
+        4,
+        4
+      ],
+      "physical_connects": [
+        0,
+        0,
+        0
+      ],
+      "health_checks": [
+        7,
+        4,
+        4
+      ],
+      "runs": [
+        4,
+        2,
+        2
+      ],
+      "ms": [
+        126.24,
+        58.69,
+        61.2
+      ],
+      "median_ms": 61.2
+    }
+  }
+}
