@@ -31,6 +31,31 @@ from course2career.llm_provider import ProviderName
 from course2career.postgres_repository import PostgresProductRepository
 
 
+def _mock_pool_connect(monkeypatch, connect):
+    import psycopg_pool
+
+    class TestPool:
+        check_connection = staticmethod(lambda _connection: None)
+
+        def __init__(self, conninfo, kwargs, **_options):
+            self.conninfo = conninfo
+            self.kwargs = kwargs
+
+        def open(self):
+            pass
+
+        def close(self):
+            pass
+
+        def getconn(self):
+            return connect(self.conninfo, **self.kwargs)
+
+        def putconn(self, _connection):
+            pass
+
+    monkeypatch.setattr(psycopg_pool, "ConnectionPool", TestPool)
+
+
 @pytest.mark.parametrize(
     "database_url",
     (
@@ -69,7 +94,7 @@ def test_database_startup_log_never_contains_url_or_credentials(
             f"DATABASE_URL={url} {secret}"
         )
 
-    monkeypatch.setattr(psycopg, "connect", failed_connect)
+    _mock_pool_connect(monkeypatch, failed_connect)
     backend = DatabaseBackend(url=url, require_verified_tls=True)
     with pytest.raises(DatabaseUnavailableError) as error:
         backend.connect()
@@ -89,7 +114,7 @@ def test_production_connect_uses_explicit_certifi_bundle_over_url(monkeypatch) -
         assert conninfo == url
         return object()
 
-    monkeypatch.setattr(psycopg, "connect", fake_connect)
+    _mock_pool_connect(monkeypatch, fake_connect)
     DatabaseBackend(url=url, require_verified_tls=True).connect()
     assert captured["sslmode"] == "verify-full"
     assert captured["sslrootcert"] == certifi.where()
@@ -110,7 +135,7 @@ def test_local_postgres_test_does_not_override_ca_bundle(monkeypatch) -> None:
         captured.update(kwargs)
         return object()
 
-    monkeypatch.setattr(psycopg, "connect", fake_connect)
+    _mock_pool_connect(monkeypatch, fake_connect)
     DatabaseBackend(
         url="postgresql://localhost/test?sslmode=disable",
         allow_insecure_local_test=True,

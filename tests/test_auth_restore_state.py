@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+import streamlit as st
 from streamlit.testing.v1 import AppTest
 
 from course2career.auth_service import AuthService
@@ -107,3 +108,91 @@ def test_login_waits_for_browser_write_before_showing_authenticated_ui(
     assert not app.exception
     assert "pending_auth_storage" not in app.session_state
     assert app.session_state.principal.user_id == user.user_id
+
+
+def test_normal_route_change_does_not_restart_entry(monkeypatch, tmp_path):
+    import course2career.config as config
+
+    entries = []
+    load_settings = config.load_settings
+
+    def counted_settings():
+        entries.append(True)
+        return load_settings()
+
+    route = {"path": "analysis"}
+
+    class SelectedPage:
+        @property
+        def url_path(self):
+            return route["path"]
+
+        def run(self):
+            st.title(f"synthetic destination {self.url_path}")
+
+    monkeypatch.setattr(config, "load_settings", counted_settings)
+    monkeypatch.setattr(st, "navigation", lambda *_args, **_kwargs: SelectedPage())
+    app = _new_app(
+        monkeypatch,
+        tmp_path,
+        [browser_auth.BrowserStorageState("NO_TOKEN")] * 4,
+    )
+    app.session_state._active_page_path = "home"
+    app.run()
+    assert not app.exception
+    assert len(entries) == 1
+    assert app.title[0].value == "synthetic destination analysis"
+    route["path"] = "quota"
+    app.run()
+    assert not app.exception
+    assert len(entries) == 2
+    assert app.title[0].value == "synthetic destination quota"
+
+
+def test_restored_principal_is_checked_once_and_every_later_run_rechecks(
+    monkeypatch, tmp_path
+):
+    repo = SQLiteProductRepository(tmp_path / "restore.db")
+    auth = AuthService(repo)
+    user = auth.register("fresh_restore", "synthetic-password-123")
+    token = auth.create_session(user)
+    calls = []
+    restore = AuthService.restore_session
+
+    def counted_restore(self, candidate, **kwargs):
+        calls.append(True)
+        return restore(self, candidate, **kwargs)
+
+    monkeypatch.setattr(AuthService, "restore_session", counted_restore)
+    app = _new_app(
+        monkeypatch,
+        tmp_path,
+        [browser_auth.BrowserStorageState("TOKEN_PRESENT", token)] * 8,
+    )
+    app.run()
+    assert not app.exception
+    assert app.session_state.principal.user_id == user.user_id
+    assert len(calls) == 1
+    app.run()
+    assert not app.exception
+    assert len(calls) == 2
+    with repo._connect() as connection:
+        connection.execute(
+            "UPDATE users SET role = 'developer' WHERE id = ?", (user.user_id,)
+        )
+        connection.execute(
+            "INSERT INTO user_byok_settings(user_id, byok_enabled, updated_at) "
+            "VALUES (?, 1, ?)",
+            (user.user_id, "synthetic-time"),
+        )
+    app.run()
+    assert not app.exception
+    assert app.session_state.principal.role == Role.DEVELOPER
+    assert app.session_state.principal.byok_enabled
+    assert len(calls) == 3
+    auth.revoke_session(token)
+    app.run()
+    assert not app.exception
+    assert app.session_state.principal.role == Role.GUEST
+    assert app.session_state.analysis_form_epoch == 1
+    assert len(calls) >= 4

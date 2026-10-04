@@ -1,5 +1,11 @@
 # Course2Career 开发日志
 
+## 2026-10-04 性能修复实施（独立候选，未部署）
+
+重新 fetch 确认 main `62336cc9ea8541d670b054dc936a59d2d275773b`，保留原工作区所有文件，在独立 `perf/reduce-rerun-database-overhead` 分支依次实施 render Provider view / Key-version 复用、有界 PostgreSQL pool、普通导航单轮、同轮 restore 去重；每步单独 benchmark。Developer 58 SQL / 58 新连接 / 2 轮 / 2383 ms → 8 / 0 / 1 / 149 ms，规则整页 1440 → 221 ms，均为三次本地 warm 中位数。
+
+敏感操作不信任展示 view；保存回调补 session 复核，账户切换清理 Provider 输入。全量 330 passed、1 restore 环境跳过；独立 PG 13 passed、备份 / 恢复补跑通过，浏览器 7 组 PASS。没有修改 schema、生产 Secrets、Provider 协议 / 模型 / Key / 认证或调用真实模型。逐文件原因、数值、TLS 和静止双标签边界见[性能报告](performance-fix-20261004.md)。待 Draft PR 审阅，`RELEASE_READY=no`，不 merge / deploy。
+
 ## 2026-09-29 发布后生产同类缺陷修复与发布收尾
 
 基于 [2026-09-28 审计](post-release-production-bug-audit-20260928.md)，[PR #4](https://github.com/tcjyq/mhj-course2career/pull/4) 合入 A01—A08：已有 WebSocket 会话复核服务端 token、System AI 禁用 SDK 自动重试、身份切换清理分析输入、CSV 文本防公式、账号维度短窗口登录限流、BYOK Key/Profile 原子保存，以及配置模板和当前部署说明。合并 SHA `e87441f7e6f5817d60568f9f55db0a166f5edf6a`，main CI 五项成功。合成自动化与真实浏览器结果、剩余边界见[修复报告](post-release-production-bug-fix-report-20260929.md)。

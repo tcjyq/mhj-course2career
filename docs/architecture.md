@@ -1,5 +1,11 @@
 # 系统架构
 
+## 性能修复候选（2026-10-04，未部署）
+
+`provider_display.py` context manager 提供 render scope 的只读 Key metadata / version 与 profiles；`model_discovery.peek / selected_model` 可使用它完成纯展示缓存 lookup。view 不含 Secret，不存入 session_state，完整 Principal / active 生命周期不匹配即拒绝。敏感动作保持原持久权限校验；Developer 保存回调另外刷新 session，因为回调在脚本入口前执行。
+
+缓存 repository 的 PostgreSQL backend 延迟持有有界 Psycopg pool（默认 0–4，借还独占事务，每次健康检查），成功 commit、失败 rollback，失效连接丢弃；显式 close / finalizer 关闭资源。生产 verify-full + certifi 不变，无 SQLite fallback。同轮初始 restore 复用刚验证 Principal；以后每个 rerun 仍 refresh_session。[实测与生命周期边界](performance-fix-20261004.md)。
+
 ## C08-E1 注册与平台补贴保护（生产已上线）
 
 `ui/installation.py` 由独立的一方组件生成/读取 32 字节随机标识；认证 token 与 installation 不共用。`ui/turnstile_widget.py` 只在公开注册页显示挑战，`turnstile.py` 在服务端验证 success、精确 hostname 与 `register` action。`AuthService.register_public()` 先验证挑战，再做密码哈希；仓储在同一 SQLite `BEGIN IMMEDIATE` 或 PostgreSQL advisory 锁事务内清理过期来源哈希、统计滚动窗口并插入用户。Schema v4 只给 `users` 和 `api_usage` 增加三个 nullable 字段及查询索引，旧数据不回填。
@@ -124,7 +130,7 @@ flowchart LR
 - C08-C `ProviderPreset.model_discovery_strategy` 选择动态模型 API 或有来源日期的短静态目录。`ModelCatalogService` 合并官方可用性、能力、价格与独立 B2 记录，拒绝把官方结构化输出升为 `VERIFIED`。内存缓存键含用户、Provider、官方端点、Workspace、Key 更新时间；每次访问复核 B3 开关。DeepSeek 生产 Auto-Safe 目录与开发者候选目录职责不同；旧别名仅提示迁移。[目录说明](c08-model-discovery.md) · [ADR 006](decisions/006-model-catalog-provenance-and-scope.md)。
 - 开发者密钥表单通过提交回调完成加密保存；回调结束前删除明文状态并递增表单版本，使前端创建全新的空密码组件，重跑后的页面只读取脱敏元数据。
 - 页面使用`st.navigation`按角色动态展示入口，页面隐藏不替代服务端权限判断。
-- 页面内容运行在可清空占位容器中；检测到路由变化时先清空旧容器并执行一次受控重跑，规避 Streamlit 页面切换时的内容残留。
+- 页面内容运行在可清空占位容器中；普通路由变化先清空旧容器，以 route / identity epoch 为稳定 container key，同一轮渲染目标页面，避免固定额外重跑。身份清理时隐藏旧页面，必要的认证 / 存储重跑保留；依据 [Streamlit 1.60 container API](https://docs.streamlit.io/1.60.0/develop/api-reference/layout/st.container)，并经真实浏览器验证旧内容不残留。
 - 入口层先按稳定构造参数创建模型工厂，再注入共享模型目录，兼容 Streamlit 热重载期间入口与已缓存模块短暂不同步的窗口。
 - 用量服务优先向新版仓储回写供应商实际模型；若热更新窗口中的旧仓储尚不接受 `model` 参数，则仅回退一次旧接口，继续保存状态、Token 与费用。仓储缓存修订号同时递增，完整重跑后恢复新版接口。
 

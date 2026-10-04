@@ -3,7 +3,9 @@
 import logging
 import re
 import sqlite3
+import weakref
 from pathlib import Path
+from threading import Lock
 from urllib.parse import parse_qs, urlsplit
 
 
@@ -197,8 +199,10 @@ class _Cursor:
 
 
 class PostgresConnection:
-    def __init__(self, connection):
+    def __init__(self, connection, *, release=None):
         self.connection = connection
+        self._release = release
+        self._closed = False
 
     def execute(self, sql, params=None):
         import psycopg
@@ -233,7 +237,12 @@ class PostgresConnection:
             raise _unavailable(exc) from None
 
     def close(self):
-        self.connection.close()
+        if not self._closed:
+            self._closed = True
+            if self._release is None:
+                self.connection.close()
+            else:
+                self._release(self.connection)
 
     def __enter__(self):
         return self
@@ -256,6 +265,8 @@ class DatabaseBackend:
         url: str | None = None,
         allow_insecure_local_test: bool = False,
         require_verified_tls: bool = False,
+        pool_max_size: int = 4,
+        pool_timeout: float = 8,
     ):
         if bool(database_path) == bool(url):
             raise DatabaseConfigurationError("必须且只能配置一个数据库连接目标。")
@@ -263,6 +274,14 @@ class DatabaseBackend:
         self.url = url
         self.sslmode = None
         self.require_verified_tls = require_verified_tls
+        if not 1 <= pool_max_size <= 16 or pool_timeout <= 0:
+            raise DatabaseConfigurationError("数据库连接池配置无效。")
+        self._pool_max_size = pool_max_size
+        self._pool_timeout = pool_timeout
+        self._pool = None
+        self._pool_lock = Lock()
+        self._pool_finalizer = None
+        self._closed = False
         if self.path:
             self.path.parent.mkdir(parents=True, exist_ok=True)
         else:
@@ -295,24 +314,77 @@ class DatabaseBackend:
             connection.execute("PRAGMA foreign_keys = ON")
             return connection
         import psycopg
-        from psycopg.rows import dict_row
+        from psycopg_pool import PoolClosed, PoolTimeout, TooManyRequests
 
-        tls_options = {"sslmode": self.sslmode}
-        if self.require_verified_tls:
-            import certifi
-
-            tls_options = {
-                "sslmode": "verify-full",
-                "sslrootcert": certifi.where(),
-            }
         try:
-            return PostgresConnection(
-                psycopg.connect(
-                    self.url,
-                    row_factory=dict_row,
-                    connect_timeout=8,
-                    **tls_options,
-                )
-            )
-        except psycopg.OperationalError as exc:
+            pool = self._get_pool()
+            return PostgresConnection(pool.getconn(), release=pool.putconn)
+        except (psycopg.OperationalError, psycopg.InterfaceError) as exc:
             raise _unavailable(exc) from None
+        except (PoolClosed, PoolTimeout, TooManyRequests):
+            raise DatabaseUnavailableError(
+                "持久数据库暂时不可用。", failure_category="NETWORK"
+            ) from None
+
+    def _get_pool(self):
+        from psycopg.rows import dict_row
+        from psycopg_pool import ConnectionPool
+
+        with self._pool_lock:
+            if self._closed:
+                raise DatabaseUnavailableError("持久数据库暂时不可用。")
+            if self._pool is not None:
+                return self._pool
+            tls_options = {"sslmode": self.sslmode}
+            if self.require_verified_tls:
+                import certifi
+
+                tls_options = {
+                    "sslmode": "verify-full",
+                    "sslrootcert": certifi.where(),
+                }
+            logger = logging.getLogger("psycopg.pool")
+            if not any(isinstance(f, _SafePoolLogs) for f in logger.filters):
+                logger.addFilter(_SafePoolLogs())
+            pool = ConnectionPool(
+                conninfo=self.url,
+                kwargs={
+                    "row_factory": dict_row,
+                    "connect_timeout": 8,
+                    **tls_options,
+                },
+                min_size=0,
+                max_size=self._pool_max_size,
+                max_waiting=16,
+                timeout=self._pool_timeout,
+                max_idle=60,
+                max_lifetime=1800,
+                reconnect_timeout=8,
+                num_workers=2,
+                check=ConnectionPool.check_connection,
+                name="course2career",
+                open=False,
+            )
+            pool.open()
+            self._pool = pool
+            # GC/cache replacement and normal process exit both release workers.
+            self._pool_finalizer = weakref.finalize(self, pool.close)
+            return pool
+
+    def close(self) -> None:
+        with self._pool_lock:
+            self._closed = True
+            if self._pool_finalizer is not None:
+                self._pool_finalizer()
+
+
+class _SafePoolLogs(logging.Filter):
+    """Pool worker errors may contain DSNs: retain severity, suppress raw details."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.msg = "postgres_pool_event level=%s"
+        record.args = (record.levelname,)
+        record.exc_info = None
+        record.exc_text = None
+        record.stack_info = None
+        return True
