@@ -1,5 +1,9 @@
 # C08 多供应商设计与阶段状态
 
+## 2026-10-05 接入体系候选
+
+ProviderPreset 保持现有预设与接口，增加按访问模式投影的 AccessDefinition 和 ProviderCompatibility。API 是唯一可用模式；PLAN/OAUTH_SUBSCRIPTION 与 PLAN_KEY/OAUTH 仅类型预留，不代表已实现订阅。CredentialResolver 调用现有 APIKeyService，不建立 OAuth 表，也不复用 Pi 的 provider-only 全局 credential store。统一结果保留 Structured JobAnalysis，显示、用量与真实返回身份分离。[当前实现与十家矩阵](provider-access-upgrade-20261005.md) · [ADR 009](decisions/009-provider-access-and-runtime-identity.md)。
+
 状态：C08-A 为历史基础；C08-B1 实现十家官方预设的 BYOK 配置与协议适配。2026-09-24 的 B2 首轮 OpenAI 与 Anthropic 请求均返回 401，当时无 VERIFIED；2026-09-26 的 D1 续测已精确认证 Bailian `cn-beijing` / `qwen3.8-flash` 和 DeepSeek `global` / `deepseek-flash`，不推广到其他模型。C08-B3 允许普通登录用户免费自助启用 BYOK；C08-C 加入大陆优先的官方模型目录、能力和价格来源。相关功能已随 C08 进入生产，C08-E1 当前发布状态见[记录](c08-e1-production-release.md)；已认证 Developer Mode 与 BYOK 的本次生产手工回归仍为 `MANUAL_PENDING`。模型证据见 [官方矩阵](c08-provider-matrix.md)、[模型目录](c08-model-discovery.md)、[B2 验证报告](c08-provider-validation.md)和 [ADR 005](decisions/005-self-service-byok-capability.md)。
 
 ## 起点与现状审计

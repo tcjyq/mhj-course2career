@@ -1,5 +1,11 @@
 # 系统架构
 
+## Provider 接入升级（2026-10-05 候选）
+
+调用链为 ProviderPreset（品牌与单一声明源）→ AccessDefinition（API/协议/端点/auth/catalog/兼容）→ CredentialResolver（APIKeyService 加密后端，user/system 所有权不变）→ 最后已知目录 / 模型解析 → 协议 adapter → JobAnalysis + usage + immutable ModelTrace + CallEvidence → 连接与固定集验证。`extract_job_skills()` 保持返回 JobAnalysis，`last_result` 提供统一 ProviderCallResult，不增加通用聊天层。
+
+快照只用于展示；Resolver 不接受展示 view，也不缓存已解析 Secret。新 trace 不写历史数据库，仅显式认证脚本输出脱敏证据 JSON。OpenAI 先读取 raw 响应的 model / usage 再执行 SDK 解析；DeepSeek 逐次记录原有 404 fallback。所有 SDK 自动 retry 为 0，调用预算为 1，DeepSeek 已配置 fallback 时为 2。目录 peek/read/resolve 永不自动请求；显式 refresh 才联网。没有 OAuth / Plan 数据库迁移。[ADR 009](decisions/009-provider-access-and-runtime-identity.md) · [完整证据](provider-access-upgrade-20261005.md)。
+
 ## 性能修复候选（2026-10-04，未部署）
 
 `provider_display.py` context manager 提供 render scope 的只读 Key metadata / version 与 profiles；`model_discovery.peek / selected_model` 可使用它完成纯展示缓存 lookup。view 不含 Secret，不存入 session_state，完整 Principal / active 生命周期不匹配即拒绝。敏感动作保持原持久权限校验；Developer 保存回调另外刷新 session，因为回调在脚本入口前执行。

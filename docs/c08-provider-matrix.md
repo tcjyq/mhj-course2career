@@ -1,5 +1,9 @@
 # C08-C 官方 Provider 与模型目录矩阵
 
+## 2026-10-05 架构候选矩阵补充
+
+十家均经过 API AccessDefinition → 当前账户 CredentialResolver → 工厂 → 原有协议 adapter → ModelTrace → 分层验证的离线回归；协议、官方端点、默认模型和费率不改。真实新认证均未执行，不能把 Faux 测试的 VERIFIED 写入产品认证。DeepSeek/Bailian 的 2026-09-26 两条旧认证保持历史状态并标记 raw identity 限制，其余真实能力不作新增声称。[当前十家测试状态及许可 Gate](provider-access-upgrade-20261005.md)。下面的 2026-09-24 表为带日期历史快照。
+
 核对日期：2026-09-24（北京时间）。这是官方文档快照，动态目录以用户当前 Key、端点和手动刷新结果为准。**Preset 存在、官方能力可用、Course2Career 真实验证通过是三件不同的事。** 十家均未取得 B2 `VERIFIED`；OpenAI 和 Anthropic 的历史 401 保持认证失败／兼容性未知。[B2 实测记录](c08-provider-validation.md) · [目录实现与限制](c08-model-discovery.md)。
 
 | Provider | Region | Endpoint | Discovery strategy | Discovery URL | Auth | Current candidate models | Capability source | Pricing source | Currency | Checked at | Real verification |

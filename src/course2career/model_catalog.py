@@ -66,18 +66,21 @@ class DeepSeekModelCatalog:
         *,
         force_refresh: bool = False,
     ) -> ModelCatalogSnapshot:
+        """Read last-known data. force_refresh is a legacy explicit-refresh alias."""
+        if force_refresh:
+            return self.refresh(api_key)
+        snapshot = self.peek(api_key)
+        if snapshot is None:
+            raise ModelDiscoveryError("尚未刷新 DeepSeek 模型列表。")
+        return snapshot
+
+    def refresh(self, api_key: str) -> ModelCatalogSnapshot:
+        """Explicit network action; callers must freshly authorize credential use."""
         if not api_key:
             raise ModelDiscoveryError("未配置 DeepSeek API Key，无法刷新模型列表。")
         cache_key = _key_fingerprint(api_key)
         cached = self._cache.get(cache_key)
         now = self._clock()
-        if (
-            cached is not None
-            and not force_refresh
-            and now - cached.fetched_monotonic <= self.cache_seconds
-        ):
-            return cached.snapshot
-
         try:
             snapshot = self._fetch_models(api_key)
         except Exception as exc:
@@ -99,6 +102,8 @@ class DeepSeekModelCatalog:
         if cached is None:
             return None
         age = self._clock() - cached.fetched_monotonic
+        if age > self.stale_seconds:
+            return None
         return replace(cached.snapshot, stale=age > self.cache_seconds)
 
     def resolve(
@@ -116,9 +121,8 @@ class DeepSeekModelCatalog:
         if mode != "auto_safe":
             raise ModelDiscoveryError("不支持的 DeepSeek 模型选择模式。")
 
-        try:
-            catalog = self.get_models(api_key)
-        except ModelDiscoveryError:
+        catalog = self.peek(api_key)
+        if catalog is None:
             return ModelSelection(configured_model, (), "configured_fallback")
 
         available = set(catalog.available_models)
@@ -131,7 +135,7 @@ class DeepSeekModelCatalog:
         )
         if not candidates:
             raise ModelDiscoveryError("DeepSeek 当前没有经过验证的可用模型。")
-        source = "stale_catalog" if catalog.stale else "live_catalog"
+        source = "stale_catalog" if catalog.stale else "cached_catalog"
         return ModelSelection(candidates[0], candidates[1:], source, catalog)
 
     def _fetch_models(self, api_key: str) -> ModelCatalogSnapshot:

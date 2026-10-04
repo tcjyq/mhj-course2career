@@ -1,5 +1,11 @@
 # AI 输出评测方案
 
+## Provider 架构候选验证（2026-10-05）
+
+先以两项失败测试复现“缺失/陌生 DeepSeek 返回模型仍 VERIFIED”，然后覆盖十家工厂路径、五条协议、实际 OpenAI SDK 离线 Schema 失败、fallback、缺失 usage、凭证隔离、Key 轮换、BYOK 禁用和 legacy 认证旁路。全部推理为 deterministic/Faux 或 MockTransport，REAL_AI_CALLS=0。具体全量测试、PostgreSQL 集成/恢复、独立审查修正及浏览器结果见[候选报告](provider-access-upgrade-20261005.md)。
+
+与 main 526faf9 同环境各三次 warm run：Developer 8 SQL / 0 新物理连接 / 1 轮保持不变，Python median 153.04→154.53 ms；Analysis 7/0/1；quota、membership 4/0/1。没有自动 Provider HTTP。小样本耗时变化不是生产结论或显著性证明；没有宣称进一步提速。[原始样本](provider-access/20261005/benchmark-summary.json)。下面带日期的性能候选数值为此前阶段历史证据。
+
 ## 性能修复候选（2026-10-04，未部署）
 
 本轮只测性能与权限回归，不产生模型请求。Python 3.12 全量 330 passed、1 skipped（restore DB 环境未设置）；独立 PostgreSQL 集成 13 passed，随后合成备份 / 恢复与恢复校验通过，补齐该跳过项。真实本地浏览器 7 组安全检查通过，普通 18 次导航均一轮；Ruff / 格式 / diff 门禁通过。

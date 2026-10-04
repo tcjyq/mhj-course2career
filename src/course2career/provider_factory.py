@@ -1,8 +1,7 @@
 from dataclasses import replace
 
-from course2career.api_key_service import APIKeyNotFoundError, APIKeyService
+from course2career.api_key_service import APIKeyService
 from course2career.config import SYSTEM_AI_HARD_MAX_OUTPUT_TOKENS, Settings
-from course2career.key_encryption import KeyDecryptionError
 from course2career.llm_client import OpenAIJDClient
 from course2career.llm_provider import LLMProvider, ProviderName
 from course2career.llm_providers import (
@@ -16,6 +15,11 @@ from course2career.model_catalog import (
 )
 from course2career.native_providers import AnthropicMessagesProvider, GeminiProvider
 from course2career.permissions import Plan, Principal
+from course2career.provider_access import (
+    AccessMode,
+    CredentialResolutionError,
+    CredentialResolver,
+)
 from course2career.provider_registry import ProviderProtocol, get_provider_preset
 from course2career.provider_verification import Verification, get_record
 
@@ -31,6 +35,7 @@ class LLMProviderFactory:
     ) -> None:
         self.settings = settings
         self.api_key_service = api_key_service
+        self.credential_resolver = CredentialResolver(settings, api_key_service)
         self.model_catalog = model_catalog or DeepSeekModelCatalog(
             timeout_seconds=settings.openai_timeout_seconds,
             cache_seconds=getattr(settings, "deepseek_model_cache_seconds", 1800),
@@ -72,9 +77,11 @@ class LLMProviderFactory:
         key_mode: str,
         model: str,
         endpoint_id: str | None = None,
+        access_mode: AccessMode = AccessMode.API,
     ) -> LLMProvider:
         try:
             preset = get_provider_preset(provider, self.settings)
+            preset.access(access_mode)
         except ValueError as exc:
             raise ProviderError(str(exc)) from exc
         provider = preset.provider_id
@@ -97,7 +104,7 @@ class LLMProviderFactory:
             )
             return OpenAIJDClient(
                 provider_settings,
-                max_retries=0 if key_mode == "system" else None,
+                max_retries=0,
                 max_output_tokens=(
                     min(
                         1500,
@@ -124,7 +131,8 @@ class LLMProviderFactory:
                 raise ProviderError(str(exc)) from exc
             return DeepSeekProvider(
                 api_key=api_key,
-                max_retries=0 if key_mode == "system" else None,
+                max_retries=0,
+                saved_model=model,
                 model=selection.primary_model,
                 fallback_models=selection.fallback_models,
                 max_output_tokens=(
@@ -191,24 +199,10 @@ class LLMProviderFactory:
         provider: ProviderName,
         key_mode: str,
     ) -> str:
-        if key_mode == "user":
-            if self.api_key_service is None:
-                raise ProviderError("开发者API Key服务未配置。")
-            try:
-                return self.api_key_service.get_key(principal, provider)
-            except (APIKeyNotFoundError, KeyDecryptionError) as exc:
-                raise ProviderError(
-                    "无法读取开发者API Key，请重新保存后再试。"
-                ) from exc
-        if key_mode != "system":
-            raise ProviderError("不支持的API Key模式。")
-        if not getattr(self.settings, "system_ai_enabled", True):
-            raise ProviderError("系统AI当前已暂停，请使用本地规则模式。")
-
         preset = get_provider_preset(provider, self.settings)
-        if preset.system_key_setting is None:
-            raise ProviderError("该供应商未开放系统API Key模式。")
-        api_key = getattr(self.settings, preset.system_key_setting)
-        if not api_key:
-            raise ProviderError(f"未配置平台 {preset.display_name} API Key。")
-        return api_key
+        try:
+            return self.credential_resolver.resolve(
+                principal, preset, key_mode
+            ).require_usable()
+        except CredentialResolutionError as exc:
+            raise ProviderError(str(exc)) from exc

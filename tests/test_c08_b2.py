@@ -16,6 +16,7 @@ from course2career.provider_connection import (
 )
 from course2career.provider_error_classification import classify_provider_error
 from course2career.provider_registry import get_provider_preset
+from course2career.provider_runtime import ModelAttempt, ModelMatch, ModelTrace
 from course2career.provider_validation import (
     ValidationFixture,
     diagnose_fixture,
@@ -50,6 +51,7 @@ class FakeClient:
         self.fail_at = fail_at
         self.calls = 0
         self.last_usage: LLMUsage | None = None
+        self.last_trace = ModelTrace(self.model_name, self.model_name)
 
     def extract_job_skills(self, jd: str) -> JobAnalysis:
         self.calls += 1
@@ -61,6 +63,18 @@ class FakeClient:
             else None
         )
         terms = [term for term in ("Python", "SQL", "需求分析", "Excel") if term in jd]
+        self.last_trace = ModelTrace(
+            self.model_name,
+            self.model_name,
+            (
+                ModelAttempt(
+                    self.model_name,
+                    self.model_name,
+                    success=True,
+                    response_received=True,
+                ),
+            ),
+        )
         return JobAnalysis(
             job_title="合成岗位",
             skills=[
@@ -361,6 +375,22 @@ def test_verification_record_scopes_endpoint_and_model(tmp_path: Path) -> None:
         result=Verification.VERIFIED,
         external_calls=5,
         returned_model="gpt-5.6-luna",
+        model_match=ModelMatch.MATCH,
+        model_traces=(
+            ModelTrace(
+                "gpt-5.6-luna",
+                "gpt-5.6-luna",
+                (
+                    ModelAttempt(
+                        "gpt-5.6-luna",
+                        "gpt-5.6-luna",
+                        success=True,
+                        response_received=True,
+                    ),
+                ),
+            ),
+        )
+        * 5,
     )
     save_record(record, path)
     assert get_record(ProviderName.OPENAI, "global", "gpt-5.6-luna", path) == record
@@ -489,7 +519,7 @@ def test_openrouter_prompt_only_cannot_become_verified() -> None:
         (404, ProviderErrorCode.MODEL_NOT_FOUND),
         (429, ProviderErrorCode.RATE_LIMIT),
         (400, ProviderErrorCode.SCHEMA_UNSUPPORTED),
-        (500, ProviderErrorCode.PROVIDER_ERROR),
+        (500, ProviderErrorCode.PROVIDER_UNAVAILABLE),
     ],
 )
 def test_http_error_classification_never_exposes_message(
@@ -497,6 +527,8 @@ def test_http_error_classification_never_exposes_message(
 ) -> None:
     error = RuntimeError("fake-private-secret")
     error.status_code = status  # type: ignore[attr-defined]
+    if status == 400:
+        error.code = "unsupported_json_schema"  # type: ignore[attr-defined]
     result = classify_provider_error(error, schema_requested=True)
     assert result.code == expected
     assert result.http_status == status

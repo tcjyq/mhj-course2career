@@ -1,5 +1,9 @@
 # Course2Career 产品需求
 
+## Provider 接入与身份验收（2026-10-05 候选）
+
+Provider 品牌、API 协议、访问模式、凭证类型及 user/system 所有权分别表达。当前仅 API + API_KEY 开放；用户 Key 读取仍由 APIKeyService 即时检查账户与 BYOK 权限，失效时不能回退平台 Key。模型身份分别记录 SAVED、RESOLVED、每次 REQUESTED、原始 RETURNED 和 DISPLAYED；UNKNOWN / MISMATCH 不可获得新的精确 VERIFIED。完整固定集、usage、每次成功且真实返回目标模型是新认证的必要条件。历史认证保留并标明身份证据限制；一份用户 Key 的当次连接状态不提升实现认证。普通 render 不访问 Provider、不解密所有 Key、不重复授权展示读取。[实现和验收](provider-access-upgrade-20261005.md)。
+
 ## 性能修复候选验收（2026-10-04，未部署）
 
 普通页面导航只执行一轮正常脚本；身份清理、存储握手、无效会话与登录跳转可执行必要重跑。Developer / Analysis 的账户 Provider 展示数据仅在同一用户、同一 render 复用，不能授权任何密钥操作、client、AI 请求或目录远程刷新。下一轮仍复核 session；Key 更新 / 删除仍通过 version 失效目录缓存。账号切换清理分析及 Provider 输入。

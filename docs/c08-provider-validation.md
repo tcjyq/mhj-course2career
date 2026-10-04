@@ -1,5 +1,11 @@
 # C08-B2 真实 Provider 兼容性验证
 
+## 2026-10-05 身份证据修正（候选）
+
+LEGACY_MODEL_IDENTITY_EVIDENCE_LIMITATION：旧 adapter 曾在返回 model 缺失/陌生时用请求模型填充 usage.model，因此 2026-09-26 两条历史 VERIFIED 的 returned_model 字段不能重新当作原始响应身份证明。保留旧记录和当时结果，不声称已获得新的 raw proof。页面标明历史实现认证及限制，当前用户 Key 最近连接状态独立。
+
+新建记录默认 identity_evidence_version=1；只有 loader 对缺少版本的旧记录显式使用 v0，新 legacy VERIFIED 不能通过 save_record 新增。每次 trace 必须成功、请求与真实返回均等于认证目标，连接+完整固定集+usage齐全才 VERIFIED；fallback 不能为原模型认证，UNKNOWN/MISMATCH最多保留 Schema 兼容。`model_traces` 为脚本证据而非历史数据库 schema；external_calls 按所有 wire attempts 计数，不再少计 fallback。价格估算要求目标身份一致；未知型号不套用目标型号费率。[确定性验证与真实验证边界](provider-access-upgrade-20261005.md)。
+
 日期：2026-09-23（北京时间）。B1 基线：`f497279e94848472603dd3ed1df266ec4794cbdf`。本轮仅在本地分支验证，未推送或部署。固定输入位于 `tests/fixtures/provider_validation/cases.json`，全部为合成 JD；完整结果仅写入 gitignored `outputs/c08-provider-validation/records.json`，其中没有 Key、请求正文或原始响应。
 
 ## 2026-09-23 历史基线结果

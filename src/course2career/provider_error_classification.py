@@ -27,6 +27,10 @@ _MESSAGES = {
     ProviderErrorCode.PROVIDER_ERROR: "供应商请求失败，请检查模型与端点配置。",
     ProviderErrorCode.NETWORK_ERROR: "网络连接失败。",
     ProviderErrorCode.UNKNOWN_ERROR: "连接测试未通过。",
+    ProviderErrorCode.MODEL_NOT_INCLUDED: "当前凭证未包含此模型的访问权限。",
+    ProviderErrorCode.USAGE_LIMIT: "当前凭证的使用额度已达上限。",
+    ProviderErrorCode.QUOTA_EXHAUSTED: "供应商账户额度已耗尽。",
+    ProviderErrorCode.PROVIDER_UNAVAILABLE: "供应商暂时不可用。",
 }
 
 
@@ -50,13 +54,41 @@ def classify_provider_error(
         status = next(
             (item.code for item in causes if isinstance(item, HTTPError)), None
         )
-    if status in {401, 403}:
+    # Read only an allowlisted SDK code, never error text or raw response bodies.
+    explicit = next(
+        (
+            value
+            for item in causes
+            if isinstance(value := getattr(item, "code", None), str)
+            and value
+            in {
+                "insufficient_quota",
+                "quota_exceeded",
+                "usage_limit_reached",
+                "model_not_included",
+                "unsupported_response_format",
+                "unsupported_json_schema",
+            }
+        ),
+        None,
+    )
+    if explicit in {"insufficient_quota", "quota_exceeded"}:
+        code = ProviderErrorCode.QUOTA_EXHAUSTED
+    elif explicit == "usage_limit_reached":
+        code = ProviderErrorCode.USAGE_LIMIT
+    elif explicit == "model_not_included":
+        code = ProviderErrorCode.MODEL_NOT_INCLUDED
+    elif status in {401, 403}:
         code = ProviderErrorCode.AUTH_ERROR
     elif status == 404:
         code = ProviderErrorCode.MODEL_NOT_FOUND
     elif status == 429:
         code = ProviderErrorCode.RATE_LIMIT
-    elif status == 400 and schema_requested:
+    elif (
+        status == 400
+        and schema_requested
+        and explicit in {"unsupported_response_format", "unsupported_json_schema"}
+    ):
         code = ProviderErrorCode.SCHEMA_UNSUPPORTED
     elif any(isinstance(item, (TimeoutError,)) for item in causes) or any(
         "Timeout" in type(item).__name__ for item in causes
@@ -71,6 +103,8 @@ def classify_provider_error(
         "ConnectionError" in type(item).__name__ for item in causes
     ):
         code = ProviderErrorCode.NETWORK_ERROR
+    elif status is not None and status >= 500:
+        code = ProviderErrorCode.PROVIDER_UNAVAILABLE
     elif status is not None:
         code = ProviderErrorCode.PROVIDER_ERROR
     else:

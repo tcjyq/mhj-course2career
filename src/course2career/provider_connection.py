@@ -9,6 +9,7 @@ from course2career.permissions import Permission, Principal, authorize
 from course2career.provider_error_classification import classify_provider_error
 from course2career.provider_factory import LLMProviderFactory
 from course2career.provider_registry import get_provider_preset
+from course2career.provider_runtime import ModelMatch, ModelTrace
 from course2career.provider_verification import ProviderErrorCode, Verification
 from course2career.structured_output import StructuredOutputStrategy
 
@@ -30,6 +31,16 @@ class ConnectionTestResult:
     sanitized_error: str | None
     error_code: ProviderErrorCode | None = None
     http_status: int | None = None
+    model_trace: ModelTrace | None = None
+    job_analysis_ok: bool = False
+
+    @property
+    def returned_model(self) -> str | None:
+        return self.model_trace.returned_model if self.model_trace else None
+
+    @property
+    def model_match(self) -> ModelMatch:
+        return self.model_trace.model_match if self.model_trace else ModelMatch.UNKNOWN
 
     @property
     def usage_ok(self) -> bool:
@@ -74,20 +85,33 @@ def test_provider_connection(
             client.last_usage is not None,
             round((monotonic() - started) * 1000),
             None,
+            model_trace=getattr(client, "last_trace", None),
+            job_analysis_ok=True,
         )
     except Exception as exc:
         preset = get_provider_preset(provider)
         classified = classify_provider_error(
             exc,
-            schema_requested=preset.structured_output_strategy
+            schema_requested=(
+                getattr(client, "structured_strategy", None)
+                or preset.strategy_for_model(model)
+            )
             in {
                 StructuredOutputStrategy.STRICT_JSON_SCHEMA,
                 StructuredOutputStrategy.NATIVE_SCHEMA,
             },
         )
         usage_available = client is not None and client.last_usage is not None
-        request_ok = usage_available or (
-            classified.code == ProviderErrorCode.SCHEMA_VALIDATION_FAILED
+        trace = getattr(client, "last_trace", None)
+        request_ok = bool(
+            trace and trace.attempts and trace.attempts[-1].response_received
+        ) or (
+            trace is None
+            and client is not None
+            and (
+                usage_available
+                or classified.code == ProviderErrorCode.SCHEMA_VALIDATION_FAILED
+            )
         )
         return ConnectionTestResult(
             provider,
@@ -95,7 +119,7 @@ def test_provider_connection(
             False
             if classified.code == ProviderErrorCode.AUTH_ERROR
             else True
-            if classified.http_status is not None or request_ok
+            if request_ok
             else None,
             request_ok,
             False,
@@ -104,4 +128,5 @@ def test_provider_connection(
             classified.sanitized_message,
             classified.code,
             classified.http_status,
+            model_trace=trace,
         )

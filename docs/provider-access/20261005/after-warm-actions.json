@@ -1,0 +1,3044 @@
+[
+  {
+    "scenario": "guest_initial",
+    "ui_observed_ms": 2777,
+    "reruns": 2,
+    "application_ms": [
+      12.8
+    ],
+    "sql": 3,
+    "connections": 1,
+    "health_checks": 1,
+    "physical_connections": 1,
+    "connect_ms": 30.03,
+    "sql_ms": 2.57,
+    "tables": {
+      "schema_migrations": 1
+    },
+    "calls": {
+      "load_settings": 2,
+      "read_installation": 2,
+      "read_browser_storage": 2
+    },
+    "external_attempts": 0,
+    "start_index": 0,
+    "end_index": 15
+  },
+  {
+    "scenario": "guest_login_navigation_1",
+    "ui_observed_ms": 222,
+    "reruns": 1,
+    "application_ms": [
+      18.97
+    ],
+    "sql": 0,
+    "connections": 0,
+    "health_checks": 0,
+    "physical_connections": 0,
+    "connect_ms": 0,
+    "sql_ms": 0,
+    "tables": {},
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1
+    },
+    "external_attempts": 0,
+    "start_index": 15,
+    "end_index": 20
+  },
+  {
+    "scenario": "guest_home_navigation_1",
+    "ui_observed_ms": 261,
+    "reruns": 1,
+    "application_ms": [
+      26.98
+    ],
+    "sql": 0,
+    "connections": 0,
+    "health_checks": 0,
+    "physical_connections": 0,
+    "connect_ms": 0,
+    "sql_ms": 0,
+    "tables": {},
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1
+    },
+    "external_attempts": 0,
+    "start_index": 20,
+    "end_index": 25
+  },
+  {
+    "scenario": "guest_login_navigation_2",
+    "ui_observed_ms": 233,
+    "reruns": 1,
+    "application_ms": [
+      22.41
+    ],
+    "sql": 0,
+    "connections": 0,
+    "health_checks": 0,
+    "physical_connections": 0,
+    "connect_ms": 0,
+    "sql_ms": 0,
+    "tables": {},
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1
+    },
+    "external_attempts": 0,
+    "start_index": 25,
+    "end_index": 30
+  },
+  {
+    "scenario": "guest_home_navigation_2",
+    "ui_observed_ms": 224,
+    "reruns": 1,
+    "application_ms": [
+      21.58
+    ],
+    "sql": 0,
+    "connections": 0,
+    "health_checks": 0,
+    "physical_connections": 0,
+    "connect_ms": 0,
+    "sql_ms": 0,
+    "tables": {},
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1
+    },
+    "external_attempts": 0,
+    "start_index": 30,
+    "end_index": 35
+  },
+  {
+    "scenario": "guest_login_navigation_3",
+    "ui_observed_ms": 248,
+    "reruns": 1,
+    "application_ms": [
+      20.93
+    ],
+    "sql": 0,
+    "connections": 0,
+    "health_checks": 0,
+    "physical_connections": 0,
+    "connect_ms": 0,
+    "sql_ms": 0,
+    "tables": {},
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1
+    },
+    "external_attempts": 0,
+    "start_index": 35,
+    "end_index": 40
+  },
+  {
+    "scenario": "guest_home_navigation_3",
+    "ui_observed_ms": 308,
+    "reruns": 1,
+    "application_ms": [
+      33.24
+    ],
+    "sql": 0,
+    "connections": 0,
+    "health_checks": 0,
+    "physical_connections": 0,
+    "connect_ms": 0,
+    "sql_ms": 0,
+    "tables": {},
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1
+    },
+    "external_attempts": 0,
+    "start_index": 40,
+    "end_index": 45
+  },
+  {
+    "scenario": "user_login_page",
+    "ui_observed_ms": 308,
+    "reruns": 1,
+    "application_ms": [
+      16.94
+    ],
+    "sql": 0,
+    "connections": 0,
+    "health_checks": 0,
+    "physical_connections": 0,
+    "connect_ms": 0,
+    "sql_ms": 0,
+    "tables": {},
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1
+    },
+    "external_attempts": 0,
+    "start_index": 45,
+    "end_index": 50
+  },
+  {
+    "scenario": "user_authenticate",
+    "ui_observed_ms": 663,
+    "reruns": 3,
+    "application_ms": [
+      316.8,
+      21.84
+    ],
+    "sql": 11,
+    "connections": 11,
+    "health_checks": 11,
+    "physical_connections": 0,
+    "connect_ms": 11.58,
+    "sql_ms": 11.78,
+    "tables": {
+      "login_attempts": 3,
+      "users": 3,
+      "user_byok_settings": 3,
+      "auth_sessions": 2
+    },
+    "calls": {
+      "load_settings": 3,
+      "read_installation": 3,
+      "read_browser_storage": 3,
+      "AuthService.authenticate": 1,
+      "AuthService.refresh_principal": 2,
+      "AuthService.create_session": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1
+    },
+    "external_attempts": 0,
+    "start_index": 50,
+    "end_index": 103
+  },
+  {
+    "scenario": "user_home_navigation_1",
+    "ui_observed_ms": 326,
+    "reruns": 2,
+    "application_ms": [
+      35.02,
+      37.72
+    ],
+    "sql": 6,
+    "connections": 6,
+    "health_checks": 6,
+    "physical_connections": 0,
+    "connect_ms": 4.84,
+    "sql_ms": 3.05,
+    "tables": {
+      "auth_sessions": 2,
+      "users": 2,
+      "user_byok_settings": 2
+    },
+    "calls": {
+      "load_settings": 2,
+      "read_installation": 2,
+      "read_browser_storage": 2,
+      "AuthService.refresh_principal": 2,
+      "AuthService.restore_session": 2,
+      "AuthService.refresh_session": 2
+    },
+    "external_attempts": 0,
+    "start_index": 103,
+    "end_index": 137
+  },
+  {
+    "scenario": "user_analysis_navigation_1",
+    "ui_observed_ms": 875,
+    "reruns": 1,
+    "application_ms": [
+      616.21
+    ],
+    "sql": 4,
+    "connections": 4,
+    "health_checks": 4,
+    "physical_connections": 0,
+    "connect_ms": 7.34,
+    "sql_ms": 5.47,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1,
+      "analysis_records": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "APIKeyService.list_keys": 1,
+      "AnalysisRecordService.list_own": 1
+    },
+    "external_attempts": 0,
+    "start_index": 137,
+    "end_index": 159
+  },
+  {
+    "scenario": "user_analysis_demo_1",
+    "ui_observed_ms": 814,
+    "reruns": 1,
+    "application_ms": [
+      205.6
+    ],
+    "sql": 4,
+    "connections": 4,
+    "health_checks": 4,
+    "physical_connections": 0,
+    "connect_ms": 4.93,
+    "sql_ms": 2.72,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1,
+      "analysis_records": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "APIKeyService.list_keys": 1,
+      "AnalysisRecordService.list_own": 1
+    },
+    "external_attempts": 0,
+    "start_index": 159,
+    "end_index": 181
+  },
+  {
+    "scenario": "user_analysis_reset_1",
+    "ui_observed_ms": 339,
+    "reruns": 1,
+    "application_ms": [
+      91.61
+    ],
+    "sql": 4,
+    "connections": 4,
+    "health_checks": 4,
+    "physical_connections": 0,
+    "connect_ms": 5.48,
+    "sql_ms": 2.08,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1,
+      "analysis_records": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "APIKeyService.list_keys": 1,
+      "AnalysisRecordService.list_own": 1
+    },
+    "external_attempts": 0,
+    "start_index": 181,
+    "end_index": 203
+  },
+  {
+    "scenario": "user_developer_navigation_1",
+    "ui_observed_ms": 342,
+    "reruns": 1,
+    "application_ms": [
+      43.39
+    ],
+    "sql": 5,
+    "connections": 5,
+    "health_checks": 5,
+    "physical_connections": 0,
+    "connect_ms": 6.08,
+    "sql_ms": 2.54,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 3
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "APIKeyService.list_keys": 1,
+      "BYOKModeService.is_enabled": 2
+    },
+    "external_attempts": 0,
+    "start_index": 203,
+    "end_index": 229
+  },
+  {
+    "scenario": "user_quota_navigation_1",
+    "ui_observed_ms": 339,
+    "reruns": 1,
+    "application_ms": [
+      83.08
+    ],
+    "sql": 4,
+    "connections": 4,
+    "health_checks": 4,
+    "physical_connections": 0,
+    "connect_ms": 3.66,
+    "sql_ms": 8.67,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1,
+      "api_usage": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "AIUsageService.get_quota_status": 1
+    },
+    "external_attempts": 0,
+    "start_index": 229,
+    "end_index": 250
+  },
+  {
+    "scenario": "user_membership_navigation_1",
+    "ui_observed_ms": 343,
+    "reruns": 1,
+    "application_ms": [
+      40.14
+    ],
+    "sql": 4,
+    "connections": 4,
+    "health_checks": 4,
+    "physical_connections": 0,
+    "connect_ms": 3.47,
+    "sql_ms": 2.18,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 2
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "BYOKModeService.is_enabled": 1
+    },
+    "external_attempts": 0,
+    "start_index": 250,
+    "end_index": 271
+  },
+  {
+    "scenario": "user_F5_1",
+    "ui_observed_ms": 701,
+    "reruns": 2,
+    "application_ms": [
+      48.46
+    ],
+    "sql": 4,
+    "connections": 4,
+    "health_checks": 4,
+    "physical_connections": 0,
+    "connect_ms": 4.1,
+    "sql_ms": 4.09,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 2
+    },
+    "calls": {
+      "load_settings": 2,
+      "read_installation": 2,
+      "read_browser_storage": 2,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "BYOKModeService.is_enabled": 1
+    },
+    "external_attempts": 0,
+    "start_index": 271,
+    "end_index": 295
+  },
+  {
+    "scenario": "user_home_navigation_2",
+    "ui_observed_ms": 247,
+    "reruns": 1,
+    "application_ms": [
+      32.9
+    ],
+    "sql": 3,
+    "connections": 3,
+    "health_checks": 3,
+    "physical_connections": 0,
+    "connect_ms": 3.47,
+    "sql_ms": 1.45,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1
+    },
+    "external_attempts": 0,
+    "start_index": 295,
+    "end_index": 312
+  },
+  {
+    "scenario": "user_analysis_navigation_2",
+    "ui_observed_ms": 414,
+    "reruns": 1,
+    "application_ms": [
+      75.3
+    ],
+    "sql": 4,
+    "connections": 4,
+    "health_checks": 4,
+    "physical_connections": 0,
+    "connect_ms": 3.62,
+    "sql_ms": 1.65,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1,
+      "analysis_records": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "APIKeyService.list_keys": 1,
+      "AnalysisRecordService.list_own": 1
+    },
+    "external_attempts": 0,
+    "start_index": 312,
+    "end_index": 334
+  },
+  {
+    "scenario": "user_analysis_demo_2",
+    "ui_observed_ms": 430,
+    "reruns": 1,
+    "application_ms": [
+      187.04
+    ],
+    "sql": 4,
+    "connections": 4,
+    "health_checks": 4,
+    "physical_connections": 0,
+    "connect_ms": 4.33,
+    "sql_ms": 3.01,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1,
+      "analysis_records": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "APIKeyService.list_keys": 1,
+      "AnalysisRecordService.list_own": 1
+    },
+    "external_attempts": 0,
+    "start_index": 334,
+    "end_index": 356
+  },
+  {
+    "scenario": "user_analysis_reset_2",
+    "ui_observed_ms": 401,
+    "reruns": 1,
+    "application_ms": [
+      95.1
+    ],
+    "sql": 4,
+    "connections": 4,
+    "health_checks": 4,
+    "physical_connections": 0,
+    "connect_ms": 3.82,
+    "sql_ms": 2.71,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1,
+      "analysis_records": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "APIKeyService.list_keys": 1,
+      "AnalysisRecordService.list_own": 1
+    },
+    "external_attempts": 0,
+    "start_index": 356,
+    "end_index": 378
+  },
+  {
+    "scenario": "user_developer_navigation_2",
+    "ui_observed_ms": 313,
+    "reruns": 1,
+    "application_ms": [
+      40.09
+    ],
+    "sql": 5,
+    "connections": 5,
+    "health_checks": 5,
+    "physical_connections": 0,
+    "connect_ms": 4.44,
+    "sql_ms": 1.72,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 3
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "APIKeyService.list_keys": 1,
+      "BYOKModeService.is_enabled": 2
+    },
+    "external_attempts": 0,
+    "start_index": 378,
+    "end_index": 404
+  },
+  {
+    "scenario": "user_quota_navigation_2",
+    "ui_observed_ms": 253,
+    "reruns": 1,
+    "application_ms": [
+      35.74
+    ],
+    "sql": 4,
+    "connections": 4,
+    "health_checks": 4,
+    "physical_connections": 0,
+    "connect_ms": 3.47,
+    "sql_ms": 2.22,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1,
+      "api_usage": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "AIUsageService.get_quota_status": 1
+    },
+    "external_attempts": 0,
+    "start_index": 404,
+    "end_index": 425
+  },
+  {
+    "scenario": "user_membership_navigation_2",
+    "ui_observed_ms": 237,
+    "reruns": 1,
+    "application_ms": [
+      34.81
+    ],
+    "sql": 4,
+    "connections": 4,
+    "health_checks": 4,
+    "physical_connections": 0,
+    "connect_ms": 3.13,
+    "sql_ms": 1.51,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 2
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "BYOKModeService.is_enabled": 1
+    },
+    "external_attempts": 0,
+    "start_index": 425,
+    "end_index": 446
+  },
+  {
+    "scenario": "user_F5_2",
+    "ui_observed_ms": 690,
+    "reruns": 3,
+    "application_ms": [
+      41.25,
+      31.59
+    ],
+    "sql": 7,
+    "connections": 7,
+    "health_checks": 7,
+    "physical_connections": 0,
+    "connect_ms": 7.39,
+    "sql_ms": 3.22,
+    "tables": {
+      "auth_sessions": 2,
+      "users": 2,
+      "user_byok_settings": 3
+    },
+    "calls": {
+      "load_settings": 3,
+      "read_installation": 3,
+      "read_browser_storage": 3,
+      "AuthService.refresh_principal": 2,
+      "AuthService.restore_session": 2,
+      "AuthService.refresh_session": 1,
+      "BYOKModeService.is_enabled": 1
+    },
+    "external_attempts": 0,
+    "start_index": 446,
+    "end_index": 487
+  },
+  {
+    "scenario": "user_home_navigation_3",
+    "ui_observed_ms": 265,
+    "reruns": 1,
+    "application_ms": [
+      49.67
+    ],
+    "sql": 3,
+    "connections": 3,
+    "health_checks": 3,
+    "physical_connections": 0,
+    "connect_ms": 6.83,
+    "sql_ms": 1.03,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1
+    },
+    "external_attempts": 0,
+    "start_index": 487,
+    "end_index": 504
+  },
+  {
+    "scenario": "user_analysis_navigation_3",
+    "ui_observed_ms": 417,
+    "reruns": 1,
+    "application_ms": [
+      98.76
+    ],
+    "sql": 4,
+    "connections": 4,
+    "health_checks": 4,
+    "physical_connections": 0,
+    "connect_ms": 5.7,
+    "sql_ms": 1.79,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1,
+      "analysis_records": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "APIKeyService.list_keys": 1,
+      "AnalysisRecordService.list_own": 1
+    },
+    "external_attempts": 0,
+    "start_index": 504,
+    "end_index": 526
+  },
+  {
+    "scenario": "user_analysis_demo_3",
+    "ui_observed_ms": 405,
+    "reruns": 1,
+    "application_ms": [
+      140.41
+    ],
+    "sql": 4,
+    "connections": 4,
+    "health_checks": 4,
+    "physical_connections": 0,
+    "connect_ms": 2.35,
+    "sql_ms": 1.38,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1,
+      "analysis_records": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "APIKeyService.list_keys": 1,
+      "AnalysisRecordService.list_own": 1
+    },
+    "external_attempts": 0,
+    "start_index": 526,
+    "end_index": 548
+  },
+  {
+    "scenario": "user_analysis_reset_3",
+    "ui_observed_ms": 376,
+    "reruns": 1,
+    "application_ms": [
+      79.37
+    ],
+    "sql": 4,
+    "connections": 4,
+    "health_checks": 4,
+    "physical_connections": 0,
+    "connect_ms": 3.68,
+    "sql_ms": 1.82,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1,
+      "analysis_records": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "APIKeyService.list_keys": 1,
+      "AnalysisRecordService.list_own": 1
+    },
+    "external_attempts": 0,
+    "start_index": 548,
+    "end_index": 570
+  },
+  {
+    "scenario": "user_developer_navigation_3",
+    "ui_observed_ms": 320,
+    "reruns": 1,
+    "application_ms": [
+      41.15
+    ],
+    "sql": 5,
+    "connections": 5,
+    "health_checks": 5,
+    "physical_connections": 0,
+    "connect_ms": 4.75,
+    "sql_ms": 1.65,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 3
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "APIKeyService.list_keys": 1,
+      "BYOKModeService.is_enabled": 2
+    },
+    "external_attempts": 0,
+    "start_index": 570,
+    "end_index": 596
+  },
+  {
+    "scenario": "user_quota_navigation_3",
+    "ui_observed_ms": 330,
+    "reruns": 1,
+    "application_ms": [
+      35.12
+    ],
+    "sql": 4,
+    "connections": 4,
+    "health_checks": 4,
+    "physical_connections": 0,
+    "connect_ms": 3.14,
+    "sql_ms": 1.94,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1,
+      "api_usage": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "AIUsageService.get_quota_status": 1
+    },
+    "external_attempts": 0,
+    "start_index": 596,
+    "end_index": 617
+  },
+  {
+    "scenario": "user_membership_navigation_3",
+    "ui_observed_ms": 342,
+    "reruns": 1,
+    "application_ms": [
+      38.42
+    ],
+    "sql": 4,
+    "connections": 4,
+    "health_checks": 4,
+    "physical_connections": 0,
+    "connect_ms": 4.09,
+    "sql_ms": 2.12,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 2
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "BYOKModeService.is_enabled": 1
+    },
+    "external_attempts": 0,
+    "start_index": 617,
+    "end_index": 638
+  },
+  {
+    "scenario": "user_F5_3",
+    "ui_observed_ms": 717,
+    "reruns": 3,
+    "application_ms": [
+      34.71,
+      48.84
+    ],
+    "sql": 7,
+    "connections": 7,
+    "health_checks": 7,
+    "physical_connections": 0,
+    "connect_ms": 6.93,
+    "sql_ms": 3.12,
+    "tables": {
+      "auth_sessions": 2,
+      "users": 2,
+      "user_byok_settings": 3
+    },
+    "calls": {
+      "load_settings": 3,
+      "read_installation": 3,
+      "read_browser_storage": 3,
+      "AuthService.refresh_principal": 2,
+      "AuthService.restore_session": 2,
+      "AuthService.refresh_session": 1,
+      "BYOKModeService.is_enabled": 1
+    },
+    "external_attempts": 0,
+    "start_index": 638,
+    "end_index": 679
+  },
+  {
+    "scenario": "user_logout",
+    "ui_observed_ms": 485,
+    "reruns": 3,
+    "application_ms": [
+      32.89,
+      22.21
+    ],
+    "sql": 4,
+    "connections": 4,
+    "health_checks": 4,
+    "physical_connections": 0,
+    "connect_ms": 4.78,
+    "sql_ms": 1.8,
+    "tables": {
+      "auth_sessions": 2,
+      "users": 1,
+      "user_byok_settings": 1
+    },
+    "calls": {
+      "load_settings": 3,
+      "read_installation": 3,
+      "read_browser_storage": 3,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1
+    },
+    "external_attempts": 0,
+    "start_index": 679,
+    "end_index": 708
+  },
+  {
+    "scenario": "byok_user_login_page",
+    "ui_observed_ms": 370,
+    "reruns": 2,
+    "application_ms": [
+      19.29,
+      19.59
+    ],
+    "sql": 0,
+    "connections": 0,
+    "health_checks": 0,
+    "physical_connections": 0,
+    "connect_ms": 0,
+    "sql_ms": 0,
+    "tables": {},
+    "calls": {
+      "load_settings": 2,
+      "read_installation": 2,
+      "read_browser_storage": 2
+    },
+    "external_attempts": 0,
+    "start_index": 708,
+    "end_index": 718
+  },
+  {
+    "scenario": "byok_user_authenticate",
+    "ui_observed_ms": 625,
+    "reruns": 3,
+    "application_ms": [
+      201.57,
+      28.24
+    ],
+    "sql": 11,
+    "connections": 11,
+    "health_checks": 11,
+    "physical_connections": 0,
+    "connect_ms": 9.14,
+    "sql_ms": 5.13,
+    "tables": {
+      "login_attempts": 3,
+      "users": 3,
+      "user_byok_settings": 3,
+      "auth_sessions": 2
+    },
+    "calls": {
+      "load_settings": 3,
+      "read_installation": 3,
+      "read_browser_storage": 3,
+      "AuthService.authenticate": 1,
+      "AuthService.refresh_principal": 2,
+      "AuthService.create_session": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1
+    },
+    "external_attempts": 0,
+    "start_index": 718,
+    "end_index": 771
+  },
+  {
+    "scenario": "byok_user_home_navigation_1",
+    "ui_observed_ms": 401,
+    "reruns": 2,
+    "application_ms": [
+      31.7,
+      39.64
+    ],
+    "sql": 6,
+    "connections": 6,
+    "health_checks": 6,
+    "physical_connections": 0,
+    "connect_ms": 6.68,
+    "sql_ms": 2.51,
+    "tables": {
+      "auth_sessions": 2,
+      "users": 2,
+      "user_byok_settings": 2
+    },
+    "calls": {
+      "load_settings": 2,
+      "read_installation": 2,
+      "read_browser_storage": 2,
+      "AuthService.refresh_principal": 2,
+      "AuthService.restore_session": 2,
+      "AuthService.refresh_session": 2
+    },
+    "external_attempts": 0,
+    "start_index": 771,
+    "end_index": 805
+  },
+  {
+    "scenario": "byok_user_analysis_navigation_1",
+    "ui_observed_ms": 433,
+    "reruns": 1,
+    "application_ms": [
+      121.7
+    ],
+    "sql": 7,
+    "connections": 7,
+    "health_checks": 7,
+    "physical_connections": 0,
+    "connect_ms": 8.59,
+    "sql_ms": 5.32,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 2,
+      "user_api_keys": 1,
+      "user_provider_profiles": 1,
+      "analysis_records": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "APIKeyService.list_keys": 1,
+      "ModelCatalogService.peek": 10,
+      "ModelCatalogService.selected_model": 10,
+      "AnalysisRecordService.list_own": 1
+    },
+    "external_attempts": 0,
+    "start_index": 805,
+    "end_index": 856
+  },
+  {
+    "scenario": "byok_user_analysis_demo_1",
+    "ui_observed_ms": 820,
+    "reruns": 1,
+    "application_ms": [
+      226.89
+    ],
+    "sql": 7,
+    "connections": 7,
+    "health_checks": 7,
+    "physical_connections": 0,
+    "connect_ms": 5.34,
+    "sql_ms": 4.06,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 2,
+      "user_api_keys": 1,
+      "user_provider_profiles": 1,
+      "analysis_records": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "APIKeyService.list_keys": 1,
+      "ModelCatalogService.peek": 10,
+      "ModelCatalogService.selected_model": 10,
+      "AnalysisRecordService.list_own": 1
+    },
+    "external_attempts": 0,
+    "start_index": 856,
+    "end_index": 907
+  },
+  {
+    "scenario": "byok_user_analysis_reset_1",
+    "ui_observed_ms": 370,
+    "reruns": 1,
+    "application_ms": [
+      117.82
+    ],
+    "sql": 7,
+    "connections": 7,
+    "health_checks": 7,
+    "physical_connections": 0,
+    "connect_ms": 6.44,
+    "sql_ms": 3.02,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 2,
+      "user_api_keys": 1,
+      "user_provider_profiles": 1,
+      "analysis_records": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "APIKeyService.list_keys": 1,
+      "ModelCatalogService.peek": 10,
+      "ModelCatalogService.selected_model": 10,
+      "AnalysisRecordService.list_own": 1
+    },
+    "external_attempts": 0,
+    "start_index": 907,
+    "end_index": 958
+  },
+  {
+    "scenario": "byok_user_developer_navigation_1",
+    "ui_observed_ms": 394,
+    "reruns": 1,
+    "application_ms": [
+      146.63
+    ],
+    "sql": 8,
+    "connections": 8,
+    "health_checks": 8,
+    "physical_connections": 0,
+    "connect_ms": 6.18,
+    "sql_ms": 3.63,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 4,
+      "user_api_keys": 1,
+      "user_provider_profiles": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "APIKeyService.list_keys": 1,
+      "ModelCatalogService.peek": 18,
+      "ModelCatalogService.selected_model": 10,
+      "ModelCatalogService.discover_models": 2
+    },
+    "external_attempts": 0,
+    "start_index": 958,
+    "end_index": 1021
+  },
+  {
+    "scenario": "byok_user_developer_widget_1",
+    "ui_observed_ms": 561,
+    "reruns": 2,
+    "application_ms": [
+      84.91,
+      156.27
+    ],
+    "sql": 16,
+    "connections": 16,
+    "health_checks": 16,
+    "physical_connections": 0,
+    "connect_ms": 10.68,
+    "sql_ms": 14.35,
+    "tables": {
+      "auth_sessions": 2,
+      "users": 2,
+      "user_byok_settings": 8,
+      "user_api_keys": 2,
+      "user_provider_profiles": 2
+    },
+    "calls": {
+      "load_settings": 2,
+      "read_installation": 2,
+      "read_browser_storage": 2,
+      "AuthService.refresh_principal": 2,
+      "AuthService.restore_session": 2,
+      "AuthService.refresh_session": 2,
+      "APIKeyService.list_keys": 2,
+      "ModelCatalogService.peek": 25,
+      "ModelCatalogService.selected_model": 14,
+      "ModelCatalogService.discover_models": 4
+    },
+    "external_attempts": 0,
+    "start_index": 1021,
+    "end_index": 1130
+  },
+  {
+    "scenario": "byok_user_quota_navigation_1",
+    "ui_observed_ms": 290,
+    "reruns": 1,
+    "application_ms": [
+      23.28
+    ],
+    "sql": 4,
+    "connections": 4,
+    "health_checks": 4,
+    "physical_connections": 0,
+    "connect_ms": 1.81,
+    "sql_ms": 2.71,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1,
+      "api_usage": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "AIUsageService.get_quota_status": 1
+    },
+    "external_attempts": 0,
+    "start_index": 1130,
+    "end_index": 1151
+  },
+  {
+    "scenario": "byok_user_membership_navigation_1",
+    "ui_observed_ms": 250,
+    "reruns": 1,
+    "application_ms": [
+      34.49
+    ],
+    "sql": 4,
+    "connections": 4,
+    "health_checks": 4,
+    "physical_connections": 0,
+    "connect_ms": 5.17,
+    "sql_ms": 1.87,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 2
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "BYOKModeService.is_enabled": 1
+    },
+    "external_attempts": 0,
+    "start_index": 1151,
+    "end_index": 1172
+  },
+  {
+    "scenario": "byok_user_F5_1",
+    "ui_observed_ms": 744,
+    "reruns": 3,
+    "application_ms": [
+      34.6,
+      40.08
+    ],
+    "sql": 7,
+    "connections": 7,
+    "health_checks": 7,
+    "physical_connections": 0,
+    "connect_ms": 7.11,
+    "sql_ms": 2.79,
+    "tables": {
+      "auth_sessions": 2,
+      "users": 2,
+      "user_byok_settings": 3
+    },
+    "calls": {
+      "load_settings": 3,
+      "read_installation": 3,
+      "read_browser_storage": 3,
+      "AuthService.refresh_principal": 2,
+      "AuthService.restore_session": 2,
+      "AuthService.refresh_session": 1,
+      "BYOKModeService.is_enabled": 1
+    },
+    "external_attempts": 0,
+    "start_index": 1172,
+    "end_index": 1213
+  },
+  {
+    "scenario": "byok_user_home_navigation_2",
+    "ui_observed_ms": 388,
+    "reruns": 1,
+    "application_ms": [
+      61.65
+    ],
+    "sql": 3,
+    "connections": 3,
+    "health_checks": 3,
+    "physical_connections": 0,
+    "connect_ms": 2.78,
+    "sql_ms": 2.43,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1
+    },
+    "external_attempts": 0,
+    "start_index": 1213,
+    "end_index": 1230
+  },
+  {
+    "scenario": "byok_user_analysis_navigation_2",
+    "ui_observed_ms": 472,
+    "reruns": 1,
+    "application_ms": [
+      143.33
+    ],
+    "sql": 7,
+    "connections": 7,
+    "health_checks": 7,
+    "physical_connections": 0,
+    "connect_ms": 7.13,
+    "sql_ms": 2.76,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 2,
+      "user_api_keys": 1,
+      "user_provider_profiles": 1,
+      "analysis_records": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "APIKeyService.list_keys": 1,
+      "ModelCatalogService.peek": 10,
+      "ModelCatalogService.selected_model": 10,
+      "AnalysisRecordService.list_own": 1
+    },
+    "external_attempts": 0,
+    "start_index": 1230,
+    "end_index": 1281
+  },
+  {
+    "scenario": "byok_user_analysis_demo_2",
+    "ui_observed_ms": 485,
+    "reruns": 1,
+    "application_ms": [
+      211.56
+    ],
+    "sql": 7,
+    "connections": 7,
+    "health_checks": 7,
+    "physical_connections": 0,
+    "connect_ms": 6.76,
+    "sql_ms": 4.14,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 2,
+      "user_api_keys": 1,
+      "user_provider_profiles": 1,
+      "analysis_records": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "APIKeyService.list_keys": 1,
+      "ModelCatalogService.peek": 10,
+      "ModelCatalogService.selected_model": 10,
+      "AnalysisRecordService.list_own": 1
+    },
+    "external_attempts": 0,
+    "start_index": 1281,
+    "end_index": 1332
+  },
+  {
+    "scenario": "byok_user_analysis_reset_2",
+    "ui_observed_ms": 1252,
+    "reruns": 1,
+    "application_ms": [
+      119.44
+    ],
+    "sql": 7,
+    "connections": 7,
+    "health_checks": 7,
+    "physical_connections": 0,
+    "connect_ms": 9.23,
+    "sql_ms": 3.44,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 2,
+      "user_api_keys": 1,
+      "user_provider_profiles": 1,
+      "analysis_records": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "APIKeyService.list_keys": 1,
+      "ModelCatalogService.peek": 10,
+      "ModelCatalogService.selected_model": 10,
+      "AnalysisRecordService.list_own": 1
+    },
+    "external_attempts": 0,
+    "start_index": 1332,
+    "end_index": 1383
+  },
+  {
+    "scenario": "byok_user_developer_navigation_2",
+    "ui_observed_ms": 464,
+    "reruns": 1,
+    "application_ms": [
+      154.53
+    ],
+    "sql": 8,
+    "connections": 8,
+    "health_checks": 8,
+    "physical_connections": 0,
+    "connect_ms": 9.59,
+    "sql_ms": 3.74,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 4,
+      "user_api_keys": 1,
+      "user_provider_profiles": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "APIKeyService.list_keys": 1,
+      "ModelCatalogService.peek": 18,
+      "ModelCatalogService.selected_model": 10,
+      "ModelCatalogService.discover_models": 2
+    },
+    "external_attempts": 0,
+    "start_index": 1383,
+    "end_index": 1446
+  },
+  {
+    "scenario": "byok_user_developer_widget_2",
+    "ui_observed_ms": 591,
+    "reruns": 2,
+    "application_ms": [
+      83.8,
+      159.28
+    ],
+    "sql": 16,
+    "connections": 16,
+    "health_checks": 16,
+    "physical_connections": 0,
+    "connect_ms": 15.24,
+    "sql_ms": 8.7,
+    "tables": {
+      "auth_sessions": 2,
+      "users": 2,
+      "user_byok_settings": 8,
+      "user_api_keys": 2,
+      "user_provider_profiles": 2
+    },
+    "calls": {
+      "load_settings": 2,
+      "read_installation": 2,
+      "read_browser_storage": 2,
+      "AuthService.refresh_principal": 2,
+      "AuthService.restore_session": 2,
+      "AuthService.refresh_session": 2,
+      "APIKeyService.list_keys": 2,
+      "ModelCatalogService.peek": 25,
+      "ModelCatalogService.selected_model": 14,
+      "ModelCatalogService.discover_models": 4
+    },
+    "external_attempts": 0,
+    "start_index": 1446,
+    "end_index": 1555
+  },
+  {
+    "scenario": "byok_user_quota_navigation_2",
+    "ui_observed_ms": 328,
+    "reruns": 1,
+    "application_ms": [
+      74.51
+    ],
+    "sql": 4,
+    "connections": 4,
+    "health_checks": 4,
+    "physical_connections": 0,
+    "connect_ms": 3.27,
+    "sql_ms": 2,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1,
+      "api_usage": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "AIUsageService.get_quota_status": 1
+    },
+    "external_attempts": 0,
+    "start_index": 1555,
+    "end_index": 1576
+  },
+  {
+    "scenario": "byok_user_membership_navigation_2",
+    "ui_observed_ms": 323,
+    "reruns": 1,
+    "application_ms": [
+      40.78
+    ],
+    "sql": 4,
+    "connections": 4,
+    "health_checks": 4,
+    "physical_connections": 0,
+    "connect_ms": 3.48,
+    "sql_ms": 1.4,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 2
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "BYOKModeService.is_enabled": 1
+    },
+    "external_attempts": 0,
+    "start_index": 1576,
+    "end_index": 1597
+  },
+  {
+    "scenario": "byok_user_F5_2",
+    "ui_observed_ms": 713,
+    "reruns": 3,
+    "application_ms": [
+      44.31,
+      59.39
+    ],
+    "sql": 7,
+    "connections": 7,
+    "health_checks": 7,
+    "physical_connections": 0,
+    "connect_ms": 9.59,
+    "sql_ms": 2.7,
+    "tables": {
+      "auth_sessions": 2,
+      "users": 2,
+      "user_byok_settings": 3
+    },
+    "calls": {
+      "load_settings": 3,
+      "read_installation": 3,
+      "read_browser_storage": 3,
+      "AuthService.refresh_principal": 2,
+      "AuthService.restore_session": 2,
+      "AuthService.refresh_session": 1,
+      "BYOKModeService.is_enabled": 1
+    },
+    "external_attempts": 0,
+    "start_index": 1597,
+    "end_index": 1638
+  },
+  {
+    "scenario": "byok_user_home_navigation_3",
+    "ui_observed_ms": 313,
+    "reruns": 1,
+    "application_ms": [
+      43.32
+    ],
+    "sql": 3,
+    "connections": 3,
+    "health_checks": 3,
+    "physical_connections": 0,
+    "connect_ms": 2.19,
+    "sql_ms": 0.97,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1
+    },
+    "external_attempts": 0,
+    "start_index": 1638,
+    "end_index": 1655
+  },
+  {
+    "scenario": "byok_user_analysis_navigation_3",
+    "ui_observed_ms": 459,
+    "reruns": 1,
+    "application_ms": [
+      168.8
+    ],
+    "sql": 7,
+    "connections": 7,
+    "health_checks": 7,
+    "physical_connections": 0,
+    "connect_ms": 5.66,
+    "sql_ms": 4.74,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 2,
+      "user_api_keys": 1,
+      "user_provider_profiles": 1,
+      "analysis_records": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "APIKeyService.list_keys": 1,
+      "ModelCatalogService.peek": 10,
+      "ModelCatalogService.selected_model": 10,
+      "AnalysisRecordService.list_own": 1
+    },
+    "external_attempts": 0,
+    "start_index": 1655,
+    "end_index": 1706
+  },
+  {
+    "scenario": "byok_user_analysis_demo_3",
+    "ui_observed_ms": 519,
+    "reruns": 1,
+    "application_ms": [
+      228.09
+    ],
+    "sql": 7,
+    "connections": 7,
+    "health_checks": 7,
+    "physical_connections": 0,
+    "connect_ms": 10.24,
+    "sql_ms": 3.44,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 2,
+      "user_api_keys": 1,
+      "user_provider_profiles": 1,
+      "analysis_records": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "APIKeyService.list_keys": 1,
+      "ModelCatalogService.peek": 10,
+      "ModelCatalogService.selected_model": 10,
+      "AnalysisRecordService.list_own": 1
+    },
+    "external_attempts": 0,
+    "start_index": 1706,
+    "end_index": 1757
+  },
+  {
+    "scenario": "byok_user_analysis_reset_3",
+    "ui_observed_ms": 401,
+    "reruns": 1,
+    "application_ms": [
+      116.75
+    ],
+    "sql": 7,
+    "connections": 7,
+    "health_checks": 7,
+    "physical_connections": 0,
+    "connect_ms": 5.57,
+    "sql_ms": 2.01,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 2,
+      "user_api_keys": 1,
+      "user_provider_profiles": 1,
+      "analysis_records": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "APIKeyService.list_keys": 1,
+      "ModelCatalogService.peek": 10,
+      "ModelCatalogService.selected_model": 10,
+      "AnalysisRecordService.list_own": 1
+    },
+    "external_attempts": 0,
+    "start_index": 1757,
+    "end_index": 1808
+  },
+  {
+    "scenario": "byok_user_developer_navigation_3",
+    "ui_observed_ms": 424,
+    "reruns": 1,
+    "application_ms": [
+      169.79
+    ],
+    "sql": 8,
+    "connections": 8,
+    "health_checks": 8,
+    "physical_connections": 0,
+    "connect_ms": 10.39,
+    "sql_ms": 3.21,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 4,
+      "user_api_keys": 1,
+      "user_provider_profiles": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "APIKeyService.list_keys": 1,
+      "ModelCatalogService.peek": 18,
+      "ModelCatalogService.selected_model": 10,
+      "ModelCatalogService.discover_models": 2
+    },
+    "external_attempts": 0,
+    "start_index": 1808,
+    "end_index": 1871
+  },
+  {
+    "scenario": "byok_user_developer_widget_3",
+    "ui_observed_ms": 597,
+    "reruns": 2,
+    "application_ms": [
+      85.85,
+      166.71
+    ],
+    "sql": 16,
+    "connections": 16,
+    "health_checks": 16,
+    "physical_connections": 0,
+    "connect_ms": 17.85,
+    "sql_ms": 6.55,
+    "tables": {
+      "auth_sessions": 2,
+      "users": 2,
+      "user_byok_settings": 8,
+      "user_api_keys": 2,
+      "user_provider_profiles": 2
+    },
+    "calls": {
+      "load_settings": 2,
+      "read_installation": 2,
+      "read_browser_storage": 2,
+      "AuthService.refresh_principal": 2,
+      "AuthService.restore_session": 2,
+      "AuthService.refresh_session": 2,
+      "APIKeyService.list_keys": 2,
+      "ModelCatalogService.peek": 25,
+      "ModelCatalogService.selected_model": 14,
+      "ModelCatalogService.discover_models": 4
+    },
+    "external_attempts": 0,
+    "start_index": 1871,
+    "end_index": 1980
+  },
+  {
+    "scenario": "byok_user_quota_navigation_3",
+    "ui_observed_ms": 248,
+    "reruns": 1,
+    "application_ms": [
+      38.77
+    ],
+    "sql": 4,
+    "connections": 4,
+    "health_checks": 4,
+    "physical_connections": 0,
+    "connect_ms": 5.03,
+    "sql_ms": 1.95,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1,
+      "api_usage": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "AIUsageService.get_quota_status": 1
+    },
+    "external_attempts": 0,
+    "start_index": 1980,
+    "end_index": 2001
+  },
+  {
+    "scenario": "byok_user_membership_navigation_3",
+    "ui_observed_ms": 357,
+    "reruns": 1,
+    "application_ms": [
+      44.51
+    ],
+    "sql": 4,
+    "connections": 4,
+    "health_checks": 4,
+    "physical_connections": 0,
+    "connect_ms": 3.84,
+    "sql_ms": 1.97,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 2
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "BYOKModeService.is_enabled": 1
+    },
+    "external_attempts": 0,
+    "start_index": 2001,
+    "end_index": 2022
+  },
+  {
+    "scenario": "byok_user_F5_3",
+    "ui_observed_ms": 699,
+    "reruns": 2,
+    "application_ms": [
+      37.21
+    ],
+    "sql": 4,
+    "connections": 4,
+    "health_checks": 4,
+    "physical_connections": 0,
+    "connect_ms": 3.29,
+    "sql_ms": 1.36,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 2
+    },
+    "calls": {
+      "load_settings": 2,
+      "read_installation": 2,
+      "read_browser_storage": 2,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "BYOKModeService.is_enabled": 1
+    },
+    "external_attempts": 0,
+    "start_index": 2022,
+    "end_index": 2046
+  },
+  {
+    "scenario": "byok_user_logout",
+    "ui_observed_ms": 510,
+    "reruns": 3,
+    "application_ms": [
+      33.05,
+      24.55
+    ],
+    "sql": 4,
+    "connections": 4,
+    "health_checks": 4,
+    "physical_connections": 0,
+    "connect_ms": 4.38,
+    "sql_ms": 1.88,
+    "tables": {
+      "auth_sessions": 2,
+      "users": 1,
+      "user_byok_settings": 1
+    },
+    "calls": {
+      "load_settings": 3,
+      "read_installation": 3,
+      "read_browser_storage": 3,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1
+    },
+    "external_attempts": 0,
+    "start_index": 2046,
+    "end_index": 2075
+  },
+  {
+    "scenario": "legacy_developer_login_page",
+    "ui_observed_ms": 415,
+    "reruns": 2,
+    "application_ms": [
+      31.24,
+      24.63
+    ],
+    "sql": 0,
+    "connections": 0,
+    "health_checks": 0,
+    "physical_connections": 0,
+    "connect_ms": 0,
+    "sql_ms": 0,
+    "tables": {},
+    "calls": {
+      "load_settings": 2,
+      "read_installation": 2,
+      "read_browser_storage": 2
+    },
+    "external_attempts": 0,
+    "start_index": 2075,
+    "end_index": 2085
+  },
+  {
+    "scenario": "legacy_developer_authenticate",
+    "ui_observed_ms": 736,
+    "reruns": 3,
+    "application_ms": [
+      301.1,
+      33.32
+    ],
+    "sql": 11,
+    "connections": 11,
+    "health_checks": 11,
+    "physical_connections": 0,
+    "connect_ms": 10.44,
+    "sql_ms": 6.88,
+    "tables": {
+      "login_attempts": 3,
+      "users": 3,
+      "user_byok_settings": 3,
+      "auth_sessions": 2
+    },
+    "calls": {
+      "load_settings": 3,
+      "read_installation": 3,
+      "read_browser_storage": 3,
+      "AuthService.authenticate": 1,
+      "AuthService.refresh_principal": 2,
+      "AuthService.create_session": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1
+    },
+    "external_attempts": 0,
+    "start_index": 2085,
+    "end_index": 2138
+  },
+  {
+    "scenario": "legacy_developer_home_navigation_1",
+    "ui_observed_ms": 410,
+    "reruns": 2,
+    "application_ms": [
+      39.13,
+      35.41
+    ],
+    "sql": 6,
+    "connections": 6,
+    "health_checks": 6,
+    "physical_connections": 0,
+    "connect_ms": 6.92,
+    "sql_ms": 2.46,
+    "tables": {
+      "auth_sessions": 2,
+      "users": 2,
+      "user_byok_settings": 2
+    },
+    "calls": {
+      "load_settings": 2,
+      "read_installation": 2,
+      "read_browser_storage": 2,
+      "AuthService.refresh_principal": 2,
+      "AuthService.restore_session": 2,
+      "AuthService.refresh_session": 2
+    },
+    "external_attempts": 0,
+    "start_index": 2138,
+    "end_index": 2172
+  },
+  {
+    "scenario": "legacy_developer_analysis_navigation_1",
+    "ui_observed_ms": 430,
+    "reruns": 1,
+    "application_ms": [
+      127.54
+    ],
+    "sql": 6,
+    "connections": 6,
+    "health_checks": 6,
+    "physical_connections": 0,
+    "connect_ms": 8,
+    "sql_ms": 2.72,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1,
+      "user_api_keys": 1,
+      "user_provider_profiles": 1,
+      "analysis_records": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "APIKeyService.list_keys": 1,
+      "ModelCatalogService.peek": 10,
+      "ModelCatalogService.selected_model": 10,
+      "AnalysisRecordService.list_own": 1
+    },
+    "external_attempts": 0,
+    "start_index": 2172,
+    "end_index": 2220
+  },
+  {
+    "scenario": "legacy_developer_analysis_demo_1",
+    "ui_observed_ms": 484,
+    "reruns": 1,
+    "application_ms": [
+      215.9
+    ],
+    "sql": 6,
+    "connections": 6,
+    "health_checks": 6,
+    "physical_connections": 0,
+    "connect_ms": 5.23,
+    "sql_ms": 2.65,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1,
+      "user_api_keys": 1,
+      "user_provider_profiles": 1,
+      "analysis_records": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "APIKeyService.list_keys": 1,
+      "ModelCatalogService.peek": 10,
+      "ModelCatalogService.selected_model": 10,
+      "AnalysisRecordService.list_own": 1
+    },
+    "external_attempts": 0,
+    "start_index": 2220,
+    "end_index": 2268
+  },
+  {
+    "scenario": "legacy_developer_analysis_reset_1",
+    "ui_observed_ms": 317,
+    "reruns": 1,
+    "application_ms": [
+      77.87
+    ],
+    "sql": 6,
+    "connections": 6,
+    "health_checks": 6,
+    "physical_connections": 0,
+    "connect_ms": 3.31,
+    "sql_ms": 2.24,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1,
+      "user_api_keys": 1,
+      "user_provider_profiles": 1,
+      "analysis_records": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "APIKeyService.list_keys": 1,
+      "ModelCatalogService.peek": 10,
+      "ModelCatalogService.selected_model": 10,
+      "AnalysisRecordService.list_own": 1
+    },
+    "external_attempts": 0,
+    "start_index": 2268,
+    "end_index": 2316
+  },
+  {
+    "scenario": "legacy_developer_developer_navigation_1",
+    "ui_observed_ms": 413,
+    "reruns": 1,
+    "application_ms": [
+      152.37
+    ],
+    "sql": 5,
+    "connections": 5,
+    "health_checks": 5,
+    "physical_connections": 0,
+    "connect_ms": 7.87,
+    "sql_ms": 2.28,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1,
+      "user_api_keys": 1,
+      "user_provider_profiles": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "APIKeyService.list_keys": 1,
+      "ModelCatalogService.peek": 18,
+      "ModelCatalogService.selected_model": 10,
+      "ModelCatalogService.discover_models": 2
+    },
+    "external_attempts": 0,
+    "start_index": 2316,
+    "end_index": 2370
+  },
+  {
+    "scenario": "legacy_developer_developer_widget_1",
+    "ui_observed_ms": 586,
+    "reruns": 2,
+    "application_ms": [
+      71.11,
+      149.25
+    ],
+    "sql": 10,
+    "connections": 10,
+    "health_checks": 10,
+    "physical_connections": 0,
+    "connect_ms": 9.6,
+    "sql_ms": 4.14,
+    "tables": {
+      "auth_sessions": 2,
+      "users": 2,
+      "user_byok_settings": 2,
+      "user_api_keys": 2,
+      "user_provider_profiles": 2
+    },
+    "calls": {
+      "load_settings": 2,
+      "read_installation": 2,
+      "read_browser_storage": 2,
+      "AuthService.refresh_principal": 2,
+      "AuthService.restore_session": 2,
+      "AuthService.refresh_session": 2,
+      "APIKeyService.list_keys": 2,
+      "ModelCatalogService.peek": 25,
+      "ModelCatalogService.selected_model": 14,
+      "ModelCatalogService.discover_models": 4
+    },
+    "external_attempts": 0,
+    "start_index": 2370,
+    "end_index": 2461
+  },
+  {
+    "scenario": "legacy_developer_quota_navigation_1",
+    "ui_observed_ms": 228,
+    "reruns": 1,
+    "application_ms": [
+      14.36
+    ],
+    "sql": 4,
+    "connections": 4,
+    "health_checks": 4,
+    "physical_connections": 0,
+    "connect_ms": 1.83,
+    "sql_ms": 0.97,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1,
+      "api_usage": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "AIUsageService.get_quota_status": 1
+    },
+    "external_attempts": 0,
+    "start_index": 2461,
+    "end_index": 2482
+  },
+  {
+    "scenario": "legacy_developer_membership_navigation_1",
+    "ui_observed_ms": 304,
+    "reruns": 1,
+    "application_ms": [
+      28.96
+    ],
+    "sql": 3,
+    "connections": 3,
+    "health_checks": 3,
+    "physical_connections": 0,
+    "connect_ms": 2.72,
+    "sql_ms": 0.95,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1
+    },
+    "external_attempts": 0,
+    "start_index": 2482,
+    "end_index": 2499
+  },
+  {
+    "scenario": "legacy_developer_F5_1",
+    "ui_observed_ms": 648,
+    "reruns": 2,
+    "application_ms": [
+      24.88
+    ],
+    "sql": 3,
+    "connections": 3,
+    "health_checks": 3,
+    "physical_connections": 0,
+    "connect_ms": 2.26,
+    "sql_ms": 0.99,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1
+    },
+    "calls": {
+      "load_settings": 2,
+      "read_installation": 2,
+      "read_browser_storage": 2,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1
+    },
+    "external_attempts": 0,
+    "start_index": 2499,
+    "end_index": 2519
+  },
+  {
+    "scenario": "legacy_developer_home_navigation_2",
+    "ui_observed_ms": 325,
+    "reruns": 1,
+    "application_ms": [
+      33.56
+    ],
+    "sql": 3,
+    "connections": 3,
+    "health_checks": 3,
+    "physical_connections": 0,
+    "connect_ms": 2.78,
+    "sql_ms": 1.18,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1
+    },
+    "external_attempts": 0,
+    "start_index": 2519,
+    "end_index": 2536
+  },
+  {
+    "scenario": "legacy_developer_analysis_navigation_2",
+    "ui_observed_ms": 441,
+    "reruns": 1,
+    "application_ms": [
+      117.58
+    ],
+    "sql": 6,
+    "connections": 6,
+    "health_checks": 6,
+    "physical_connections": 0,
+    "connect_ms": 5.36,
+    "sql_ms": 2.05,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1,
+      "user_api_keys": 1,
+      "user_provider_profiles": 1,
+      "analysis_records": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "APIKeyService.list_keys": 1,
+      "ModelCatalogService.peek": 10,
+      "ModelCatalogService.selected_model": 10,
+      "AnalysisRecordService.list_own": 1
+    },
+    "external_attempts": 0,
+    "start_index": 2536,
+    "end_index": 2584
+  },
+  {
+    "scenario": "legacy_developer_analysis_demo_2",
+    "ui_observed_ms": 523,
+    "reruns": 1,
+    "application_ms": [
+      222.8
+    ],
+    "sql": 6,
+    "connections": 6,
+    "health_checks": 6,
+    "physical_connections": 0,
+    "connect_ms": 5.6,
+    "sql_ms": 2.12,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1,
+      "user_api_keys": 1,
+      "user_provider_profiles": 1,
+      "analysis_records": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "APIKeyService.list_keys": 1,
+      "ModelCatalogService.peek": 10,
+      "ModelCatalogService.selected_model": 10,
+      "AnalysisRecordService.list_own": 1
+    },
+    "external_attempts": 0,
+    "start_index": 2584,
+    "end_index": 2632
+  },
+  {
+    "scenario": "legacy_developer_analysis_reset_2",
+    "ui_observed_ms": 357,
+    "reruns": 1,
+    "application_ms": [
+      125.51
+    ],
+    "sql": 6,
+    "connections": 6,
+    "health_checks": 6,
+    "physical_connections": 0,
+    "connect_ms": 6.82,
+    "sql_ms": 2.32,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1,
+      "user_api_keys": 1,
+      "user_provider_profiles": 1,
+      "analysis_records": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "APIKeyService.list_keys": 1,
+      "ModelCatalogService.peek": 10,
+      "ModelCatalogService.selected_model": 10,
+      "AnalysisRecordService.list_own": 1
+    },
+    "external_attempts": 0,
+    "start_index": 2632,
+    "end_index": 2680
+  },
+  {
+    "scenario": "legacy_developer_developer_navigation_2",
+    "ui_observed_ms": 433,
+    "reruns": 1,
+    "application_ms": [
+      155.28
+    ],
+    "sql": 5,
+    "connections": 5,
+    "health_checks": 5,
+    "physical_connections": 0,
+    "connect_ms": 5.98,
+    "sql_ms": 4.57,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1,
+      "user_api_keys": 1,
+      "user_provider_profiles": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "APIKeyService.list_keys": 1,
+      "ModelCatalogService.peek": 18,
+      "ModelCatalogService.selected_model": 10,
+      "ModelCatalogService.discover_models": 2
+    },
+    "external_attempts": 0,
+    "start_index": 2680,
+    "end_index": 2734
+  },
+  {
+    "scenario": "legacy_developer_developer_widget_2",
+    "ui_observed_ms": 592,
+    "reruns": 2,
+    "application_ms": [
+      79.11,
+      146.69
+    ],
+    "sql": 10,
+    "connections": 10,
+    "health_checks": 10,
+    "physical_connections": 0,
+    "connect_ms": 8.4,
+    "sql_ms": 4.52,
+    "tables": {
+      "auth_sessions": 2,
+      "users": 2,
+      "user_byok_settings": 2,
+      "user_api_keys": 2,
+      "user_provider_profiles": 2
+    },
+    "calls": {
+      "load_settings": 2,
+      "read_installation": 2,
+      "read_browser_storage": 2,
+      "AuthService.refresh_principal": 2,
+      "AuthService.restore_session": 2,
+      "AuthService.refresh_session": 2,
+      "APIKeyService.list_keys": 2,
+      "ModelCatalogService.peek": 25,
+      "ModelCatalogService.selected_model": 14,
+      "ModelCatalogService.discover_models": 4
+    },
+    "external_attempts": 0,
+    "start_index": 2734,
+    "end_index": 2825
+  },
+  {
+    "scenario": "legacy_developer_quota_navigation_2",
+    "ui_observed_ms": 337,
+    "reruns": 1,
+    "application_ms": [
+      35.86
+    ],
+    "sql": 4,
+    "connections": 4,
+    "health_checks": 4,
+    "physical_connections": 0,
+    "connect_ms": 3.38,
+    "sql_ms": 2.97,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1,
+      "api_usage": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "AIUsageService.get_quota_status": 1
+    },
+    "external_attempts": 0,
+    "start_index": 2825,
+    "end_index": 2846
+  },
+  {
+    "scenario": "legacy_developer_membership_navigation_2",
+    "ui_observed_ms": 323,
+    "reruns": 1,
+    "application_ms": [
+      36.72
+    ],
+    "sql": 3,
+    "connections": 3,
+    "health_checks": 3,
+    "physical_connections": 0,
+    "connect_ms": 3.35,
+    "sql_ms": 1.5,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1
+    },
+    "external_attempts": 0,
+    "start_index": 2846,
+    "end_index": 2863
+  },
+  {
+    "scenario": "legacy_developer_F5_2",
+    "ui_observed_ms": 785,
+    "reruns": 4,
+    "application_ms": [
+      89.41,
+      49.32
+    ],
+    "sql": 6,
+    "connections": 6,
+    "health_checks": 6,
+    "physical_connections": 0,
+    "connect_ms": 4.82,
+    "sql_ms": 3.47,
+    "tables": {
+      "auth_sessions": 2,
+      "users": 2,
+      "user_byok_settings": 2
+    },
+    "calls": {
+      "load_settings": 3,
+      "read_installation": 3,
+      "read_browser_storage": 3,
+      "AuthService.refresh_principal": 2,
+      "AuthService.restore_session": 2,
+      "AuthService.refresh_session": 1
+    },
+    "external_attempts": 0,
+    "start_index": 2863,
+    "end_index": 2901
+  },
+  {
+    "scenario": "legacy_developer_home_navigation_3",
+    "ui_observed_ms": 341,
+    "reruns": 1,
+    "application_ms": [
+      50.08
+    ],
+    "sql": 3,
+    "connections": 3,
+    "health_checks": 3,
+    "physical_connections": 0,
+    "connect_ms": 2.46,
+    "sql_ms": 0.92,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1
+    },
+    "external_attempts": 0,
+    "start_index": 2901,
+    "end_index": 2918
+  },
+  {
+    "scenario": "legacy_developer_analysis_navigation_3",
+    "ui_observed_ms": 458,
+    "reruns": 1,
+    "application_ms": [
+      134.48
+    ],
+    "sql": 6,
+    "connections": 6,
+    "health_checks": 6,
+    "physical_connections": 0,
+    "connect_ms": 5.52,
+    "sql_ms": 2.9,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1,
+      "user_api_keys": 1,
+      "user_provider_profiles": 1,
+      "analysis_records": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "APIKeyService.list_keys": 1,
+      "ModelCatalogService.peek": 10,
+      "ModelCatalogService.selected_model": 10,
+      "AnalysisRecordService.list_own": 1
+    },
+    "external_attempts": 0,
+    "start_index": 2918,
+    "end_index": 2966
+  },
+  {
+    "scenario": "legacy_developer_analysis_demo_3",
+    "ui_observed_ms": 537,
+    "reruns": 1,
+    "application_ms": [
+      248.71
+    ],
+    "sql": 6,
+    "connections": 6,
+    "health_checks": 6,
+    "physical_connections": 0,
+    "connect_ms": 8.44,
+    "sql_ms": 4.29,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1,
+      "user_api_keys": 1,
+      "user_provider_profiles": 1,
+      "analysis_records": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "APIKeyService.list_keys": 1,
+      "ModelCatalogService.peek": 10,
+      "ModelCatalogService.selected_model": 10,
+      "AnalysisRecordService.list_own": 1
+    },
+    "external_attempts": 0,
+    "start_index": 2966,
+    "end_index": 3014
+  },
+  {
+    "scenario": "legacy_developer_analysis_reset_3",
+    "ui_observed_ms": 394,
+    "reruns": 1,
+    "application_ms": [
+      135.68
+    ],
+    "sql": 6,
+    "connections": 6,
+    "health_checks": 6,
+    "physical_connections": 0,
+    "connect_ms": 7.17,
+    "sql_ms": 2.97,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1,
+      "user_api_keys": 1,
+      "user_provider_profiles": 1,
+      "analysis_records": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "APIKeyService.list_keys": 1,
+      "ModelCatalogService.peek": 10,
+      "ModelCatalogService.selected_model": 10,
+      "AnalysisRecordService.list_own": 1
+    },
+    "external_attempts": 0,
+    "start_index": 3014,
+    "end_index": 3062
+  },
+  {
+    "scenario": "legacy_developer_developer_navigation_3",
+    "ui_observed_ms": 408,
+    "reruns": 1,
+    "application_ms": [
+      168.43
+    ],
+    "sql": 5,
+    "connections": 5,
+    "health_checks": 5,
+    "physical_connections": 0,
+    "connect_ms": 4.69,
+    "sql_ms": 1.51,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1,
+      "user_api_keys": 1,
+      "user_provider_profiles": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "APIKeyService.list_keys": 1,
+      "ModelCatalogService.peek": 18,
+      "ModelCatalogService.selected_model": 10,
+      "ModelCatalogService.discover_models": 2
+    },
+    "external_attempts": 0,
+    "start_index": 3062,
+    "end_index": 3116
+  },
+  {
+    "scenario": "legacy_developer_developer_widget_3",
+    "ui_observed_ms": 595,
+    "reruns": 2,
+    "application_ms": [
+      74.23,
+      172.54
+    ],
+    "sql": 10,
+    "connections": 10,
+    "health_checks": 10,
+    "physical_connections": 0,
+    "connect_ms": 9.31,
+    "sql_ms": 3.94,
+    "tables": {
+      "auth_sessions": 2,
+      "users": 2,
+      "user_byok_settings": 2,
+      "user_api_keys": 2,
+      "user_provider_profiles": 2
+    },
+    "calls": {
+      "load_settings": 2,
+      "read_installation": 2,
+      "read_browser_storage": 2,
+      "AuthService.refresh_principal": 2,
+      "AuthService.restore_session": 2,
+      "AuthService.refresh_session": 2,
+      "APIKeyService.list_keys": 2,
+      "ModelCatalogService.peek": 25,
+      "ModelCatalogService.selected_model": 14,
+      "ModelCatalogService.discover_models": 4
+    },
+    "external_attempts": 0,
+    "start_index": 3116,
+    "end_index": 3207
+  },
+  {
+    "scenario": "legacy_developer_quota_navigation_3",
+    "ui_observed_ms": 261,
+    "reruns": 1,
+    "application_ms": [
+      42.09
+    ],
+    "sql": 4,
+    "connections": 4,
+    "health_checks": 4,
+    "physical_connections": 0,
+    "connect_ms": 3.76,
+    "sql_ms": 1.68,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1,
+      "api_usage": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1,
+      "AIUsageService.get_quota_status": 1
+    },
+    "external_attempts": 0,
+    "start_index": 3207,
+    "end_index": 3228
+  },
+  {
+    "scenario": "legacy_developer_membership_navigation_3",
+    "ui_observed_ms": 339,
+    "reruns": 1,
+    "application_ms": [
+      36.15
+    ],
+    "sql": 3,
+    "connections": 3,
+    "health_checks": 3,
+    "physical_connections": 0,
+    "connect_ms": 2.33,
+    "sql_ms": 0.96,
+    "tables": {
+      "auth_sessions": 1,
+      "users": 1,
+      "user_byok_settings": 1
+    },
+    "calls": {
+      "load_settings": 1,
+      "read_installation": 1,
+      "read_browser_storage": 1,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1
+    },
+    "external_attempts": 0,
+    "start_index": 3228,
+    "end_index": 3245
+  },
+  {
+    "scenario": "legacy_developer_F5_3",
+    "ui_observed_ms": 604,
+    "reruns": 3,
+    "application_ms": [
+      33.27,
+      32.68
+    ],
+    "sql": 6,
+    "connections": 6,
+    "health_checks": 6,
+    "physical_connections": 0,
+    "connect_ms": 5.65,
+    "sql_ms": 3.27,
+    "tables": {
+      "auth_sessions": 2,
+      "users": 2,
+      "user_byok_settings": 2
+    },
+    "calls": {
+      "load_settings": 3,
+      "read_installation": 3,
+      "read_browser_storage": 3,
+      "AuthService.refresh_principal": 2,
+      "AuthService.restore_session": 2,
+      "AuthService.refresh_session": 1
+    },
+    "external_attempts": 0,
+    "start_index": 3245,
+    "end_index": 3282
+  },
+  {
+    "scenario": "legacy_developer_logout",
+    "ui_observed_ms": 434,
+    "reruns": 3,
+    "application_ms": [
+      34.05,
+      19.81
+    ],
+    "sql": 4,
+    "connections": 4,
+    "health_checks": 4,
+    "physical_connections": 0,
+    "connect_ms": 3.8,
+    "sql_ms": 2.16,
+    "tables": {
+      "auth_sessions": 2,
+      "users": 1,
+      "user_byok_settings": 1
+    },
+    "calls": {
+      "load_settings": 3,
+      "read_installation": 3,
+      "read_browser_storage": 3,
+      "AuthService.refresh_principal": 1,
+      "AuthService.restore_session": 1,
+      "AuthService.refresh_session": 1
+    },
+    "external_attempts": 0,
+    "start_index": 3282,
+    "end_index": 3311
+  }
+]

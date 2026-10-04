@@ -9,7 +9,12 @@ from course2career.model_catalog import (
     DEEPSEEK_BASE_URL,
 )
 from course2career.models import JobAnalysis
-from course2career.provider_registry import ProviderPreset, ProviderProtocol
+from course2career.provider_registry import (
+    ProviderPreset,
+    ProviderProtocol,
+    get_provider_preset,
+)
+from course2career.provider_runtime import ProviderRuntime, returned_model_id
 from course2career.structured_output import (
     BailianSchemaAdapter,
     StructuredOutputStrategy,
@@ -23,7 +28,7 @@ class ProviderError(LLMClientError):
     """模型供应商配置或调用失败。"""
 
 
-class OpenAICompatibleChatProvider:
+class OpenAICompatibleChatProvider(ProviderRuntime):
     """供新预设复用的 Chat Completions 适配器。"""
 
     def __init__(
@@ -37,10 +42,12 @@ class OpenAICompatibleChatProvider:
         sdk_client: Any | None = None,
         max_output_tokens: int = 1500,
         structured_strategy: StructuredOutputStrategy | None = None,
-        max_retries: int | None = None,
+        max_retries: int = 0,
     ) -> None:
         if not api_key or not model or not model.strip() or len(model) > 200:
             raise ProviderError("模型或开发者API Key配置无效。")
+        if max_retries != 0:
+            raise ProviderError("自动 SDK 重试未开放，请使用受控调用预算。")
         if preset.primary_protocol != ProviderProtocol.OPENAI_CHAT:
             raise ProviderError("模型供应商协议配置无效。")
         try:
@@ -52,6 +59,7 @@ class OpenAICompatibleChatProvider:
         self.max_output_tokens = max(int(max_output_tokens), 1)
         self.structured_strategy = structured_strategy
         self._last_usage: LLMUsage | None = None
+        self._init_runtime(model, self.model, endpoint)
         if sdk_client is None:
             try:
                 from openai import DefaultHttpxClient, OpenAI
@@ -61,7 +69,7 @@ class OpenAICompatibleChatProvider:
                 api_key=api_key,
                 base_url=endpoint,
                 timeout=timeout_seconds,
-                **({"max_retries": max_retries} if max_retries is not None else {}),
+                max_retries=max_retries,
                 http_client=DefaultHttpxClient(follow_redirects=False),
             )
         self.client = sdk_client
@@ -79,7 +87,7 @@ class OpenAICompatibleChatProvider:
         return self._last_usage
 
     def extract_job_skills(self, jd_text: str) -> JobAnalysis:
-        self._last_usage = None
+        self._begin_call(self.model)
         schema = json.dumps(
             JobAnalysis.model_json_schema(), ensure_ascii=False, separators=(",", ":")
         )
@@ -111,15 +119,12 @@ class OpenAICompatibleChatProvider:
                     "schema": BailianSchemaAdapter.job_analysis_schema(),
                 },
             }
-        if self.preset.capability_adapter_id == "minimax_text_only":
-            kwargs["extra_body"] = {"reasoning_split": True}
-        elif (
-            self.preset.provider_id == ProviderName.OPENROUTER
-            and strategy == StructuredOutputStrategy.STRICT_JSON_SCHEMA
-        ):
-            kwargs["extra_body"] = {"provider": {"require_parameters": True}}
+        extra_body = self.preset.compatibility.extra_body(strategy)
+        if extra_body:
+            kwargs["extra_body"] = extra_body
         try:
             response = self.client.chat.completions.create(**kwargs)
+            self._observe_response(getattr(response, "model", None))
             usage = getattr(response, "usage", None)
             if usage is not None:
                 self._last_usage = LLMUsage(
@@ -136,14 +141,21 @@ class OpenAICompatibleChatProvider:
             content = response.choices[0].message.content
             if not content:
                 raise ValueError("empty response content")
-            return JobAnalysis.model_validate_json(content).model_copy(
-                update={"source": "ai"}
+            return self._finish_call(
+                JobAnalysis.model_validate_json(content).model_copy(
+                    update={"source": "ai"}
+                )
             )
         except Exception as exc:
+            self._fail_attempt(
+                exc,
+                schema_requested=strategy
+                == StructuredOutputStrategy.STRICT_JSON_SCHEMA,
+            )
             raise ProviderError("模型服务暂时不可用，请检查配置后重试。") from exc
 
 
-class DeepSeekProvider:
+class DeepSeekProvider(ProviderRuntime):
     """通过DeepSeek的OpenAI兼容Chat Completions接口提取岗位技能。"""
 
     def __init__(
@@ -155,10 +167,13 @@ class DeepSeekProvider:
         max_output_tokens: int = 1500,
         timeout_seconds: float = 30,
         sdk_client: Any | None = None,
-        max_retries: int | None = None,
+        max_retries: int = 0,
+        saved_model: str | None = None,
     ) -> None:
         if not api_key:
             raise ProviderError("未配置 DeepSeek API Key。")
+        if max_retries != 0:
+            raise ProviderError("自动 SDK 重试未开放，请使用受控调用预算。")
         if model not in DEEPSEEK_MODELS:
             raise ProviderError("不支持的 DeepSeek 模型。")
         invalid_fallbacks = set(fallback_models) - DEEPSEEK_MODELS
@@ -170,6 +185,12 @@ class DeepSeekProvider:
         )
         self.max_output_tokens = max(int(max_output_tokens), 1)
         self._last_usage: LLMUsage | None = None
+        self._init_runtime(
+            saved_model if saved_model is not None else model,
+            model,
+            DEEPSEEK_BASE_URL,
+            max_attempts=2 if self.fallback_models else 1,
+        )
         if sdk_client is None:
             try:
                 from openai import DefaultHttpxClient, OpenAI
@@ -179,7 +200,7 @@ class DeepSeekProvider:
                 api_key=api_key,
                 base_url=DEEPSEEK_BASE_URL,
                 timeout=timeout_seconds,
-                **({"max_retries": max_retries} if max_retries is not None else {}),
+                max_retries=max_retries,
                 http_client=DefaultHttpxClient(follow_redirects=False),
             )
         self.client = sdk_client
@@ -197,7 +218,7 @@ class DeepSeekProvider:
         return self._last_usage
 
     def extract_job_skills(self, jd_text: str) -> JobAnalysis:
-        self._last_usage = None
+        self._begin_call(self.model)
         schema = json.dumps(
             JobAnalysis.model_json_schema(), ensure_ascii=False, separators=(",", ":")
         )
@@ -215,8 +236,10 @@ class DeepSeekProvider:
                 ],
             )
         except Exception as exc:
+            self._fail_attempt(exc)
             if _is_missing_model_error(exc) and self.fallback_models:
                 self.model = self.fallback_models[0]
+                self._start_attempt(self.model, "MODEL_NOT_FOUND")
                 try:
                     response = self._create_completion(
                         self.model,
@@ -226,6 +249,7 @@ class DeepSeekProvider:
                         ],
                     )
                 except Exception as fallback_exc:
+                    self._fail_attempt(fallback_exc)
                     raise ProviderError(
                         "DeepSeek服务暂时不可用，请检查配置后重试。"
                     ) from fallback_exc
@@ -235,18 +259,16 @@ class DeepSeekProvider:
                 ) from exc
 
         try:
+            self._observe_response(getattr(response, "model", None))
             usage = getattr(response, "usage", None)
             if usage is not None:
-                response_model = getattr(response, "model", None)
-                actual_model = (
-                    response_model if response_model in DEEPSEEK_MODELS else self.model
-                )
+                actual_model = returned_model_id(getattr(response, "model", None))
                 self._last_usage = LLMUsage(
                     input_tokens=coerce_token_count(getattr(usage, "prompt_tokens", 0)),
                     output_tokens=coerce_token_count(
                         getattr(usage, "completion_tokens", 0)
                     ),
-                    model=actual_model,
+                    model=actual_model or self.model,
                     system_fingerprint=_safe_optional_text(
                         getattr(response, "system_fingerprint", None)
                     ),
@@ -255,10 +277,11 @@ class DeepSeekProvider:
             if not content:
                 raise ValueError("empty response content")
             result = JobAnalysis.model_validate_json(content)
-            return result.model_copy(update={"source": "ai"})
+            return self._finish_call(result.model_copy(update={"source": "ai"}))
         except ProviderError:
             raise
         except Exception as exc:
+            self._fail_attempt(exc)
             raise ProviderError("DeepSeek服务暂时不可用，请检查配置后重试。") from exc
 
     def _create_completion(
@@ -273,7 +296,9 @@ class DeepSeekProvider:
             response_format={"type": "json_object"},
             max_tokens=self.max_output_tokens,
             stream=False,
-            extra_body={"thinking": {"type": "disabled"}},
+            extra_body=get_provider_preset(
+                ProviderName.DEEPSEEK
+            ).compatibility.extra_body(StructuredOutputStrategy.JSON_OBJECT),
         )
 
 
@@ -282,7 +307,4 @@ def _is_missing_model_error(exc: Exception) -> bool:
 
 
 def _safe_optional_text(value: object) -> str | None:
-    if not isinstance(value, str):
-        return None
-    value = value.strip()
-    return value[:200] or None
+    return returned_model_id(value)
