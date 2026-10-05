@@ -37,6 +37,7 @@ from course2career.provider_registry import (
     ProviderPreset,
     ui_provider_presets,
 )
+from course2career.provider_verification import get_record
 from course2career.ui.byok_mode_controls import render_byok_mode_controls
 
 
@@ -306,18 +307,40 @@ def _render_provider_card(
             Verification.UNKNOWN: "未验证",
             Verification.CONNECTED: "已连接",
             Verification.SCHEMA_COMPATIBLE: "Schema 兼容",
-            Verification.VERIFIED: "✓ Course2Career 实现认证（历史记录）",
+            Verification.VERIFIED: "✓ Course2Career 实现认证（身份版本待核实）",
             Verification.UNSUPPORTED: "当前模型不支持",
         }
+        record = get_record(provider, selected_endpoint, selected_model)
+        legacy_verified = (
+            record is not None
+            and record.result == Verification.VERIFIED
+            and record.legacy_model_identity_evidence
+        )
+        if legacy_verified:
+            labels[Verification.VERIFIED] = "✓ Course2Career 实现认证（历史记录）"
+        elif (
+            record is not None
+            and record.result == Verification.VERIFIED
+            and record.identity_evidence_version == 1
+        ):
+            labels[Verification.VERIFIED] = "✓ Course2Career 精确模型实现认证"
         st.caption(
             f"模型：{selected_model or '待填写'} · "
             f"实现认证：{labels[capability.verification]}"
         )
         if capability.verification == Verification.VERIFIED:
-            st.caption(
-                "实现认证不证明当前 Key 可用；"
-                "2026-09-26 旧记录的返回模型身份证据有限，待重新认证。"
-            )
+            if legacy_verified:
+                st.caption(
+                    "实现认证不证明当前 Key 可用；"
+                    f"{record.verified_at[:10]} 旧记录的返回模型身份证据有限，"
+                    "待重新认证。"
+                )
+            elif record is not None and record.identity_evidence_version == 1:
+                st.caption(
+                    "精确模型实现认证具有逐次身份与固定集证据；不证明当前 Key 可用。"
+                )
+            else:
+                st.caption("实现认证的模型身份证据版本待核实；不证明当前 Key 可用。")
         if capability.lifecycle_status == LifecycleStatus.COMPATIBILITY_ALIAS:
             st.warning(
                 f"{selected_model} 是兼容旧名称，建议主动选择 "

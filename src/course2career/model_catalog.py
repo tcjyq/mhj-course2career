@@ -113,7 +113,9 @@ class DeepSeekModelCatalog:
         mode: str,
         configured_model: str,
         preference: tuple[str, ...],
+        refresh_if_needed: bool = False,
     ) -> ModelSelection:
+        """Pure by default; explicit AI creation may refresh cold/expired data once."""
         if configured_model not in APPROVED_DEEPSEEK_MODELS:
             raise ModelDiscoveryError("配置的 DeepSeek 模型尚未通过兼容性验证。")
         if mode == "pinned":
@@ -122,6 +124,11 @@ class DeepSeekModelCatalog:
             raise ModelDiscoveryError("不支持的 DeepSeek 模型选择模式。")
 
         catalog = self.peek(api_key)
+        if refresh_if_needed and (catalog is None or catalog.stale):
+            try:
+                catalog = self.refresh(api_key)
+            except ModelDiscoveryError:
+                return ModelSelection(configured_model, (), "configured_fallback")
         if catalog is None:
             return ModelSelection(configured_model, (), "configured_fallback")
 

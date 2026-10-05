@@ -1,5 +1,7 @@
 # Course2Career 开发日志
 
+PR #8 review fix（已审查起点 a6ee491）：恢复显式 AI auto_safe 的一次必要目录刷新，保留默认纯读取、warm/pinned 零刷新与原 fallback policy；AccessMode 到 resolver/cache 全程传递；卡片按真实证据版本区分旧限制与精确认证。未实现 Subscription/OAuth、未真实推理；验证结果见候选报告。
+
 ## 2026-10-05 Provider 访问语义与精确身份实施（独立候选）
 
 从重新 fetch 的 main 526faf920eba68634d58be75504e3140235c3414 开始，保留原工作区未跟踪文件，在独立 fix/provider-model-identity-verification 工作树实施。实际阅读 Pi main 200387122ca450d6387f033949423114a270b96c 的 Provider/Auth/Catalog/Compatibility/Faux/OAuth 设计与 MIT 许可证；只借设计，未复制非 trivial 实现或添加 Pi 依赖。

@@ -95,7 +95,9 @@ class LLMProviderFactory:
             and provider != ProviderName.DEEPSEEK
         ):
             raise ProviderError("免费套餐的系统AI仅使用 DeepSeek。")
-        api_key = self._resolve_api_key(principal, provider, key_mode)
+        api_key = self._resolve_api_key(
+            principal, provider, key_mode, access_mode=access_mode
+        )
         if provider == ProviderName.OPENAI:
             provider_settings = replace(
                 self.settings,
@@ -126,6 +128,7 @@ class LLMProviderFactory:
                         "deepseek_model_preference",
                         ("deepseek-flash", "deepseek-v4-pro"),
                     ),
+                    refresh_if_needed=True,
                 )
             except ModelDiscoveryError as exc:
                 raise ProviderError(str(exc)) from exc
@@ -198,11 +201,13 @@ class LLMProviderFactory:
         principal: Principal,
         provider: ProviderName,
         key_mode: str,
+        *,
+        access_mode: AccessMode = AccessMode.API,
     ) -> str:
         preset = get_provider_preset(provider, self.settings)
         try:
             return self.credential_resolver.resolve(
-                principal, preset, key_mode
+                principal, preset, key_mode, access_mode=access_mode
             ).require_usable()
         except CredentialResolutionError as exc:
             raise ProviderError(str(exc)) from exc

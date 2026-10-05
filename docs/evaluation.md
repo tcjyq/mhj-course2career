@@ -1,5 +1,7 @@
 # AI 输出评测方案
 
+PR #8 review fix 增加 System/BYOK 冷/暖/过期/pinned/刷新失败与真实 generation 顺序的 Faux 回归、AccessMode 到 resolver/cache 传递、Developer 零 HTTP/零解密和 v0/v1 文案回归；全量、独立 PostgreSQL integration/restore、浏览器及 PR #7 结构指标重新验证，结果见候选报告的 review fix 记录。
+
 ## Provider 架构候选验证（2026-10-05）
 
 先以两项失败测试复现“缺失/陌生 DeepSeek 返回模型仍 VERIFIED”，然后覆盖十家工厂路径、五条协议、实际 OpenAI SDK 离线 Schema 失败、fallback、缺失 usage、凭证隔离、Key 轮换、BYOK 禁用和 legacy 认证旁路。全部推理为 deterministic/Faux 或 MockTransport，REAL_AI_CALLS=0。具体全量测试、PostgreSQL 集成/恢复、独立审查修正及浏览器结果见[候选报告](provider-access-upgrade-20261005.md)。

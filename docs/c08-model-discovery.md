@@ -4,7 +4,7 @@
 
 展示 peek / selected_model 继续复用同轮 ProviderDisplayView，不增加 Secret 读取或 Provider HTTP。ModelCatalogService 目录键明确增加 API access mode，仍包含用户、provider、endpoint（region）、workspace、Key updated_time；预留模式先拒绝再读取凭证。显式 discovery/refresh 用 CredentialResolver 的 API_KEY 后端，权限失效不会切换平台 Key。
 
-DeepSeekModelCatalog.get_models 默认读取最后已知缓存；refresh 或兼容的 force_refresh=True 是显式网络动作。auto_safe resolve 只 peek，不自动联网；没有目录/超过最大 stale 时间则沿用配置模型，已有目录仍按相同批准白名单及 preference 顺序解析，原有单次404 fallback保留。管理员刷新与显式检查脚本的 force_refresh 调用继续可用。目录可见性不等于真实 JobAnalysis/模型认证。[当前验收](provider-access-upgrade-20261005.md)。
+DeepSeekModelCatalog.get_models 默认读取最后已知缓存；refresh 或兼容的 force_refresh=True 是显式网络动作。默认 resolve 只 peek；显式 AI client 创建传入 refresh_if_needed=True，auto_safe 冷/过期目录最多刷新一次，成功后按相同 approved/preference 生成 primary/fallback。有效 warm cache 不刷新；pinned 不查询目录；冷/不可用缓存刷新失败使用配置模型，原有 stale 安全窗口及单次404 fallback保留。管理员刷新与显式检查脚本的 force_refresh 调用继续可用。目录可见性不等于真实 JobAnalysis/模型认证。[当前验收](provider-access-upgrade-20261005.md)。
 
 ## 2026-10-04 展示路径性能候选（未部署）
 

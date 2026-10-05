@@ -305,6 +305,8 @@ class ModelCatalogService:
         endpoint_id: str,
         workspace_id: str | None,
         display_view: ProviderDisplayView | None = None,
+        *,
+        access_mode: AccessMode = AccessMode.API,
     ) -> tuple[str, str, str, str, str, str] | None:
         if principal.user_id is None:
             return None
@@ -323,7 +325,7 @@ class ModelCatalogService:
         return (
             principal.user_id,
             preset.provider_id.value,
-            AccessMode.API.value,
+            access_mode.value,
             endpoint_id,
             workspace_id or "",
             version,
@@ -347,7 +349,12 @@ class ModelCatalogService:
         preset = get_provider_preset(provider)
         preset.endpoint(endpoint_id)
         key = self._cache_key(
-            principal, preset, endpoint_id, workspace_id, display_view
+            principal,
+            preset,
+            endpoint_id,
+            workspace_id,
+            display_view,
+            access_mode=access_mode,
         )
         entry = self._cache.get(key) if key is not None else None
         if entry is None:
@@ -374,7 +381,9 @@ class ModelCatalogService:
         preset.endpoint(endpoint_id)
         if workspace_id and not WORKSPACE_ID_PATTERN.fullmatch(workspace_id):
             raise CatalogError("业务空间 ID 格式无效。")
-        key = self._cache_key(principal, preset, endpoint_id, workspace_id)
+        key = self._cache_key(
+            principal, preset, endpoint_id, workspace_id, access_mode=access_mode
+        )
         entry = self._cache.get(key) if key is not None else None
         if entry and not force_refresh and self.clock() - entry[1] <= self.ttl_seconds:
             return entry[0]
@@ -387,7 +396,7 @@ class ModelCatalogService:
                 models = _static_catalog(provider, endpoint_id, CHECKED_AT)
             else:
                 api_key = self.credentials.resolve(
-                    principal, preset, "user"
+                    principal, preset, "user", access_mode=access_mode
                 ).require_usable()
                 rows = self._fetch_rows(preset, endpoint_id, workspace_id, api_key)
                 models = self._map_rows(provider, endpoint_id, rows, checked_at)

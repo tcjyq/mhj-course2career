@@ -1,5 +1,7 @@
 # Course2Career
 
+PR #8 review fix：普通展示与目录读取仍为 0 Provider HTTP；显式 DeepSeek auto_safe AI 在冷/过期缓存时最多刷新一次。AccessMode 贯通 resolver/cache；认证文案依据真实 v0/v1 证据，订阅模式仍关闭。
+
 ## Provider 接入升级候选（2026-10-05，未合并）
 
 现有十家 API Key 预设接入独立 AccessMode / CredentialKind、受控兼容声明及运行时 ModelTrace。缺失或陌生返回模型不再冒充请求模型认证；历史实现认证与个人 Key 最近测试分开展示。PLAN / OAUTH_SUBSCRIPTION 仅预留且拒绝使用，未加入订阅或 OAuth。PR #7 的 render snapshot、连接池和普通单轮导航保持。没有真实 Provider 调用、schema / 默认模型 / 价格 / quota 变化。[实现与证据](docs/provider-access-upgrade-20261005.md)。

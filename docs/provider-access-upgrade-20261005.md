@@ -10,7 +10,7 @@
 |---|---|---|---|
 | Provider ownership / protocol separation | 原 ProviderPreset 升级为访问声明来源，adapter 按现有 protocol 实现 | 统一端点/auth/catalog/兼容事实 | C2C 只有十家与 JobAnalysis，不需要 Models collection/agent SDK |
 | Typed credential resolution | AccessMode / CredentialKind 独立，Resolver 使用 APIKeyService | 用户失败不能静默用平台 Key；所有权不等于 auth type | Pi provider-only credential store 不符合 C2C 多账户数据库隔离 |
-| Explicit catalog refresh | peek/read/resolve 纯缓存，refresh 显式联网 | 避免 render/工厂隐藏 Provider 请求 | 保留现有 TTL、Key-version、snapshot 和 UI，不另建 catalog 系统 |
+| Explicit catalog refresh | peek/read/默认resolve纯缓存，显式AI auto_safe最多一次必要refresh | 避免 render 隐藏 Provider 请求 | 保留现有 TTL、Key-version、snapshot 和 UI，不另建 catalog 系统 |
 | Compatibility declaration | 显式 MiniMax reasoning_split、DeepSeek thinking、Bailian schema 前缀、OpenRouter strict 路由、Gemini modelVersion | 相同 wire family 仍有具体差异 | 不复制 URL guessing、未使用的参数或 speculative aliases |
 | Normalized results / bounded errors | JobAnalysis + usage + trace + CallEvidence；固定错误文案与 attempt budget | 明确契约、身份和实际尝试 | 不引入流式事件、abort/retry 通用框架，现有请求 timeout 保留 |
 | Faux testing | tests/faux_provider.py scripted wire + 实际 SDK MockTransport | 离线反证而非真实 Key 调试 | 只是测试辅助，不是新的产品 Provider、模拟计费或生成模型 |
@@ -34,7 +34,7 @@ ProviderPreset → API AccessDefinition（品牌/协议/官方区域端点/auth/
 | src/course2career/llm_client.py | Responses 先采集 raw model/usage 再 SDK 解析；端点取受控声明，防 SDK ambient base URL 覆盖 |
 | src/course2career/llm_providers.py | Chat/DeepSeek 真实返回身份、逐次 fallback、reset/错误记录，兼容参数来自声明 |
 | src/course2career/native_providers.py | Anthropic model / Gemini modelVersion 独立 trace，失败也保留已收到元数据 |
-| src/course2career/model_catalog.py | DeepSeek read/resolve 不联网、显式 refresh，原白名单与偏好顺序保留 |
+| src/course2career/model_catalog.py | DeepSeek read/默认resolve不联网；显式AI必要refresh最多一次，原白名单与偏好保留 |
 | src/course2career/model_discovery.py | 目录键包含 API mode，refresh 经 Resolver，保留 render view 与 Key-version 隔离 |
 | src/course2career/provider_connection.py | 六层连接证据、真实返回与 MATCH/MISMATCH/UNKNOWN，不升级单次 VERIFIED |
 | src/course2career/provider_validation.py | 认证只信逐次 trace，保留失败 trace，用实际 attempts 统计外发；身份未知不套目标费率 |
@@ -46,6 +46,8 @@ ProviderPreset → API AccessDefinition（品牌/协议/官方区域端点/auth/
 | tests/test_provider_access_runtime.py | 十家贯通、五协议、身份/预算/fallback/credential/isolation/legacy/error 分层测试 |
 | tests/test_llm_client.py | 实际 SDK 离线 schema failure 保留 model/usage；固定 endpoint 不受环境覆盖 |
 | tests/test_model_catalog.py | 新纯读取与显式刷新语义、保留 stale 和偏好选择回归 |
+| tests/test_provider_factory.py | 保留与目录无关的构造测试为 pinned 离线路径，auto_safe 真实工厂回归由 Faux 覆盖 |
+| tests/test_provider_display.py | Developer 普通 render 零 HTTP/零 Secret 使用，以及真实 v0/v1 认证文案回归 |
 | tests/test_c08_b2.py | 测试认证 fixture 明确提供 genuine fake trace，适配新严格记录与错误分类 |
 | README.md | 候选能力与未部署边界 |
 | docs/requirements.md | 新访问/身份/认证验收要求 |
@@ -63,7 +65,8 @@ ProviderPreset → API AccessDefinition（品牌/协议/官方区域端点/auth/
 | docs/provider-access/20261005/benchmark-summary.json | 三次 warm 样本与相同口径前后汇总 |
 | docs/provider-access/20261005/before-warm-actions.json | 精确 main 的本地原始动作结果 |
 | docs/provider-access/20261005/after-warm-actions.json | 候选分支本地原始动作结果 |
-| docs/provider-access/20261005/security-browser.json | 七组本地浏览器回归结果 |
+| docs/provider-access/20261005/security-browser.json | 首次实施七组本地浏览器回归结果 |
+| docs/provider-access/20261005/review-fix-regression.json | 最小 review fix 全量/PG/Faux/UI/七组浏览器与三次 warm 结构回归汇总 |
 | screenshots/provider-access-synthetic-20261005.png | 假账号/假 Key 的卡片截图，不是生产认证 |
 
 ## 4. MODEL IDENTITY
@@ -124,6 +127,8 @@ System 和 BYOK SDK retry 均为0；每次业务调用预算1，已有 DeepSeek 
 
 ## 10. TESTS
 
+以下为首次实施验证；后续最小 review fix 的最新结果见文末专节。
+
 独立审查反证后修正三项：实际SDK提前解析、fallback次数、legacy默认旁路；相应回归已加入。首先两项原bug测试真实FAIL（旧实现误给VERIFIED），修复后PASS。
 
 最终命令使用项目 .venv 的 Python 3.12、PYTHONPATH 中本机已安装 pool 依赖；没有安装/升级项目依赖。所有 DB URL 强制 localhost:55448 的独立合成库。
@@ -163,6 +168,22 @@ ACCOUNT_ISOLATION=PASS；BYOK_DISABLE=PASS；SESSION_REVOKE=PASS；KEY_ROTATION=
 独立分支 `fix/provider-model-identity-verification`，基于最新确认main `526faf920eba68634d58be75504e3140235c3414`。最终HEAD、Draft PR URL和精确HEAD的CI结果在交付中记录。RELEASE_READY=no，PRODUCTION_UNVERIFIED；本轮只commit/push/Draft，不mark ready/merge/deploy。
 
 REAL_VALIDATION_REQUIRED：若要更新真实精确认证，另行授权 DeepSeek global/deepseek-flash 和 Bailian cn-beijing/qwen3.8-flash 各连接1+固定题4（共10次推理）；Bailian需合法区域/Workspace参数。成本需按当时价格与实际usage核算，目前未执行，不能写0成本。其余Provider需先指定精确model、合法用户Key、expected calls/cost，不批量读生产Key。
+
+## PR #8 最小 review fix（已审查起点 a6ee491）
+
+BLOCKER_FIXED=yes。`resolve(..., refresh_if_needed=False)` 默认仍纯 peek；只有显式 AI client 创建传入 True。System 与 BYOK 的 auto_safe 冷/过期缓存最多一次 catalog refresh，再按原 approved/preference 生成 primary/fallback；有效 warm cache 不刷新，pinned 在读取目录前直接返回。冷/超过最大 stale 窗口刷新失败使用 configured model + zero fallback；原允许 stale 窗口与404 fallback policy不变。catalog SDK 与 generation SDK retry 均为0。这里的 catalog GET 独立于 generation attempt/quota，不增加隐式推理。
+
+ACCESS_MODE_PROPAGATION=PASS（方案A）：Factory → _resolve_api_key → CredentialResolver，以及 ModelCatalogService → CredentialResolver / cache key，均显式传入调用者 access_mode。API现有行为兼容，PLAN/OAUTH仍在 Secret/cache/network 前拒绝，没有开放新模式。LEGACY_UI_FIXED=PASS：实际v0 VERIFIED按记录日期显示旧证据限制，实际v1 VERIFIED显示逐次身份/固定集精确认证；证据版本不明时不宣称精确认证。未改写或升级历史v0。
+
+- `python -m pytest -p no:cacheprovider --basetemp D:/codex_study/_tmp/c2c-provider-20261004/full-review-fix`：442 passed、1 skipped，77.38s。唯一跳过为全量进程没有恢复目标，下项独立补齐。
+- `python -m pytest -m postgres ...`：13 passed、430 deselected；独立 pg_dump custom → 新合成 restored_review_fix → pg_restore --exit-on-error → `pytest -m postgres_restore ...`：1 passed、442 deselected。
+- `python -m pytest tests/test_model_catalog.py tests/test_provider_factory.py tests/test_provider_access_runtime.py tests/test_provider_display.py ...`：132 passed，包含新增19项参数化/浏览器AppTest场景。
+- `node scripts/verify_performance_browser.cjs`：七组PASS，18次普通导航单轮；最终 Developer 十卡片/新文案、本地规则、logout PASS。真实 Provider HTTP 全程阻断并计数为0，未测试连接/真实AI。
+- Ruff lint/format、git diff --check：PASS。受控历史认证、默认模型/endpoint、quota、订阅关闭状态、schema及PR #7 DB/nav代码保持。
+
+同PR #7 instrumentation、同本机合成BYOK、每项3次warm，SQL/checkout=Developer 8、Analysis 7、quota 4、membership 4、本地规则7；每次新物理connect=0、ordinary script runs=1、Provider HTTP=0。Python中位数依次69.60/60.27/18.87/20.56/96.99ms；只确认结构回归，不用不同测试时段宣称提速。[逐次样本与验证汇总](provider-access/20261005/review-fix-regression.json)。F5/登录/storage handshake仍允许必要额外执行。
+
+只对现有Draft PR #8追加最小review fix提交并push，不mark ready/merge/deploy。最终NEW_HEAD与精确HEAD CI在交付中记录。
 
 ## 14. NEXT ACTION
 

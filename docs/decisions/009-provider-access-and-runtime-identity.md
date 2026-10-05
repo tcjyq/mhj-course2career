@@ -12,7 +12,7 @@
 
 ModelTrace/ModelAttempt不可变且只存模型ID、安全错误码与fallback原因；每次call reset。真实返回不得以请求/usage标签替代。统一last_result包含JobAnalysis、usage、trace、provider/endpoint与证据；原extract_job_skills返回值兼容。新认证默认v1，逐次原始身份证据完整匹配才VERIFIED；仅loader接受无版本旧记录为legacy，新增legacy VERIFIED拒绝。历史认证不删除、不重新声称raw证明。
 
-目录读取/解析只用最后已知缓存，联网限显式refresh。DeepSeek cold/过期目录保留配置模型，已有目录偏好/白名单与单404fallback不变。SDK自动retry统一0，预算1或既有fallback2；本轮不建通用重试/流式事件框架。
+目录读取/默认解析只用最后已知缓存；2026-10-05 review fix 恢复显式 AI auto_safe 冷/过期缓存最多一次 refresh，成功后使用原 approved/preference primary/fallback。warm/pinned 不刷新，失败保留原 stale 安全窗口或配置模型，单404 fallback不变。SDK自动retry统一0，预算1或既有fallback2；本轮不建通用重试/流式事件框架。
 
 ## 来源与取舍
 

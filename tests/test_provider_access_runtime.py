@@ -16,6 +16,8 @@ from course2career.llm_providers import (
     OpenAICompatibleChatProvider,
     ProviderError,
 )
+from course2career.model_catalog import DeepSeekModelCatalog
+from course2career.model_discovery import ModelCatalogService
 from course2career.native_providers import AnthropicMessagesProvider, GeminiProvider
 from course2career.permissions import PermissionDeniedError, Principal
 from course2career.product_repository import SQLiteProductRepository
@@ -439,3 +441,203 @@ def test_local_configuration_error_is_not_auth_or_request_success(accounts):
     assert not result.request_ok
     assert result.model_match == ModelMatch.UNKNOWN
     assert "synthetic-private-secret" not in str(result)
+
+
+@pytest.fixture
+def explicit_deepseek_ai(accounts, monkeypatch):
+    events = []
+    state = {"catalog_error": None, "now": 0.0}
+    wire = FauxWire()
+    original_generation = wire.chat.completions.create
+
+    def generation(**kwargs):
+        events.append("generation")
+        return original_generation(**kwargs)
+
+    wire.chat.completions.create = generation
+
+    def models():
+        events.append("catalog")
+        if state["catalog_error"] is not None:
+            raise state["catalog_error"]
+        return SimpleNamespace(
+            data=[
+                SimpleNamespace(id=model, owned_by="deepseek")
+                for model in (
+                    "deepseek-v4-pro",
+                    "deepseek-v4-flash",
+                    "deepseek-preview",
+                )
+            ]
+        )
+
+    catalog = DeepSeekModelCatalog(
+        cache_seconds=30,
+        stale_seconds=300,
+        client_factory=lambda *_: SimpleNamespace(models=SimpleNamespace(list=models)),
+        clock=lambda: state["now"],
+    )
+
+    def sdk(**kwargs):
+        assert kwargs["max_retries"] == 0
+        return wire
+
+    monkeypatch.setattr("openai.OpenAI", sdk)
+    factory = LLMProviderFactory(
+        Settings(
+            deepseek_api_key="synthetic-system-key",
+            deepseek_model_preference=("deepseek-v4-pro", "deepseek-v4-flash"),
+        ),
+        accounts[3],
+        model_catalog=catalog,
+    )
+    return factory, accounts[-1][0], wire, events, state
+
+
+@pytest.mark.parametrize("owner", ["system", "user"])
+@pytest.mark.parametrize("primary_404", [False, True])
+def test_explicit_cold_auto_safe_refreshes_once_before_generation(
+    explicit_deepseek_ai, owner, primary_404
+):
+    factory, principal, wire, events, _ = explicit_deepseek_ai
+    if primary_404:
+        wire.errors.append(faux_error(404))
+    client = factory.create(
+        principal,
+        provider=ProviderName.DEEPSEEK,
+        key_mode=owner,
+        model="deepseek-flash",
+    )
+    assert events == ["catalog"]
+    assert client.model_name == "deepseek-v4-pro"
+    assert client.fallback_models == ("deepseek-v4-flash",)
+    client.extract_job_skills("Python")
+    assert events == ["catalog", *(["generation"] * (2 if primary_404 else 1))]
+    assert wire.requests == (
+        ["deepseek-v4-pro", "deepseek-v4-flash"] if primary_404 else ["deepseek-v4-pro"]
+    )
+    assert client.last_trace.saved_model == "deepseek-flash"
+
+
+@pytest.mark.parametrize("owner", ["system", "user"])
+def test_explicit_warm_auto_safe_does_not_repeat_refresh(explicit_deepseek_ai, owner):
+    factory, principal, _, events, _ = explicit_deepseek_ai
+    for _ in range(4):
+        client = factory.create(
+            principal,
+            provider=ProviderName.DEEPSEEK,
+            key_mode=owner,
+            model="deepseek-flash",
+        )
+        client.extract_job_skills("Python")
+    assert events == ["catalog", *(["generation"] * 4)]
+
+
+def test_explicit_expired_auto_safe_refresh_is_bounded(explicit_deepseek_ai):
+    factory, principal, _, events, state = explicit_deepseek_ai
+    for now in (0, 31, 32):
+        state["now"] = now
+        client = factory.create(
+            principal,
+            provider=ProviderName.DEEPSEEK,
+            key_mode="system",
+            model="deepseek-flash",
+        )
+        client.extract_job_skills("Python")
+    assert events == ["catalog", "generation", "catalog", "generation", "generation"]
+
+
+@pytest.mark.parametrize("owner", ["system", "user"])
+def test_explicit_pinned_generation_has_no_catalog_http(explicit_deepseek_ai, owner):
+    factory, principal, wire, events, _ = explicit_deepseek_ai
+    factory.settings = replace(factory.settings, deepseek_model_mode="pinned")
+    client = factory.create(
+        principal,
+        provider=ProviderName.DEEPSEEK,
+        key_mode=owner,
+        model="deepseek-flash",
+    )
+    assert events == []
+    assert client.fallback_models == ()
+    client.extract_job_skills("Python")
+    assert events == ["generation"]
+    assert wire.requests == ["deepseek-flash"]
+
+
+@pytest.mark.parametrize("owner", ["system", "user"])
+@pytest.mark.parametrize("generation_fails", [False, True])
+def test_explicit_catalog_failure_uses_configured_model_without_generation_retry(
+    explicit_deepseek_ai, owner, generation_fails
+):
+    factory, principal, wire, events, state = explicit_deepseek_ai
+    state["catalog_error"] = TimeoutError("synthetic catalog unavailable")
+    if generation_fails:
+        wire.errors.append(TimeoutError("synthetic generation timeout"))
+    client = factory.create(
+        principal,
+        provider=ProviderName.DEEPSEEK,
+        key_mode=owner,
+        model="deepseek-flash",
+    )
+    assert client.model_name == "deepseek-flash"
+    assert client.fallback_models == ()
+    if generation_fails:
+        with pytest.raises(ProviderError):
+            client.extract_job_skills("Python")
+    else:
+        client.extract_job_skills("Python")
+    assert events == ["catalog", "generation"]
+    assert wire.requests == ["deepseek-flash"]
+
+
+def test_api_access_mode_reaches_factory_and_catalog_resolvers(accounts, monkeypatch):
+    keys, principal = accounts[3], accounts[-1][0]
+    factory = LLMProviderFactory(Settings(), keys)
+    catalog = ModelCatalogService(keys, getter=lambda *_: {"data": [{"id": "test"}]})
+    seen = []
+    for resolver in (factory.credential_resolver, catalog.credentials):
+        original = resolver.resolve
+
+        def resolve(principal, preset, owner, *, access_mode, _original=original):
+            seen.append(access_mode)
+            return _original(principal, preset, owner, access_mode=access_mode)
+
+        monkeypatch.setattr(resolver, "resolve", resolve)
+    monkeypatch.setattr("openai.OpenAI", lambda **_: FauxWire())
+    factory.create(
+        principal,
+        provider=ProviderName.OPENAI,
+        key_mode="user",
+        model="test",
+        access_mode=AccessMode.API,
+    )
+    catalog.discover_models(
+        principal,
+        ProviderName.OPENAI,
+        "global",
+        access_mode=AccessMode.API,
+    )
+    assert seen == [AccessMode.API, AccessMode.API]
+    assert (
+        catalog.peek(
+            principal,
+            ProviderName.OPENAI,
+            "global",
+            access_mode=AccessMode.API,
+        )
+        is not None
+    )
+
+
+@pytest.mark.parametrize("mode", [AccessMode.PLAN, AccessMode.OAUTH_SUBSCRIPTION])
+def test_reserved_catalog_access_rejected_before_credential_or_cache(
+    accounts, monkeypatch, mode
+):
+    service = ModelCatalogService(accounts[3], getter=lambda *_: pytest.fail("HTTP"))
+    monkeypatch.setattr(
+        service.credentials, "resolve", lambda *_a, **_k: pytest.fail("Secret")
+    )
+    monkeypatch.setattr(service, "_cache_key", lambda *_a, **_k: pytest.fail("cache"))
+    for action in (service.peek, service.discover_models):
+        with pytest.raises(ValueError, match="尚未开放"):
+            action(accounts[-1][0], ProviderName.OPENAI, "global", access_mode=mode)

@@ -1,5 +1,7 @@
 # Course2Career 产品需求
 
+PR #8 review fix 验收：normal render/peek/read 与 pinned 的目录 HTTP 为 0；显式 auto_safe AI 的冷/必要刷新最多一次，warm 不重复，失败保留安全 configured/stale fallback，generation retry 为 0。AccessMode 全程传递且非 API 拒绝；v0/v1 认证文案不能仅凭 VERIFIED 推断。
+
 ## Provider 接入与身份验收（2026-10-05 候选）
 
 Provider 品牌、API 协议、访问模式、凭证类型及 user/system 所有权分别表达。当前仅 API + API_KEY 开放；用户 Key 读取仍由 APIKeyService 即时检查账户与 BYOK 权限，失效时不能回退平台 Key。模型身份分别记录 SAVED、RESOLVED、每次 REQUESTED、原始 RETURNED 和 DISPLAYED；UNKNOWN / MISMATCH 不可获得新的精确 VERIFIED。完整固定集、usage、每次成功且真实返回目标模型是新认证的必要条件。历史认证保留并标明身份证据限制；一份用户 Key 的当次连接状态不提升实现认证。普通 render 不访问 Provider、不解密所有 Key、不重复授权展示读取。[实现和验收](provider-access-upgrade-20261005.md)。

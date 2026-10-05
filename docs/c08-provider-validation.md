@@ -1,5 +1,7 @@
 # C08-B2 真实 Provider 兼容性验证
 
+PR #8 review fix：Developer 只对 legacy_model_identity_evidence 的 VERIFIED 显示实际 verified_at 日期与旧身份证据限制；identity_evidence_version=1 的 VERIFIED 显示精确认证。不改写受控历史记录、不自动升级版本，当前 Key 状态仍独立。
+
 ## 2026-10-05 身份证据修正（候选）
 
 LEGACY_MODEL_IDENTITY_EVIDENCE_LIMITATION：旧 adapter 曾在返回 model 缺失/陌生时用请求模型填充 usage.model，因此 2026-09-26 两条历史 VERIFIED 的 returned_model 字段不能重新当作原始响应身份证明。保留旧记录和当时结果，不声称已获得新的 raw proof。页面标明历史实现认证及限制，当前用户 Key 最近连接状态独立。
