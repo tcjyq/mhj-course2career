@@ -1,5 +1,11 @@
 # Course2Career 开发日志
 
+## 2026-10-06 公开首页视觉重构（独立 Draft 候选）
+
+从 GitHub 最新 main `82047de0b50e051ca6f3ed4b4088cb17851c5211` 建立独立 `design/award-level-homepage` 工作树。研究 Awwwards / Webby / FWA 的 12 个参考案例与官方标准，形成三个方向后选择“折译轨道”。重构静态 Showcase 的叙事、原创材料路径、三个离线规则示例、边界与 CTA；同步 Streamlit 首页、原生导航入口、主题、文案与实际截图。未修改评分、auth、Provider、权限、quota 或仓储。
+
+三次主要设计实施、四轮完整浏览器审阅，另有最终截图与 CSP 验证。全量 431 passed / 14 skipped，Ruff 与 diff 检查见最终验收；本机合成账号验证身份恢复与普通导航。没有真实模型请求、合并或生产部署。研究、逐轮评分、截图、性能和限制见[首页验收](homepage-design-review.md)。
+
 PR #8 review fix（已审查起点 a6ee491）：恢复显式 AI auto_safe 的一次必要目录刷新，保留默认纯读取、warm/pinned 零刷新与原 fallback policy；AccessMode 到 resolver/cache 全程传递；卡片按真实证据版本区分旧限制与精确认证。未实现 Subscription/OAuth、未真实推理；验证结果见候选报告。
 
 ## 2026-10-05 Provider 访问语义与精确身份实施（独立候选）

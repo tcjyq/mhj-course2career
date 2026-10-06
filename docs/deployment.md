@@ -1,5 +1,9 @@
 # 部署说明
 
+## 2026-10-06 首页视觉候选边界
+
+本轮仅创建 Draft PR，不合并或部署。静态包新增同源 `site.js`、`demo.json` 与附 SIL OFL 的 Manrope 字体；原 Worker 安全头和域名路由保留。Streamlit 只更新首页、样式与 theme，使用现有依赖，无 Secrets / schema / 模型配置变更。部署前须审阅完整 Before / After 和[本地验收](homepage-design-review.md)。当前本地结果不能代表线上版本或真实用户性能。
+
 ## 2026-10-04 性能候选部署边界
 
 本轮尚未合并或部署，`RELEASE_READY=no`，`PRODUCTION_UNVERIFIED`。部署依赖仅新增 `psycopg_pool==3.3.3`，不要因此改 Secrets、schema 或其它依赖。pool 默认每缓存 backend 4 连接；Cloud 多进程 / 副本连接预算按池数计算。min 0、idle 60 秒，首次进入 / 空闲后访问仍可能建连；不能把本地 warm 零新连接当作永远零连接。

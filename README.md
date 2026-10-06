@@ -20,6 +20,8 @@ Course2Career 面向准备实习和校招的大学生，将课程、教育背景
 **Showcase：** [https://course2career.tcjyq.cc](https://course2career.tcjyq.cc)<br />
 **Live Demo：** [https://mhj-course2career.streamlit.app](https://mhj-course2career.streamlit.app)
 
+2026-10-06 首页视觉重构候选采用原创“折译轨道”：具体课程经过确认节点，形成可追溯的岗位技能路径。公开 Showcase 可切换三个仓库合成案例，查看离线规则产生的五维评分、独立门槛和材料来源；无 JavaScript 时仍能阅读默认示例。Streamlit 首页共享品牌色与证据路径，并提供原生“开始一次个人分析”入口。本候选未合并、未部署，公开 URL 不代表此分支效果。[设计研究](docs/homepage-design-research.md) · [截图、迭代与验收](docs/homepage-design-review.md)。
+
 招聘展示先访问稳定 Showcase；Streamlit Live Demo 支持游客以“本地规则”完成完整核心流程，无需注册或平台 AI Key。平台未配置模型凭证时，应用不会显示“系统AI”选项。
 
 C08-E1 已在生产上线：公开注册使用 Turnstile 与 installation 成功注册窗口，平台 System AI 叠加 installation、公开全局和绝对调用熔断。生产 schema v4、真实注册及一次逻辑 System DeepSeek smoke 均已通过；`RELEASE_READY=yes`。规则与证据见 [C08-E 设计](docs/c08-e-registration-abuse-design.md)及[生产发布记录](docs/c08-e1-production-release.md)。Admin、已认证 Developer Mode 与 BYOK 的生产手工回归仍为 `MANUAL_PENDING`，不是 PASS。
@@ -98,7 +100,7 @@ AI 只参与岗位技能提取。证据映射、迁移、硬门槛、五维评�
 2. [Streamlit Live Demo](https://mhj-course2career.streamlit.app)：可运行的游客本地规则体验。Community Cloud 长时间无访问后可能休眠，首次访问按平台提示唤醒即可；
 3. [GitHub 源码](https://github.com/tcjyq/mhj-course2career)：实现、测试和文档证据。
 
-Showcase 源码位于 [`showcase/`](showcase/)，只复用仓库的真实截图 `screenshots/home.png`。发布命令与域名绑定说明见 [`docs/deployment.md`](docs/deployment.md)。
+Showcase 源码位于 [`showcase/`](showcase/)，包含原创 SVG 证据路径、小型本地脚本、离线合成演示数据及真实截图 `screenshots/home.png`；不读取账户、凭证或 Provider。字体在本站托管并附 SIL OFL 许可证。发布命令与域名绑定说明见 [`docs/deployment.md`](docs/deployment.md)。
 
 ## 快速开始
 

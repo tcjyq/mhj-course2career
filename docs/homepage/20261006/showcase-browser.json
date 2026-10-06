@@ -1,0 +1,109 @@
+{
+  "widths": [
+    {
+      "width": 1440,
+      "overflow": {
+        "viewport": 1440,
+        "scroll": 1440,
+        "headings": []
+      },
+      "performance": {
+        "lcp": 256,
+        "cls": 0,
+        "longTasks": 1
+      }
+    },
+    {
+      "width": 1280,
+      "overflow": {
+        "viewport": 1280,
+        "scroll": 1280,
+        "headings": []
+      },
+      "performance": {
+        "lcp": 28,
+        "cls": 0,
+        "longTasks": 0
+      }
+    },
+    {
+      "width": 1024,
+      "overflow": {
+        "viewport": 1024,
+        "scroll": 1024,
+        "headings": []
+      },
+      "performance": {
+        "lcp": 32,
+        "cls": 0.00001757889986038208,
+        "longTasks": 0
+      }
+    },
+    {
+      "width": 768,
+      "overflow": {
+        "viewport": 768,
+        "scroll": 768,
+        "headings": []
+      },
+      "performance": {
+        "lcp": 60,
+        "cls": 0,
+        "longTasks": 0
+      }
+    },
+    {
+      "width": 430,
+      "overflow": {
+        "viewport": 430,
+        "scroll": 430,
+        "headings": []
+      },
+      "performance": {
+        "lcp": 32,
+        "cls": 0.0004915239894630338,
+        "longTasks": 0
+      }
+    },
+    {
+      "width": 390,
+      "overflow": {
+        "viewport": 390,
+        "scroll": 390,
+        "headings": []
+      },
+      "performance": {
+        "lcp": 36,
+        "cls": 0.0005419367063310371,
+        "longTasks": 0
+      }
+    },
+    {
+      "width": 360,
+      "overflow": {
+        "viewport": 360,
+        "scroll": 360,
+        "headings": []
+      },
+      "performance": {
+        "lcp": 36,
+        "cls": 0.0005870980985252902,
+        "longTasks": 0
+      }
+    }
+  ],
+  "checks": [
+    "TRACE_SELECTION",
+    "THREE_REAL_RULE_FIXTURES",
+    "EVIDENCE_EXPAND",
+    "MOBILE_MENU_ANCHOR_ESCAPE",
+    "KEYBOARD_SKIP_FOCUS",
+    "REDUCED_MOTION",
+    "NO_JS_DEFAULT_AND_CTA",
+    "DEMO_FETCH_FAILURE_FALLBACK",
+    "NO_EXTERNAL_REQUESTS_OR_PAGE_ERRORS"
+  ],
+  "errors": [],
+  "externalRequests": [],
+  "status": "PASS"
+}

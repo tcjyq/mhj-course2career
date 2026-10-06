@@ -1,5 +1,11 @@
 # AI 输出评测方案
 
+## 首页展示层验证（2026-10-06，未部署）
+
+本轮不评测或调用真实 AI。全量本地测试为 **431 passed、14 skipped**；skip 保留现有条件，不伪称通过。新增回归核对公开合成 JSON 与当前规则，以及无 JS 默认报告的分数、完整度、置信度和独立门槛。七个指定宽度通过溢出和标题检查；展示交互、无 JS、读取失败与 reduced-motion 均检查实际浏览器。PR #7 的 7 组浏览器安全与导航回归通过，18 次普通导航均一轮。
+
+视觉评分与技术结果分开，四轮浏览器截图中修复了移动字号、平板构图和截图等待策略；外部奖项标准作为参考，不表示获得奖项或评委认证。性能为本地浏览器冷加载与受限网络实验，不是生产 Core Web Vitals。[完整验收和原始数据](homepage-design-review.md)。
+
 PR #8 review fix 增加 System/BYOK 冷/暖/过期/pinned/刷新失败与真实 generation 顺序的 Faux 回归、AccessMode 到 resolver/cache 传递、Developer 零 HTTP/零解密和 v0/v1 文案回归；全量、独立 PostgreSQL integration/restore、浏览器及 PR #7 结构指标重新验证，结果见候选报告的 review fix 记录。
 
 ## Provider 架构候选验证（2026-10-05）

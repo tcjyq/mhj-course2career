@@ -1,0 +1,277 @@
+{
+  "scope": "Local cold browser lab; not production field Core Web Vitals",
+  "mobileConditions": {
+    "latencyMs": 150,
+    "downloadBytesPerSecond": 200000,
+    "cpuSlowdown": 4
+  },
+  "runs": [
+    {
+      "mode": "desktop",
+      "sample": 1,
+      "initial": {
+        "lcp": 228,
+        "cls": 0,
+        "resources": [
+          {
+            "path": "/site.css",
+            "bytes": 32658
+          },
+          {
+            "path": "/site.js",
+            "bytes": 5527
+          },
+          {
+            "path": "/fonts/manrope-latin.woff2",
+            "bytes": 24836
+          },
+          {
+            "path": "/demo.json",
+            "bytes": 32028
+          },
+          {
+            "path": "/favicon.svg",
+            "bytes": 252
+          }
+        ],
+        "documentBytes": 16561
+      },
+      "interactionEvents": [],
+      "consoleErrors": []
+    },
+    {
+      "mode": "desktop",
+      "sample": 2,
+      "initial": {
+        "lcp": 104,
+        "cls": 0,
+        "resources": [
+          {
+            "path": "/site.css",
+            "bytes": 32658
+          },
+          {
+            "path": "/site.js",
+            "bytes": 5527
+          },
+          {
+            "path": "/demo.json",
+            "bytes": 32028
+          },
+          {
+            "path": "/fonts/manrope-latin.woff2",
+            "bytes": 24836
+          },
+          {
+            "path": "/favicon.svg",
+            "bytes": 252
+          }
+        ],
+        "documentBytes": 16561
+      },
+      "interactionEvents": [],
+      "consoleErrors": []
+    },
+    {
+      "mode": "desktop",
+      "sample": 3,
+      "initial": {
+        "lcp": 100,
+        "cls": 0,
+        "resources": [
+          {
+            "path": "/site.css",
+            "bytes": 32658
+          },
+          {
+            "path": "/site.js",
+            "bytes": 5527
+          },
+          {
+            "path": "/demo.json",
+            "bytes": 32028
+          },
+          {
+            "path": "/fonts/manrope-latin.woff2",
+            "bytes": 24836
+          },
+          {
+            "path": "/favicon.svg",
+            "bytes": 252
+          }
+        ],
+        "documentBytes": 16561
+      },
+      "interactionEvents": [],
+      "consoleErrors": []
+    },
+    {
+      "mode": "mobile-throttled",
+      "sample": 1,
+      "initial": {
+        "lcp": 948,
+        "cls": 0.0005419367063310371,
+        "resources": [
+          {
+            "path": "/site.css",
+            "bytes": 32658
+          },
+          {
+            "path": "/site.js",
+            "bytes": 5527
+          },
+          {
+            "path": "/fonts/manrope-latin.woff2",
+            "bytes": 24836
+          },
+          {
+            "path": "/demo.json",
+            "bytes": 32028
+          },
+          {
+            "path": "/favicon.svg",
+            "bytes": 252
+          }
+        ],
+        "documentBytes": 16561
+      },
+      "interactionEvents": [
+        {
+          "name": "pointerdown",
+          "duration": 16
+        },
+        {
+          "name": "pointerup",
+          "duration": 16
+        },
+        {
+          "name": "click",
+          "duration": 16
+        }
+      ],
+      "consoleErrors": []
+    },
+    {
+      "mode": "mobile-throttled",
+      "sample": 2,
+      "initial": {
+        "lcp": 940,
+        "cls": 0.0005419367063310371,
+        "resources": [
+          {
+            "path": "/site.css",
+            "bytes": 32658
+          },
+          {
+            "path": "/site.js",
+            "bytes": 5527
+          },
+          {
+            "path": "/fonts/manrope-latin.woff2",
+            "bytes": 24836
+          },
+          {
+            "path": "/demo.json",
+            "bytes": 32028
+          },
+          {
+            "path": "/favicon.svg",
+            "bytes": 252
+          }
+        ],
+        "documentBytes": 16561
+      },
+      "interactionEvents": [
+        {
+          "name": "pointerdown",
+          "duration": 16
+        },
+        {
+          "name": "pointerup",
+          "duration": 16
+        },
+        {
+          "name": "click",
+          "duration": 16
+        }
+      ],
+      "consoleErrors": []
+    },
+    {
+      "mode": "mobile-throttled",
+      "sample": 3,
+      "initial": {
+        "lcp": 932,
+        "cls": 0.0005419367063310371,
+        "resources": [
+          {
+            "path": "/site.css",
+            "bytes": 32658
+          },
+          {
+            "path": "/site.js",
+            "bytes": 5527
+          },
+          {
+            "path": "/fonts/manrope-latin.woff2",
+            "bytes": 24836
+          },
+          {
+            "path": "/demo.json",
+            "bytes": 32028
+          },
+          {
+            "path": "/favicon.svg",
+            "bytes": 252
+          }
+        ],
+        "documentBytes": 16561
+      },
+      "interactionEvents": [
+        {
+          "name": "pointerdown",
+          "duration": 16
+        },
+        {
+          "name": "pointerup",
+          "duration": 16
+        },
+        {
+          "name": "click",
+          "duration": 16
+        }
+      ],
+      "consoleErrors": []
+    }
+  ],
+  "contrast": [
+    {
+      "name": "text",
+      "ratio": 11.5
+    },
+    {
+      "name": "secondary text",
+      "ratio": 5.67
+    },
+    {
+      "name": "accent",
+      "ratio": 4.98
+    },
+    {
+      "name": "trust secondary",
+      "ratio": 5.11
+    },
+    {
+      "name": "trust accent",
+      "ratio": 4.49
+    },
+    {
+      "name": "method body",
+      "ratio": 7.85
+    },
+    {
+      "name": "button",
+      "ratio": 11.67
+    }
+  ]
+}

@@ -14,4 +14,12 @@ npx wrangler dev --config showcase/wrangler.jsonc
 npx wrangler deploy --config showcase/wrangler.jsonc
 ```
 
-页面只复用了仓库已有的真实首页截图 `screenshots/home.png`，复制版本位于 `public/course2career-home.png`。
+页面包含原创 SVG 折译轨道和三个公开合成报告。数值由仓库输入与既有 Python 规则离线生成，不在浏览器执行评分，也不调用 Provider。更新数据：
+
+```powershell
+python scripts/build_showcase_demo.py
+```
+
+`public/site.js` 只请求同源 `/demo.json`，增强技能路径、报告切换与移动导航。无 JS 时默认数据分析报告及 CTA 仍可用；不存在用户数据存储、远程 JS 或新增 tracking。Manrope 拉丁字体在 `public/fonts/` 托管，并附 SIL OFL 许可证；中文使用系统字体。
+
+真实 Streamlit 首页截图 `screenshots/home.png` 的复制版本位于 `public/course2career-home.png`，测试保证字节一致。重构候选未部署；[设计研究](../docs/homepage-design-research.md) · [完整验收](../docs/homepage-design-review.md)。

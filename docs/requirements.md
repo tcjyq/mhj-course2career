@@ -1,5 +1,11 @@
 # Course2Career 产品需求
 
+## 公开首页展示验收（2026-10-06 视觉候选，未部署）
+
+Showcase 以“经历 → 确认 → 规则 → 结果 → 行动”组织内容，须在 1440 / 1280 / 1024 / 768 / 430 / 390 / 360px 可读、无横向溢出。可追溯的“折译轨道”使用具体合成课程，不展示伪造用户、客户或效果指标。三个方向的展示数值由现有本地规则生成；门槛独立于五维分数，提供合成标签与完整输入下载。无 JS / 演示读取失败时保留默认报告与真实体验链接。键盘导航、可见焦点、减少动效与移动导航可操作。
+
+Streamlit 首页提供原生个人分析入口，共享品牌色与字体原则；不改变 auth、session、Provider runtime、quota、评分或数据库。浏览器回归必须覆盖普通导航单轮运行、身份恢复、F5、登出、Analysis / Developer 与本地规则。结果与截图见[首页验收](homepage-design-review.md)。
+
 PR #8 review fix 验收：normal render/peek/read 与 pinned 的目录 HTTP 为 0；显式 auto_safe AI 的冷/必要刷新最多一次，warm 不重复，失败保留安全 configured/stale fallback，generation retry 为 0。AccessMode 全程传递且非 API 拒绝；v0/v1 认证文案不能仅凭 VERIFIED 推断。
 
 ## Provider 接入与身份验收（2026-10-05 候选）
