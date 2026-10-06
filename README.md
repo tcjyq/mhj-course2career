@@ -20,6 +20,8 @@ Course2Career 面向准备实习和校招的大学生，将课程、教育背景
 **Showcase：** [https://course2career.tcjyq.cc](https://course2career.tcjyq.cc)<br />
 **Live Demo：** [https://mhj-course2career.streamlit.app](https://mhj-course2career.streamlit.app)
 
+PR #9 的独立审查指出首版三个主要视觉问题，原 9.0 自评不再作为当前验收依据。本轮保留“折译轨道”，手机改为单条纵向材料路径；报告以折页总分、可展开五维、独立门槛和来源回路组织。可从课程进入对应技能解释，再返回课程，完整支持键盘与 reduced-motion。[本轮同版本 Before / After 与验收](docs/homepage-pr9-review-iteration.md)。
+
 2026-10-06 首页视觉重构候选采用原创“折译轨道”：具体课程经过确认节点，形成可追溯的岗位技能路径。公开 Showcase 可切换三个仓库合成案例，查看离线规则产生的五维评分、独立门槛和材料来源；无 JavaScript 时仍能阅读默认示例。Streamlit 首页共享品牌色与证据路径，并提供原生“开始一次个人分析”入口。本候选未合并、未部署，公开 URL 不代表此分支效果。[设计研究](docs/homepage-design-research.md) · [截图、迭代与验收](docs/homepage-design-review.md)。
 
 招聘展示先访问稳定 Showcase；Streamlit Live Demo 支持游客以“本地规则”完成完整核心流程，无需注册或平台 AI Key。平台未配置模型凭证时，应用不会显示“系统AI”选项。

@@ -1,0 +1,109 @@
+{
+  "widths": [
+    {
+      "width": 1440,
+      "overflow": {
+        "viewport": 1440,
+        "scroll": 1440,
+        "headings": []
+      },
+      "performance": {
+        "lcp": 156,
+        "cls": 0.000014365189163773147,
+        "longTasks": 1
+      }
+    },
+    {
+      "width": 1280,
+      "overflow": {
+        "viewport": 1280,
+        "scroll": 1280,
+        "headings": []
+      },
+      "performance": {
+        "lcp": 36,
+        "cls": 0.00001818094253540039,
+        "longTasks": 0
+      }
+    },
+    {
+      "width": 1024,
+      "overflow": {
+        "viewport": 1024,
+        "scroll": 1024,
+        "headings": []
+      },
+      "performance": {
+        "lcp": 32,
+        "cls": 0.00002733573317527771,
+        "longTasks": 0
+      }
+    },
+    {
+      "width": 768,
+      "overflow": {
+        "viewport": 768,
+        "scroll": 768,
+        "headings": []
+      },
+      "performance": {
+        "lcp": 32,
+        "cls": 0,
+        "longTasks": 0
+      }
+    },
+    {
+      "width": 430,
+      "overflow": {
+        "viewport": 430,
+        "scroll": 430,
+        "headings": []
+      },
+      "performance": {
+        "lcp": 32,
+        "cls": 0.000651606532166947,
+        "longTasks": 0
+      }
+    },
+    {
+      "width": 390,
+      "overflow": {
+        "viewport": 390,
+        "scroll": 390,
+        "headings": []
+      },
+      "performance": {
+        "lcp": 32,
+        "cls": 0.000718437971363557,
+        "longTasks": 0
+      }
+    },
+    {
+      "width": 360,
+      "overflow": {
+        "viewport": 360,
+        "scroll": 360,
+        "headings": []
+      },
+      "performance": {
+        "lcp": 32,
+        "cls": 0.0007783078023105201,
+        "longTasks": 0
+      }
+    }
+  ],
+  "checks": [
+    "TRACE_SELECTION",
+    "THREE_REAL_RULE_FIXTURES",
+    "EVIDENCE_EXPAND",
+    "MOBILE_MENU_ANCHOR_ESCAPE",
+    "KEYBOARD_SKIP_FOCUS",
+    "REDUCED_MOTION",
+    "NO_JS_DEFAULT_AND_CTA",
+    "DEMO_FETCH_FAILURE_FALLBACK",
+    "NO_EXTERNAL_REQUESTS_OR_PAGE_ERRORS"
+  ],
+  "errors": [],
+  "externalRequests": [],
+  "status": "PASS"
+}

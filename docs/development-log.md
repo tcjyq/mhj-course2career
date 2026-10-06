@@ -1,5 +1,11 @@
 # Course2Career 开发日志
 
+## 2026-10-06 Draft PR #9 独立审查后迭代
+
+在 reviewed head `9870c559214914ccd25bf690a8176327c2898403` 上继续，不重开方向。接受三个主要视觉问题与首版评分过宽的结论；手机改为单路径三阶段，报告引入总分折页、可展开维度、独立门槛、来源回路与后续行动。折转、确认、返回的不同变体连接方法、报告、可信边界、CTA 和 footer。补足真实双向追溯、案例反馈、键盘焦点与动态 reduced-motion；移除重复解释文本与未使用的 stroke-width transition。
+
+本轮四次主要实施，最后两轮完整审查覆盖默认及展开 / 切换状态。全量 431 passed / 14 skipped，原导航安全 7 组及应用 3 组浏览器回归通过；真实 AI 调用 0。只推送既有 Draft PR，不 merge / deploy。[完整 Before / After 与限制](homepage-pr9-review-iteration.md)。
+
 ## 2026-10-06 公开首页视觉重构（独立 Draft 候选）
 
 从 GitHub 最新 main `82047de0b50e051ca6f3ed4b4088cb17851c5211` 建立独立 `design/award-level-homepage` 工作树。研究 Awwwards / Webby / FWA 的 12 个参考案例与官方标准，形成三个方向后选择“折译轨道”。重构静态 Showcase 的叙事、原创材料路径、三个离线规则示例、边界与 CTA；同步 Streamlit 首页、原生导航入口、主题、文案与实际截图。未修改评分、auth、Provider、权限、quota 或仓储。

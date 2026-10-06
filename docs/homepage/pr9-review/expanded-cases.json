@@ -1,0 +1,216 @@
+{
+  "status": "PASS",
+  "scope": "Seven widths, three cases, expanded context",
+  "results": [
+    {
+      "width": 1440,
+      "id": "ai-solutions",
+      "geometry": {
+        "width": 1440,
+        "scroll": 1440,
+        "scoreHeight": 409.5625,
+        "headings": []
+      }
+    },
+    {
+      "width": 1440,
+      "id": "digital-support",
+      "geometry": {
+        "width": 1440,
+        "scroll": 1440,
+        "scoreHeight": 409.5625,
+        "headings": []
+      }
+    },
+    {
+      "width": 1440,
+      "id": "data-analysis",
+      "geometry": {
+        "width": 1440,
+        "scroll": 1440,
+        "scoreHeight": 409.5625,
+        "headings": []
+      }
+    },
+    {
+      "width": 1280,
+      "id": "ai-solutions",
+      "geometry": {
+        "width": 1280,
+        "scroll": 1280,
+        "scoreHeight": 404.75,
+        "headings": []
+      }
+    },
+    {
+      "width": 1280,
+      "id": "digital-support",
+      "geometry": {
+        "width": 1280,
+        "scroll": 1280,
+        "scoreHeight": 404.75,
+        "headings": []
+      }
+    },
+    {
+      "width": 1280,
+      "id": "data-analysis",
+      "geometry": {
+        "width": 1280,
+        "scroll": 1280,
+        "scoreHeight": 404.75,
+        "headings": []
+      }
+    },
+    {
+      "width": 1024,
+      "id": "ai-solutions",
+      "geometry": {
+        "width": 1024,
+        "scroll": 1024,
+        "scoreHeight": 382.0625,
+        "headings": []
+      }
+    },
+    {
+      "width": 1024,
+      "id": "digital-support",
+      "geometry": {
+        "width": 1024,
+        "scroll": 1024,
+        "scoreHeight": 382.0625,
+        "headings": []
+      }
+    },
+    {
+      "width": 1024,
+      "id": "data-analysis",
+      "geometry": {
+        "width": 1024,
+        "scroll": 1024,
+        "scoreHeight": 382.0625,
+        "headings": []
+      }
+    },
+    {
+      "width": 768,
+      "id": "ai-solutions",
+      "geometry": {
+        "width": 768,
+        "scroll": 768,
+        "scoreHeight": 380.75,
+        "headings": []
+      }
+    },
+    {
+      "width": 768,
+      "id": "digital-support",
+      "geometry": {
+        "width": 768,
+        "scroll": 768,
+        "scoreHeight": 380.75,
+        "headings": []
+      }
+    },
+    {
+      "width": 768,
+      "id": "data-analysis",
+      "geometry": {
+        "width": 768,
+        "scroll": 768,
+        "scoreHeight": 380.75,
+        "headings": []
+      }
+    },
+    {
+      "width": 430,
+      "id": "ai-solutions",
+      "geometry": {
+        "width": 430,
+        "scroll": 430,
+        "scoreHeight": 330.15625,
+        "headings": []
+      }
+    },
+    {
+      "width": 430,
+      "id": "digital-support",
+      "geometry": {
+        "width": 430,
+        "scroll": 430,
+        "scoreHeight": 330.15625,
+        "headings": []
+      }
+    },
+    {
+      "width": 430,
+      "id": "data-analysis",
+      "geometry": {
+        "width": 430,
+        "scroll": 430,
+        "scoreHeight": 330.15625,
+        "headings": []
+      }
+    },
+    {
+      "width": 390,
+      "id": "ai-solutions",
+      "geometry": {
+        "width": 390,
+        "scroll": 390,
+        "scoreHeight": 356.75,
+        "headings": []
+      }
+    },
+    {
+      "width": 390,
+      "id": "digital-support",
+      "geometry": {
+        "width": 390,
+        "scroll": 390,
+        "scoreHeight": 356.75,
+        "headings": []
+      }
+    },
+    {
+      "width": 390,
+      "id": "data-analysis",
+      "geometry": {
+        "width": 390,
+        "scroll": 390,
+        "scoreHeight": 356.75,
+        "headings": []
+      }
+    },
+    {
+      "width": 360,
+      "id": "ai-solutions",
+      "geometry": {
+        "width": 360,
+        "scroll": 360,
+        "scoreHeight": 356.75,
+        "headings": []
+      }
+    },
+    {
+      "width": 360,
+      "id": "digital-support",
+      "geometry": {
+        "width": 360,
+        "scroll": 360,
+        "scoreHeight": 356.75,
+        "headings": []
+      }
+    },
+    {
+      "width": 360,
+      "id": "data-analysis",
+      "geometry": {
+        "width": 360,
+        "scroll": 360,
+        "scoreHeight": 356.75,
+        "headings": []
+      }
+    }
+  ]
+}

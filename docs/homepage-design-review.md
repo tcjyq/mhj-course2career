@@ -1,4 +1,6 @@
-# 首页重构：视觉与功能验收
+# 首页重构：首版视觉与功能验收
+
+> 历史首版记录，对应 reviewed head `9870c559214914ccd25bf690a8176327c2898403`。后续独立审查发现三个主要视觉问题，并指出 9.0 自评过宽；这里的评分和停止判断不代表当前结论。[PR #9 本轮迭代与同版本对比](homepage-pr9-review-iteration.md)。
 
 日期：2026-10-06（UTC+8）。分支 `design/award-level-homepage`，起点 `82047de0b50e051ca6f3ed4b4088cb17851c5211`。这是未部署的视觉 / 展示候选。参考研究与三个编码前方向见[研究板](homepage-design-research.md)。
 
@@ -82,7 +84,7 @@ Before 是本轮实际打开 `https://course2career.tcjyq.cc/` 的生产截图�
 
 演示数据读取现有 `data/demo_cases/cases.json`，由同一规则生成：数字化实施 41.2、AI应用 39.8、数据分析 50.3。默认数据分析技术维度 86.8，但毕业年份存在硬门槛；两者分别呈现。当前数据分析无技能缺口，所以不伪造学习任务；其他两个案例从现有实际缺口展示交付物。
 
-## 最终自评（0–10）
+## 首版自评（已被后续独立审查推翻，非当前评分）
 
 作者对实际截图与交互的评分，不是独立设计师、真实用户或奖项评委评分。
 
@@ -111,4 +113,4 @@ Awwwards-style 为本轮按官方权重组织的自评：DESIGN 9.0 / USABILITY 
 - 视觉评审和 detector 顺序执行，没有独立 sub-agent 或外部评委；结论仍需人工设计审阅。原始研究、各轮截图、临时 launcher 与完整日志留在本机 gitignored `output/playwright/`。仅提交公开合成证据与筛选截图。
 - 只改展示文件、共享 theme / CSS、首页函数、原生入口的一行绑定、展示数据生成 / 回归及配套文档。没有评分 / auth / runtime / quota / 数据库修改。
 
-在本地已测试范围内：`DESKTOP_QA=PASS`、`TABLET_QA=PASS`、`MOBILE_QA=PASS`、`FUNCTIONAL_REGRESSION=PASS`；`BLOCKER_COUNT=0`、`MAJOR_VISUAL_ISSUES=0`。连续最后两轮无值得结构性修改的明显问题，`NO_OBVIOUS_IMPROVEMENT_REMAINING=yes` 表示本轮作者在已测试范围内未发现明确无代价的结构性改善；不表示设计已达到不可改进的客观极限。`READY_FOR_DESIGN_REVIEW=yes`，以 Draft PR 等待人工 review，不 merge / deploy。
+以下为首版作者当时的停止判断，后续审查已推翻；当前结论以本轮报告为准。在首版本地已测试范围内：`DESKTOP_QA=PASS`、`TABLET_QA=PASS`、`MOBILE_QA=PASS`、`FUNCTIONAL_REGRESSION=PASS`；`BLOCKER_COUNT=0`、`MAJOR_VISUAL_ISSUES=0`。连续最后两轮无值得结构性修改的明显问题，`NO_OBVIOUS_IMPROVEMENT_REMAINING=yes` 表示本轮作者在已测试范围内未发现明确无代价的结构性改善；不表示设计已达到不可改进的客观极限。`READY_FOR_DESIGN_REVIEW=yes`，以 Draft PR 等待人工 review，不 merge / deploy。
