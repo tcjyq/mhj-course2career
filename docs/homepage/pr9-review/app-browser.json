@@ -1,0 +1,10 @@
+{
+  "checks": [
+    "NATIVE_HOME_CTA",
+    "THREE_LOCAL_RULE_CASES_AND_INPUT_ISOLATION",
+    "DESKTOP_MOBILE_AUTH_ANALYSIS_DEVELOPER_LOGOUT_F5"
+  ],
+  "errors": [],
+  "externalRequests": [],
+  "status": "PASS"
+}

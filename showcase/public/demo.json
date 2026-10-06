@@ -1,0 +1,788 @@
+{
+  "scoring_version": "2.1",
+  "synthetic": true,
+  "weights": {
+    "technical": 0.25,
+    "education": 0.2,
+    "project": 0.2,
+    "internship": 0.25,
+    "potential": 0.1
+  },
+  "cases": [
+    {
+      "id": "digital-support",
+      "title": "数字化实施／信息化支持",
+      "task": "核对业务数据，梳理异常处理流程，判断哪些材料需要补充。",
+      "jd": "【合成演示】数字化实施支持\n核心要求：需求分析、ERP、Excel。协助业务流程分析与信息系统上线支持。要求2027届，连续实习至少3个月。",
+      "courses": [
+        "通用编程"
+      ],
+      "score": 41.2,
+      "dimensions": {
+        "technical": 15.0,
+        "education": 50.0,
+        "project": 50.0,
+        "internship": 50.0,
+        "potential": 50.0
+      },
+      "eligibility": "部分满足或待确认",
+      "checks": [
+        {
+          "label": "毕业年份",
+          "status": "部分满足或待确认",
+          "reason": "岗位要求毕业年份为[2027]，当前未填写"
+        },
+        {
+          "label": "连续实习时长",
+          "status": "部分满足或待确认",
+          "reason": "岗位至少要求3个月，当前未填写"
+        }
+      ],
+      "completeness": 25.0,
+      "confidence": "信息不足",
+      "matches": [
+        {
+          "skill": "Excel",
+          "support": 15.0,
+          "status": "当前缺口",
+          "sources": [
+            "材料未体现：未找到课程、项目、实习或迁移依据"
+          ]
+        },
+        {
+          "skill": "需求分析",
+          "support": 15.0,
+          "status": "当前缺口",
+          "sources": [
+            "材料未体现：未找到课程、项目、实习或迁移依据"
+          ]
+        },
+        {
+          "skill": "ERP",
+          "support": 15.0,
+          "status": "当前缺口",
+          "sources": [
+            "材料未体现：未找到课程、项目、实习或迁移依据"
+          ]
+        },
+        {
+          "skill": "业务流程分析",
+          "support": 15.0,
+          "status": "当前缺口",
+          "sources": [
+            "材料未体现：未找到课程、项目、实习或迁移依据"
+          ]
+        },
+        {
+          "skill": "信息系统",
+          "support": 15.0,
+          "status": "当前缺口",
+          "sources": [
+            "材料未体现：未找到课程、项目、实习或迁移依据"
+          ]
+        }
+      ],
+      "contributions": [
+        {
+          "label": "缺少Excel直接证据",
+          "dimension": "technical",
+          "source_type": "skill_gap",
+          "points": -1.989,
+          "reason": "当前没有直接课程、项目或实习证据，按大学生可学习基础保留15分",
+          "evidence": [],
+          "confidence": 0.65,
+          "actionable": true,
+          "improvement": "通过课程作业或项目补充Excel的可验证证据"
+        },
+        {
+          "label": "缺少需求分析直接证据",
+          "dimension": "technical",
+          "source_type": "skill_gap",
+          "points": -1.989,
+          "reason": "当前没有直接课程、项目或实习证据，按大学生可学习基础保留15分",
+          "evidence": [],
+          "confidence": 0.65,
+          "actionable": true,
+          "improvement": "通过课程作业或项目补充需求分析的可验证证据"
+        },
+        {
+          "label": "缺少ERP直接证据",
+          "dimension": "technical",
+          "source_type": "skill_gap",
+          "points": -1.989,
+          "reason": "当前没有直接课程、项目或实习证据，按大学生可学习基础保留15分",
+          "evidence": [],
+          "confidence": 0.65,
+          "actionable": true,
+          "improvement": "通过课程作业或项目补充ERP的可验证证据"
+        },
+        {
+          "label": "缺少业务流程分析直接证据",
+          "dimension": "technical",
+          "source_type": "skill_gap",
+          "points": -1.392,
+          "reason": "当前没有直接课程、项目或实习证据，按大学生可学习基础保留15分",
+          "evidence": [],
+          "confidence": 0.65,
+          "actionable": true,
+          "improvement": "通过课程作业或项目补充业务流程分析的可验证证据"
+        },
+        {
+          "label": "缺少信息系统直接证据",
+          "dimension": "technical",
+          "source_type": "skill_gap",
+          "points": -1.392,
+          "reason": "当前没有直接课程、项目或实习证据，按大学生可学习基础保留15分",
+          "evidence": [],
+          "confidence": 0.65,
+          "actionable": true,
+          "improvement": "通过课程作业或项目补充信息系统的可验证证据"
+        }
+      ],
+      "learning": [
+        {
+          "priority": 1,
+          "name": "ERP能力建设",
+          "related_gaps": [
+            "ERP"
+          ],
+          "objective": "补充ERP能力证据（核心要求，当前支撑分15.0；先重要程度、再低分）",
+          "evidence_goal": "字段字典、流程图、缺失和重复记录清单、处理状态表",
+          "task": "为合成业务场景整理字段字典与异常处理流程",
+          "completion_criteria": "字段有类型与必填规则；覆盖缺失、重复与状态流转；每项异常可追溯处理结果"
+        },
+        {
+          "priority": 2,
+          "name": "Excel能力建设",
+          "related_gaps": [
+            "Excel"
+          ],
+          "objective": "补充Excel能力证据（核心要求，当前支撑分15.0；先重要程度、再低分）",
+          "evidence_goal": "数据字典、处理文件或脚本、结果表或图表、口径说明",
+          "task": "用Excel整理合成业务数据并解释一个可核对的问题",
+          "completion_criteria": "保留原始输入；处理缺失与重复；结果可复现并与手算小样本核对"
+        },
+        {
+          "priority": 3,
+          "name": "需求分析能力建设",
+          "related_gaps": [
+            "需求分析"
+          ],
+          "objective": "补充需求分析能力证据（核心要求，当前支撑分15.0；先重要程度、再低分）",
+          "evidence_goal": "字段字典、流程图、缺失和重复记录清单、处理状态表",
+          "task": "为合成业务场景整理字段字典与异常处理流程",
+          "completion_criteria": "字段有类型与必填规则；覆盖缺失、重复与状态流转；每项异常可追溯处理结果"
+        },
+        {
+          "priority": 4,
+          "name": "业务流程分析能力建设",
+          "related_gaps": [
+            "业务流程分析"
+          ],
+          "objective": "补充业务流程分析能力证据（优先要求，当前支撑分15.0；先重要程度、再低分）",
+          "evidence_goal": "字段字典、流程图、缺失和重复记录清单、处理状态表",
+          "task": "为合成业务场景整理字段字典与异常处理流程",
+          "completion_criteria": "字段有类型与必填规则；覆盖缺失、重复与状态流转；每项异常可追溯处理结果"
+        },
+        {
+          "priority": 5,
+          "name": "信息系统能力建设",
+          "related_gaps": [
+            "信息系统"
+          ],
+          "objective": "补充信息系统能力证据（优先要求，当前支撑分15.0；先重要程度、再低分）",
+          "evidence_goal": "字段字典、流程图、缺失和重复记录清单、处理状态表",
+          "task": "为合成业务场景整理字段字典与异常处理流程",
+          "completion_criteria": "字段有类型与必填规则；覆盖缺失、重复与状态流转；每项异常可追溯处理结果"
+        }
+      ],
+      "boundary": "合成演示，不代表真实岗位或候选人；不预测录用概率；自述不等于独立验证。",
+      "input": {
+        "id": "digital-support",
+        "title": "数字化实施／信息化支持",
+        "task": "核对业务数据，梳理异常处理流程，判断哪些材料需要补充。",
+        "jd": "【合成演示】数字化实施支持\n核心要求：需求分析、ERP、Excel。协助业务流程分析与信息系统上线支持。要求2027届，连续实习至少3个月。",
+        "courses": [
+          {
+            "name": "通用编程",
+            "credit": 3,
+            "grade": 88,
+            "category": "合成专业课程",
+            "self_assessment": 4
+          }
+        ],
+        "profile": {},
+        "requirements": {
+          "required_graduation_years": [
+            2027
+          ],
+          "minimum_months": 3
+        },
+        "expected": "课程名称不能证明具体工具；资料未知；毕业年份与到岗时长待确认；需求分析和ERP等缺口生成字段字典与异常清单任务。",
+        "boundary": "合成演示，不代表真实岗位或候选人；不预测录用概率；自述不等于独立验证。"
+      }
+    },
+    {
+      "id": "ai-solutions",
+      "title": "AI应用／解决方案",
+      "task": "将业务输入转为结构化结果，设计人工确认和失败处理流程。",
+      "jd": "【合成演示】AI应用解决方案助理\n核心要求：大模型API、结构化输出、需求分析。使用Python完成轻量原型，了解FastAPI；需要说明失败案例及人工确认流程。",
+      "courses": [
+        "Python程序设计",
+        "管理信息系统"
+      ],
+      "score": 39.8,
+      "dimensions": {
+        "technical": 44.9,
+        "education": 72.8,
+        "project": 20.0,
+        "internship": 20.0,
+        "potential": 50.0
+      },
+      "eligibility": "未设置／待确认",
+      "checks": [],
+      "completeness": 90.0,
+      "confidence": "较高",
+      "matches": [
+        {
+          "skill": "需求分析",
+          "support": 88.2,
+          "status": "较强支撑",
+          "sources": [
+            "课程：管理信息系统（间接依据：课程规则推断；课程名称命中“管理信息系统”规则。）",
+            "课程迁移：信息系统 → 需求分析（间接／迁移依据；信息系统分析训练可提供需求分析相关基础；来源：课程：管理信息系统）"
+          ]
+        },
+        {
+          "skill": "大模型API",
+          "support": 15.0,
+          "status": "当前缺口",
+          "sources": [
+            "材料未体现：未找到课程、项目、实习或迁移依据"
+          ]
+        },
+        {
+          "skill": "结构化输出",
+          "support": 15.0,
+          "status": "当前缺口",
+          "sources": [
+            "材料未体现：未找到课程、项目、实习或迁移依据"
+          ]
+        },
+        {
+          "skill": "Python",
+          "support": 83.9,
+          "status": "较强支撑",
+          "sources": [
+            "课程：Python程序设计（直接材料：名称明确提及；课程名称命中“Python”规则。）"
+          ]
+        },
+        {
+          "skill": "FastAPI",
+          "support": 29.4,
+          "status": "当前缺口",
+          "sources": [
+            "课程迁移：Python → FastAPI（间接／迁移依据；Python基础可降低FastAPI学习距离；来源：课程：Python程序设计）"
+          ]
+        }
+      ],
+      "contributions": [
+        {
+          "label": "课程：管理信息系统（间接依据：课程规则推断；课程名称命中“管理信息系统”规则。）支持需求分析",
+          "dimension": "technical",
+          "source_type": "skill",
+          "points": 2.17,
+          "reason": "当前材料规则支撑分为88.2，不代表独立核验",
+          "evidence": [
+            "课程：管理信息系统（间接依据：课程规则推断；课程名称命中“管理信息系统”规则。）",
+            "课程迁移：信息系统 → 需求分析（间接／迁移依据；信息系统分析训练可提供需求分析相关基础；来源：课程：管理信息系统）"
+          ],
+          "confidence": 0.9,
+          "actionable": false,
+          "improvement": null
+        },
+        {
+          "label": "缺少大模型API直接证据",
+          "dimension": "technical",
+          "source_type": "skill_gap",
+          "points": -1.989,
+          "reason": "当前没有直接课程、项目或实习证据，按大学生可学习基础保留15分",
+          "evidence": [],
+          "confidence": 0.65,
+          "actionable": true,
+          "improvement": "通过课程作业或项目补充大模型API的可验证证据"
+        },
+        {
+          "label": "缺少结构化输出直接证据",
+          "dimension": "technical",
+          "source_type": "skill_gap",
+          "points": -1.989,
+          "reason": "当前没有直接课程、项目或实习证据，按大学生可学习基础保留15分",
+          "evidence": [],
+          "confidence": 0.65,
+          "actionable": true,
+          "improvement": "通过课程作业或项目补充结构化输出的可验证证据"
+        },
+        {
+          "label": "课程：Python程序设计（直接材料：名称明确提及；课程名称命中“Python”规则。）支持Python",
+          "dimension": "technical",
+          "source_type": "skill",
+          "points": 1.348,
+          "reason": "当前材料规则支撑分为83.9，不代表独立核验",
+          "evidence": [
+            "课程：Python程序设计（直接材料：名称明确提及；课程名称命中“Python”规则。）"
+          ],
+          "confidence": 0.9,
+          "actionable": false,
+          "improvement": null
+        },
+        {
+          "label": "课程迁移：Python → FastAPI（间接／迁移依据；Python基础可降低FastAPI学习距离；来源：课程：Python程序设计）支持FastAPI",
+          "dimension": "technical",
+          "source_type": "skill_gap",
+          "points": -0.819,
+          "reason": "当前材料规则支撑分为29.4，不代表独立核验",
+          "evidence": [
+            "课程迁移：Python → FastAPI（间接／迁移依据；Python基础可降低FastAPI学习距离；来源：课程：Python程序设计）"
+          ],
+          "confidence": 0.9,
+          "actionable": true,
+          "improvement": "通过课程作业或项目补充FastAPI的可验证证据"
+        },
+        {
+          "label": "学历与岗位要求",
+          "dimension": "education",
+          "source_type": "education",
+          "points": 1.2,
+          "reason": "学历与岗位要求评估为70.0分",
+          "evidence": [
+            "本科",
+            "普通公办本科",
+            "信息管理与信息系统"
+          ],
+          "confidence": 0.8,
+          "actionable": false,
+          "improvement": null
+        },
+        {
+          "label": "院校市场信号",
+          "dimension": "education",
+          "source_type": "education",
+          "points": 0.9,
+          "reason": "院校市场信号评估为65.0分",
+          "evidence": [
+            "本科",
+            "普通公办本科",
+            "信息管理与信息系统"
+          ],
+          "confidence": 0.8,
+          "actionable": false,
+          "improvement": null
+        },
+        {
+          "label": "专业相关性",
+          "dimension": "education",
+          "source_type": "education",
+          "points": 1.4,
+          "reason": "专业相关性评估为78.0分",
+          "evidence": [
+            "本科",
+            "普通公办本科",
+            "信息管理与信息系统"
+          ],
+          "confidence": 0.8,
+          "actionable": false,
+          "improvement": null
+        },
+        {
+          "label": "核心课程表现",
+          "dimension": "education",
+          "source_type": "education",
+          "points": 1.05,
+          "reason": "核心课程表现评估为85.0分",
+          "evidence": [
+            "本科",
+            "普通公办本科",
+            "信息管理与信息系统"
+          ],
+          "confidence": 0.8,
+          "actionable": false,
+          "improvement": null
+        },
+        {
+          "label": "缺少项目实践证据",
+          "dimension": "project",
+          "source_type": "project_gap",
+          "points": -6.0,
+          "reason": "项目相关性、完整度、技术深度、个人贡献和可验证性综合为20.0分",
+          "evidence": [],
+          "confidence": 0.95,
+          "actionable": true,
+          "improvement": "完成一个可运行、可测试、可演示的岗位相关项目"
+        },
+        {
+          "label": "缺少实习实践证据",
+          "dimension": "internship",
+          "source_type": "internship_gap",
+          "points": -7.5,
+          "reason": "岗位相关性、工作深度、成果、企业信号和时长综合为20.0分",
+          "evidence": [],
+          "confidence": 0.95,
+          "actionable": true,
+          "improvement": "争取一段与目标岗位相邻且有真实成果的实习"
+        }
+      ],
+      "learning": [
+        {
+          "priority": 1,
+          "name": "大模型API能力建设",
+          "related_gaps": [
+            "大模型API"
+          ],
+          "objective": "补充大模型API能力证据（核心要求，当前支撑分15.0；先重要程度、再低分）",
+          "evidence_goal": "输入输出样例、字段契约、失败案例、人工修正记录与边界说明",
+          "task": "用固定响应设计结构化提取与人工确认流程，无需调用真实模型",
+          "completion_criteria": "覆盖正常、空响应、虚构引用、格式错误；未确认项有提示与修正路径"
+        },
+        {
+          "priority": 2,
+          "name": "结构化输出能力建设",
+          "related_gaps": [
+            "结构化输出"
+          ],
+          "objective": "补充结构化输出能力证据（核心要求，当前支撑分15.0；先重要程度、再低分）",
+          "evidence_goal": "输入输出样例、字段契约、失败案例、人工修正记录与边界说明",
+          "task": "用固定响应设计结构化提取与人工确认流程，无需调用真实模型",
+          "completion_criteria": "覆盖正常、空响应、虚构引用、格式错误；未确认项有提示与修正路径"
+        },
+        {
+          "priority": 3,
+          "name": "FastAPI能力建设",
+          "related_gaps": [
+            "FastAPI"
+          ],
+          "objective": "补充FastAPI能力证据（优先要求，当前支撑分29.4；先重要程度、再低分）",
+          "evidence_goal": "FastAPI练习输入、操作步骤、输出、失败案例与限制说明",
+          "task": "围绕岗位中的FastAPI要求选择一个最小练习，记录前提与失败情况",
+          "completion_criteria": "列出预期输出并逐项核对；另一人可按步骤复现；不确定之处明确标注待确认"
+        }
+      ],
+      "boundary": "合成演示，不代表真实岗位或候选人；不预测录用概率；自述不等于独立验证。",
+      "input": {
+        "id": "ai-solutions",
+        "title": "AI应用／解决方案",
+        "task": "将业务输入转为结构化结果，设计人工确认和失败处理流程。",
+        "jd": "【合成演示】AI应用解决方案助理\n核心要求：大模型API、结构化输出、需求分析。使用Python完成轻量原型，了解FastAPI；需要说明失败案例及人工确认流程。",
+        "courses": [
+          {
+            "name": "Python程序设计",
+            "credit": 3,
+            "grade": 88,
+            "category": "合成专业课程",
+            "self_assessment": 4
+          },
+          {
+            "name": "管理信息系统",
+            "credit": 3,
+            "grade": 88,
+            "category": "合成专业课程",
+            "self_assessment": 4
+          }
+        ],
+        "profile": {
+          "education": {
+            "degree": "本科",
+            "institution_tier": "普通公办本科",
+            "major": "信息管理与信息系统",
+            "core_course_average": 85
+          },
+          "projects": [],
+          "internships": [],
+          "graduation_year": 2027
+        },
+        "requirements": {},
+        "expected": "Python与信息系统提供基础，FastAPI只有迁移；大模型API与结构化输出材料未体现，应补固定响应、失败案例和人工确认任务；门槛未设置，明确没有经历与未知不同。",
+        "boundary": "合成演示，不代表真实岗位或候选人；不预测录用概率；自述不等于独立验证。"
+      }
+    },
+    {
+      "id": "data-analysis",
+      "title": "数据分析",
+      "task": "判断技能支撑与毕业年份限制能否同时满足。",
+      "jd": "【合成演示】数据分析实习生\n核心要求：SQL、Python、Excel，能完成数据分析与数据可视化。仅接受2026届候选人。",
+      "courses": [
+        "SQL数据库原理",
+        "Python程序设计",
+        "Excel数据分析",
+        "数据可视化"
+      ],
+      "score": 50.3,
+      "dimensions": {
+        "technical": 86.8,
+        "education": 72.8,
+        "project": 20.0,
+        "internship": 20.0,
+        "potential": 50.0
+      },
+      "eligibility": "存在硬性门槛",
+      "checks": [
+        {
+          "label": "毕业年份",
+          "status": "存在硬性门槛",
+          "reason": "岗位要求毕业年份为[2026]，当前为2027"
+        }
+      ],
+      "completeness": 90.0,
+      "confidence": "较高",
+      "matches": [
+        {
+          "skill": "数据分析",
+          "support": 83.9,
+          "status": "较强支撑",
+          "sources": [
+            "课程：Excel数据分析（直接材料：名称明确提及；课程名称命中“数据分析”规则。）"
+          ]
+        },
+        {
+          "skill": "Python",
+          "support": 83.9,
+          "status": "较强支撑",
+          "sources": [
+            "课程：Python程序设计（直接材料：名称明确提及；课程名称命中“Python”规则。）"
+          ]
+        },
+        {
+          "skill": "SQL",
+          "support": 83.9,
+          "status": "较强支撑",
+          "sources": [
+            "课程：SQL数据库原理（直接材料：名称明确提及；课程名称命中“数据库”规则。）"
+          ]
+        },
+        {
+          "skill": "Excel",
+          "support": 83.9,
+          "status": "较强支撑",
+          "sources": [
+            "课程：Excel数据分析（直接材料：名称明确提及；课程名称命中“Excel”规则。）"
+          ]
+        },
+        {
+          "skill": "数据可视化",
+          "support": 98.6,
+          "status": "较强支撑",
+          "sources": [
+            "课程：数据可视化（直接材料：名称明确提及；课程名称命中“可视化”规则。）",
+            "课程：Excel数据分析（间接依据：课程规则推断；课程名称命中“数据分析”规则。）"
+          ]
+        }
+      ],
+      "contributions": [
+        {
+          "label": "课程：Excel数据分析（直接材料：名称明确提及；课程名称命中“数据分析”规则。）支持数据分析",
+          "dimension": "technical",
+          "source_type": "skill",
+          "points": 1.695,
+          "reason": "当前材料规则支撑分为83.9，不代表独立核验",
+          "evidence": [
+            "课程：Excel数据分析（直接材料：名称明确提及；课程名称命中“数据分析”规则。）"
+          ],
+          "confidence": 0.9,
+          "actionable": false,
+          "improvement": null
+        },
+        {
+          "label": "课程：Python程序设计（直接材料：名称明确提及；课程名称命中“Python”规则。）支持Python",
+          "dimension": "technical",
+          "source_type": "skill",
+          "points": 1.695,
+          "reason": "当前材料规则支撑分为83.9，不代表独立核验",
+          "evidence": [
+            "课程：Python程序设计（直接材料：名称明确提及；课程名称命中“Python”规则。）"
+          ],
+          "confidence": 0.9,
+          "actionable": false,
+          "improvement": null
+        },
+        {
+          "label": "课程：SQL数据库原理（直接材料：名称明确提及；课程名称命中“数据库”规则。）支持SQL",
+          "dimension": "technical",
+          "source_type": "skill",
+          "points": 1.695,
+          "reason": "当前材料规则支撑分为83.9，不代表独立核验",
+          "evidence": [
+            "课程：SQL数据库原理（直接材料：名称明确提及；课程名称命中“数据库”规则。）"
+          ],
+          "confidence": 0.9,
+          "actionable": false,
+          "improvement": null
+        },
+        {
+          "label": "课程：Excel数据分析（直接材料：名称明确提及；课程名称命中“Excel”规则。）支持Excel",
+          "dimension": "technical",
+          "source_type": "skill",
+          "points": 1.695,
+          "reason": "当前材料规则支撑分为83.9，不代表独立核验",
+          "evidence": [
+            "课程：Excel数据分析（直接材料：名称明确提及；课程名称命中“Excel”规则。）"
+          ],
+          "confidence": 0.9,
+          "actionable": false,
+          "improvement": null
+        },
+        {
+          "label": "课程：数据可视化（直接材料：名称明确提及；课程名称命中“可视化”规则。）支持数据可视化",
+          "dimension": "technical",
+          "source_type": "skill",
+          "points": 2.43,
+          "reason": "当前材料规则支撑分为98.6，不代表独立核验",
+          "evidence": [
+            "课程：数据可视化（直接材料：名称明确提及；课程名称命中“可视化”规则。）",
+            "课程：Excel数据分析（间接依据：课程规则推断；课程名称命中“数据分析”规则。）"
+          ],
+          "confidence": 0.9,
+          "actionable": false,
+          "improvement": null
+        },
+        {
+          "label": "学历与岗位要求",
+          "dimension": "education",
+          "source_type": "education",
+          "points": 1.2,
+          "reason": "学历与岗位要求评估为70.0分",
+          "evidence": [
+            "本科",
+            "普通公办本科",
+            "信息管理与信息系统"
+          ],
+          "confidence": 0.8,
+          "actionable": false,
+          "improvement": null
+        },
+        {
+          "label": "院校市场信号",
+          "dimension": "education",
+          "source_type": "education",
+          "points": 0.9,
+          "reason": "院校市场信号评估为65.0分",
+          "evidence": [
+            "本科",
+            "普通公办本科",
+            "信息管理与信息系统"
+          ],
+          "confidence": 0.8,
+          "actionable": false,
+          "improvement": null
+        },
+        {
+          "label": "专业相关性",
+          "dimension": "education",
+          "source_type": "education",
+          "points": 1.4,
+          "reason": "专业相关性评估为78.0分",
+          "evidence": [
+            "本科",
+            "普通公办本科",
+            "信息管理与信息系统"
+          ],
+          "confidence": 0.8,
+          "actionable": false,
+          "improvement": null
+        },
+        {
+          "label": "核心课程表现",
+          "dimension": "education",
+          "source_type": "education",
+          "points": 1.05,
+          "reason": "核心课程表现评估为85.0分",
+          "evidence": [
+            "本科",
+            "普通公办本科",
+            "信息管理与信息系统"
+          ],
+          "confidence": 0.8,
+          "actionable": false,
+          "improvement": null
+        },
+        {
+          "label": "缺少项目实践证据",
+          "dimension": "project",
+          "source_type": "project_gap",
+          "points": -6.0,
+          "reason": "项目相关性、完整度、技术深度、个人贡献和可验证性综合为20.0分",
+          "evidence": [],
+          "confidence": 0.95,
+          "actionable": true,
+          "improvement": "完成一个可运行、可测试、可演示的岗位相关项目"
+        },
+        {
+          "label": "缺少实习实践证据",
+          "dimension": "internship",
+          "source_type": "internship_gap",
+          "points": -7.5,
+          "reason": "岗位相关性、工作深度、成果、企业信号和时长综合为20.0分",
+          "evidence": [],
+          "confidence": 0.95,
+          "actionable": true,
+          "improvement": "争取一段与目标岗位相邻且有真实成果的实习"
+        }
+      ],
+      "learning": [],
+      "boundary": "合成演示，不代表真实岗位或候选人；不预测录用概率；自述不等于独立验证。",
+      "input": {
+        "id": "data-analysis",
+        "title": "数据分析",
+        "task": "判断技能支撑与毕业年份限制能否同时满足。",
+        "jd": "【合成演示】数据分析实习生\n核心要求：SQL、Python、Excel，能完成数据分析与数据可视化。仅接受2026届候选人。",
+        "courses": [
+          {
+            "name": "SQL数据库原理",
+            "credit": 3,
+            "grade": 88,
+            "category": "合成专业课程",
+            "self_assessment": 4
+          },
+          {
+            "name": "Python程序设计",
+            "credit": 3,
+            "grade": 88,
+            "category": "合成专业课程",
+            "self_assessment": 4
+          },
+          {
+            "name": "Excel数据分析",
+            "credit": 3,
+            "grade": 88,
+            "category": "合成专业课程",
+            "self_assessment": 4
+          },
+          {
+            "name": "数据可视化",
+            "credit": 3,
+            "grade": 88,
+            "category": "合成专业课程",
+            "self_assessment": 4
+          }
+        ],
+        "profile": {
+          "education": {
+            "degree": "本科",
+            "institution_tier": "普通公办本科",
+            "major": "信息管理与信息系统",
+            "core_course_average": 85
+          },
+          "projects": [],
+          "internships": [],
+          "graduation_year": 2027
+        },
+        "requirements": {
+          "required_graduation_years": [
+            2026
+          ]
+        },
+        "expected": "课程支持大部分技能，但2027毕业不满足2026届硬门槛；保留技能分，不将门槛失败变成技能零分。",
+        "boundary": "合成演示，不代表真实岗位或候选人；不预测录用概率；自述不等于独立验证。"
+      }
+    }
+  ]
+}

@@ -1,5 +1,13 @@
 # 系统架构
 
+## 首页展示层（2026-10-06 视觉候选，未部署）
+
+`showcase/public/index.html + site.css + site.js` 构成渐进增强的静态展示页。SVG 折线路径、技能选择、原生 details、移动导航不依赖第三方 JS；`site.js` 唯一数据请求为同源 `/demo.json`，不保存账户或浏览器数据。`scripts/build_showcase_demo.py` 在开发阶段读取仓库合成输入并运行现有本地规则，生成可下载的公开 JSON。它不在首页运行，也不调用模型。冻结 JSON 与无 JS 默认报告有一致性回归；真实应用截图与 `screenshots/home.png` 保持字节一致。
+
+PR #9 本轮只继续修改静态展示层。手机使用独立的原生有序列表与单路径 SVG，桌面继续原关系图；共享同一技能选择状态。报告的原生 details 从现有贡献条目显示解释，技术条目的重复来源收敛到技能账本，不重新评分。CSS transform 表达条带值的切换，Web Animations 只增强明确操作后的上下文；实时切换 reduced-motion 会取消未结束运动。来源返回链接只为实际含有对应课程的技能生成。没有存储、账户操作或新依赖。[审查后的验证](homepage-pr9-review-iteration.md)。
+
+原有 Worker 安全头与路由配置保留。字体由同源托管，附 SIL OFL。Streamlit 只修改首页内容与共享 CSS / theme；入口将已有 `analysis_page` 传入首页，以 `st.page_link` 保持原生路由。认证恢复、身份 epoch、仓储和 Provider 运行时不变。[设计与验证](homepage-design-review.md)。
+
 ## Provider 接入升级（2026-10-05 候选）
 
 调用链为 ProviderPreset（品牌与单一声明源）→ AccessDefinition（API/协议/端点/auth/catalog/兼容）→ CredentialResolver（APIKeyService 加密后端，user/system 所有权不变）→ 最后已知目录 / 模型解析 → 协议 adapter → JobAnalysis + usage + immutable ModelTrace + CallEvidence → 连接与固定集验证。`extract_job_skills()` 保持返回 JobAnalysis，`last_result` 提供统一 ProviderCallResult，不增加通用聊天层。

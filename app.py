@@ -304,7 +304,7 @@ with st.sidebar:
         st.rerun()
 
 home_page = st.Page(
-    render_home_page,
+    lambda: render_home_page(analysis_page),
     title="首页",
     url_path="home",
     default=True,

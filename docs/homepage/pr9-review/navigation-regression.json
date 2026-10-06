@@ -1,0 +1,30 @@
+[
+  {
+    "test": "GUEST_DEEP_LINK",
+    "result": "PASS"
+  },
+  {
+    "test": "NORMAL_NAVIGATION_SINGLE_RUN_AND_NO_STALE_BODY",
+    "result": "PASS"
+  },
+  {
+    "test": "AUTHENTICATED_DEEP_LINK_F5_NEW_TAB",
+    "result": "PASS"
+  },
+  {
+    "test": "A_GUEST_B_ACCOUNT_AND_INPUT_ISOLATION",
+    "result": "PASS"
+  },
+  {
+    "test": "BYOK_DISABLE_AND_REENABLE",
+    "result": "PASS"
+  },
+  {
+    "test": "DUAL_TAB_LOGOUT_REJECTED_ON_NEXT_ACTION",
+    "result": "PASS"
+  },
+  {
+    "test": "INVALID_TOKEN_FAILS_CLOSED",
+    "result": "PASS"
+  }
+]
