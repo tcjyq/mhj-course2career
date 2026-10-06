@@ -47,7 +47,7 @@ def test_catalog_validates_and_filters_external_model_data() -> None:
         ]
     )
 
-    snapshot = _catalog(models_api).get_models("secret-key")
+    snapshot = _catalog(models_api).refresh("secret-key")
 
     assert snapshot.available_models == (
         "deepseek-v4-flash",
@@ -69,7 +69,7 @@ def test_catalog_uses_cache_and_force_refresh_bypasses_it() -> None:
     )
     catalog = _catalog(models_api)
 
-    first = catalog.get_models("secret-key")
+    first = catalog.refresh("secret-key")
     cached = catalog.get_models("secret-key")
     refreshed = catalog.get_models("secret-key", force_refresh=True)
 
@@ -89,10 +89,10 @@ def test_expired_catalog_falls_back_to_stale_cache_on_discovery_failure() -> Non
         ]
     )
     catalog = _catalog(models_api, clock=lambda: now[0])
-    catalog.get_models("secret-key")
+    catalog.refresh("secret-key")
     now[0] = 31
 
-    snapshot = catalog.get_models("secret-key")
+    snapshot = catalog.refresh("secret-key")
 
     assert snapshot.available_models == ("deepseek-v4-flash",)
     assert snapshot.stale is True
@@ -128,7 +128,9 @@ def test_auto_safe_selects_only_available_approved_models_in_preference_order() 
         ]
     )
 
-    selection = _catalog(models_api).resolve(
+    catalog = _catalog(models_api)
+    catalog.refresh("secret-key")
+    selection = catalog.resolve(
         "secret-key",
         mode="auto_safe",
         configured_model="deepseek-v4-flash",
@@ -137,7 +139,7 @@ def test_auto_safe_selects_only_available_approved_models_in_preference_order() 
 
     assert selection.primary_model == "deepseek-v4-pro"
     assert selection.fallback_models == ("deepseek-v4-flash",)
-    assert selection.source == "live_catalog"
+    assert selection.source == "cached_catalog"
     assert "deepseek-v5-preview" not in APPROVED_DEEPSEEK_MODELS
 
 
@@ -166,9 +168,28 @@ def test_auto_safe_rejects_catalog_without_approved_models() -> None:
     )
 
     with pytest.raises(ModelDiscoveryError, match="没有经过验证的可用模型"):
-        _catalog(models_api).resolve(
+        catalog = _catalog(models_api)
+        catalog.refresh("secret-key")
+        catalog.resolve(
             "secret-key",
             mode="auto_safe",
             configured_model="deepseek-v4-flash",
             preference=("deepseek-v4-flash", "deepseek-v4-pro"),
         )
+
+
+def test_catalog_read_and_cold_resolution_never_fetch() -> None:
+    models_api = FakeModelsAPI([AssertionError("implicit network")])
+    catalog = _catalog(models_api)
+    assert catalog.peek("synthetic-key") is None
+    with pytest.raises(ModelDiscoveryError, match="尚未刷新"):
+        catalog.get_models("synthetic-key")
+    selection = catalog.resolve(
+        "synthetic-key",
+        mode="auto_safe",
+        configured_model="deepseek-flash",
+        preference=("deepseek-v4-pro",),
+    )
+    assert selection.primary_model == "deepseek-flash"
+    assert selection.source == "configured_fallback"
+    assert models_api.call_count == 0

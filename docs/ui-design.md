@@ -1,5 +1,15 @@
 # 界面与产品体验
 
+## Provider 身份和认证文案（2026-10-05 候选）
+
+在原有卡片内最小补充 API Key 访问模式、实现认证标签、按真实证据版本区分 v0 旧格式限制和 v1 精确认证，以及个人凭证最近测试。最近测试绑定 Key 更新版本，轮换后旧状态不再显示；不添加未实施的 Plan/OAuth 选择器。UNKNOWN/MISMATCH 可保留 Schema 兼容，不能显示新的精确认证通过。测试连接的成功提示明确区分请求模型与 RETURNED_MODEL，六层证据按本次操作展示；静态历史 badge 与用户 Key 状态分开。
+
+以下是隔离本机的合成 BYOK 账号，末四位也是假值；未测试真实 Key 或部署生产。
+
+![Provider 接入候选：合成账号](../screenshots/provider-access-synthetic-20261005.png)
+
+[浏览器回归](provider-access/20261005/security-browser.json) · [完整报告](provider-access-upgrade-20261005.md)。
+
 ## 2026-10-04 性能候选 UI 一致性（未部署）
 
 保留页面结构、文字、十家 Provider 卡片和三例合成演示。路由 / 身份 epoch 绑定内容容器，普通导航一轮且旧首页 / 分析表单不残留；退出清除分析及 Provider 输入。认证 / 存储握手仍使用现有加载界面。[浏览器结果](performance/20261004/security-browser.json)与[完整报告](performance-fix-20261004.md)。

@@ -24,6 +24,7 @@ def test_factory_creates_provider_from_system_environment_keys() -> None:
         Settings(
             openai_api_key="system-openai-key",
             deepseek_api_key="system-deepseek-key",
+            deepseek_model_mode="pinned",
         )
     )
 
@@ -69,7 +70,7 @@ def test_factory_uses_decrypted_developer_key(tmp_path: Path) -> None:
     cipher = APIKeyCipher(bytes(range(32)))
     key_service = APIKeyService(repository, cipher)
     key_service.save_key(developer, ProviderName.DEEPSEEK, "developer-deepseek-key")
-    factory = LLMProviderFactory(Settings(), key_service)
+    factory = LLMProviderFactory(Settings(deepseek_model_mode="pinned"), key_service)
 
     provider = factory.create(
         developer,

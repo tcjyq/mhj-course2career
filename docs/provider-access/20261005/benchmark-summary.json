@@ -1,0 +1,408 @@
+{
+  "baseline_sha": "526faf920eba68634d58be75504e3140235c3414",
+  "scope": "local synthetic PostgreSQL only; not production",
+  "samples_per_scenario": 3,
+  "timing": "sum of completed Python script execution times; browser wall includes settling",
+  "scenarios": [
+    {
+      "scenario": "developer_navigation",
+      "before": {
+        "python_ms": [
+          161.29,
+          149.3,
+          153.04
+        ],
+        "median_python_ms": 153.04,
+        "sql": [
+          8,
+          8,
+          8
+        ],
+        "checkouts": [
+          8,
+          8,
+          8
+        ],
+        "health_checks": [
+          8,
+          8,
+          8
+        ],
+        "physical_connections": [
+          0,
+          0,
+          0
+        ],
+        "script_runs": [
+          1,
+          1,
+          1
+        ],
+        "browser_wall_ms": [
+          416,
+          406,
+          402
+        ]
+      },
+      "after": {
+        "python_ms": [
+          146.63,
+          154.53,
+          169.79
+        ],
+        "median_python_ms": 154.53,
+        "sql": [
+          8,
+          8,
+          8
+        ],
+        "checkouts": [
+          8,
+          8,
+          8
+        ],
+        "health_checks": [
+          8,
+          8,
+          8
+        ],
+        "physical_connections": [
+          0,
+          0,
+          0
+        ],
+        "script_runs": [
+          1,
+          1,
+          1
+        ],
+        "browser_wall_ms": [
+          394,
+          464,
+          424
+        ]
+      },
+      "delta_python_ms": 1.49
+    },
+    {
+      "scenario": "analysis_navigation",
+      "before": {
+        "python_ms": [
+          135.21,
+          105.75,
+          138.42
+        ],
+        "median_python_ms": 135.21,
+        "sql": [
+          7,
+          7,
+          7
+        ],
+        "checkouts": [
+          7,
+          7,
+          7
+        ],
+        "health_checks": [
+          7,
+          7,
+          7
+        ],
+        "physical_connections": [
+          0,
+          0,
+          0
+        ],
+        "script_runs": [
+          1,
+          1,
+          1
+        ],
+        "browser_wall_ms": [
+          467,
+          463,
+          461
+        ]
+      },
+      "after": {
+        "python_ms": [
+          121.7,
+          143.33,
+          168.8
+        ],
+        "median_python_ms": 143.33,
+        "sql": [
+          7,
+          7,
+          7
+        ],
+        "checkouts": [
+          7,
+          7,
+          7
+        ],
+        "health_checks": [
+          7,
+          7,
+          7
+        ],
+        "physical_connections": [
+          0,
+          0,
+          0
+        ],
+        "script_runs": [
+          1,
+          1,
+          1
+        ],
+        "browser_wall_ms": [
+          433,
+          472,
+          459
+        ]
+      },
+      "delta_python_ms": 8.12
+    },
+    {
+      "scenario": "quota_navigation",
+      "before": {
+        "python_ms": [
+          38.27,
+          31.46,
+          29.45
+        ],
+        "median_python_ms": 31.46,
+        "sql": [
+          4,
+          4,
+          4
+        ],
+        "checkouts": [
+          4,
+          4,
+          4
+        ],
+        "health_checks": [
+          4,
+          4,
+          4
+        ],
+        "physical_connections": [
+          0,
+          0,
+          0
+        ],
+        "script_runs": [
+          1,
+          1,
+          1
+        ],
+        "browser_wall_ms": [
+          331,
+          329,
+          293
+        ]
+      },
+      "after": {
+        "python_ms": [
+          23.28,
+          74.51,
+          38.77
+        ],
+        "median_python_ms": 38.77,
+        "sql": [
+          4,
+          4,
+          4
+        ],
+        "checkouts": [
+          4,
+          4,
+          4
+        ],
+        "health_checks": [
+          4,
+          4,
+          4
+        ],
+        "physical_connections": [
+          0,
+          0,
+          0
+        ],
+        "script_runs": [
+          1,
+          1,
+          1
+        ],
+        "browser_wall_ms": [
+          290,
+          328,
+          248
+        ]
+      },
+      "delta_python_ms": 7.31
+    },
+    {
+      "scenario": "membership_navigation",
+      "before": {
+        "python_ms": [
+          34.11,
+          28.05,
+          37.2
+        ],
+        "median_python_ms": 34.11,
+        "sql": [
+          4,
+          4,
+          4
+        ],
+        "checkouts": [
+          4,
+          4,
+          4
+        ],
+        "health_checks": [
+          4,
+          4,
+          4
+        ],
+        "physical_connections": [
+          0,
+          0,
+          0
+        ],
+        "script_runs": [
+          1,
+          1,
+          1
+        ],
+        "browser_wall_ms": [
+          324,
+          224,
+          258
+        ]
+      },
+      "after": {
+        "python_ms": [
+          34.49,
+          40.78,
+          44.51
+        ],
+        "median_python_ms": 40.78,
+        "sql": [
+          4,
+          4,
+          4
+        ],
+        "checkouts": [
+          4,
+          4,
+          4
+        ],
+        "health_checks": [
+          4,
+          4,
+          4
+        ],
+        "physical_connections": [
+          0,
+          0,
+          0
+        ],
+        "script_runs": [
+          1,
+          1,
+          1
+        ],
+        "browser_wall_ms": [
+          250,
+          323,
+          357
+        ]
+      },
+      "delta_python_ms": 6.67
+    },
+    {
+      "scenario": "analysis_demo",
+      "before": {
+        "python_ms": [
+          246.84,
+          173.72,
+          220.94
+        ],
+        "median_python_ms": 220.94,
+        "sql": [
+          7,
+          7,
+          7
+        ],
+        "checkouts": [
+          7,
+          7,
+          7
+        ],
+        "health_checks": [
+          7,
+          7,
+          7
+        ],
+        "physical_connections": [
+          0,
+          0,
+          0
+        ],
+        "script_runs": [
+          1,
+          1,
+          1
+        ],
+        "browser_wall_ms": [
+          493,
+          421,
+          486
+        ]
+      },
+      "after": {
+        "python_ms": [
+          226.89,
+          211.56,
+          228.09
+        ],
+        "median_python_ms": 226.89,
+        "sql": [
+          7,
+          7,
+          7
+        ],
+        "checkouts": [
+          7,
+          7,
+          7
+        ],
+        "health_checks": [
+          7,
+          7,
+          7
+        ],
+        "physical_connections": [
+          0,
+          0,
+          0
+        ],
+        "script_runs": [
+          1,
+          1,
+          1
+        ],
+        "browser_wall_ms": [
+          820,
+          485,
+          519
+        ]
+      },
+      "delta_python_ms": 5.95
+    }
+  ]
+}

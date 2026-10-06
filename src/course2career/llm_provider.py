@@ -1,9 +1,12 @@
 from enum import StrEnum
-from typing import Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from course2career.models import JobAnalysis
+
+if TYPE_CHECKING:
+    from course2career.provider_runtime import ModelTrace, ProviderCallResult
 
 
 class ProviderName(StrEnum):
@@ -20,7 +23,7 @@ class ProviderName(StrEnum):
 
 
 class LLMUsage(BaseModel):
-    """一次模型调用返回的真实Token用量。"""
+    """真实 Token 用量；model 是账目展示标签，不是返回模型的认证证据。"""
 
     model_config = ConfigDict(frozen=True)
 
@@ -51,5 +54,11 @@ class LLMProvider(Protocol):
 
     @property
     def last_usage(self) -> LLMUsage | None: ...
+
+    @property
+    def last_trace(self) -> "ModelTrace": ...
+
+    @property
+    def last_result(self) -> "ProviderCallResult | None": ...
 
     def extract_job_skills(self, jd_text: str) -> JobAnalysis: ...

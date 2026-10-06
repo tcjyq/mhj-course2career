@@ -11,6 +11,7 @@ from course2career.llm_provider import LLMUsage, ProviderName, coerce_token_coun
 from course2career.llm_providers import ProviderError
 from course2career.models import JobAnalysis
 from course2career.provider_registry import ProviderPreset, ProviderProtocol
+from course2career.provider_runtime import ProviderRuntime, returned_model_id
 from course2career.structured_output import AnthropicSchemaAdapter, GeminiSchemaAdapter
 
 PROMPT_PATH = Path(__file__).resolve().parents[2] / "prompts" / "extract_jd_skills.txt"
@@ -49,7 +50,7 @@ def _instructions() -> str:
     )
 
 
-class AnthropicMessagesProvider:
+class AnthropicMessagesProvider(ProviderRuntime):
     """原生 /v1/messages + output_config.format；本地按原模型复核。"""
 
     def __init__(
@@ -75,6 +76,7 @@ class AnthropicMessagesProvider:
         self.transport = transport
         self._api_key = api_key
         self._last_usage: LLMUsage | None = None
+        self._init_runtime(model, self.model, self.endpoint)
 
     @property
     def provider_name(self) -> ProviderName:
@@ -89,7 +91,7 @@ class AnthropicMessagesProvider:
         return self._last_usage
 
     def extract_job_skills(self, jd_text: str) -> JobAnalysis:
-        self._last_usage = None
+        self._begin_call(self.model)
         try:
             response = self.transport(
                 self.endpoint.rstrip("/") + "/v1/messages",
@@ -111,6 +113,9 @@ class AnthropicMessagesProvider:
                 },
                 self.timeout_seconds,
             )
+            self._observe_response(
+                response.get(self.preset.compatibility.returned_model_field)
+            )
             usage = response.get("usage")
             if isinstance(usage, dict):
                 self._last_usage = LLMUsage(
@@ -126,14 +131,17 @@ class AnthropicMessagesProvider:
                 for block in blocks
                 if isinstance(block, dict) and block.get("type") == "text"
             )
-            return JobAnalysis.model_validate_json(content).model_copy(
-                update={"source": "ai"}
+            return self._finish_call(
+                JobAnalysis.model_validate_json(content).model_copy(
+                    update={"source": "ai"}
+                )
             )
         except Exception as exc:
+            self._fail_attempt(exc, schema_requested=True)
             raise ProviderError("模型服务暂时不可用，请检查配置后重试。") from exc
 
 
-class GeminiProvider:
+class GeminiProvider(ProviderRuntime):
     """原生 generateContent + responseJsonSchema；本地按原模型复核。"""
 
     def __init__(
@@ -159,6 +167,7 @@ class GeminiProvider:
         self.transport = transport
         self._api_key = api_key
         self._last_usage: LLMUsage | None = None
+        self._init_runtime(model, self.model, self.endpoint)
 
     @property
     def provider_name(self) -> ProviderName:
@@ -173,7 +182,7 @@ class GeminiProvider:
         return self._last_usage
 
     def extract_job_skills(self, jd_text: str) -> JobAnalysis:
-        self._last_usage = None
+        self._begin_call(self.model)
         try:
             response = self.transport(
                 self.endpoint.rstrip("/") + f"/models/{self.model}:generateContent",
@@ -188,6 +197,9 @@ class GeminiProvider:
                     },
                 },
                 self.timeout_seconds,
+            )
+            self._observe_response(
+                response.get(self.preset.compatibility.returned_model_field)
             )
             usage = response.get("usageMetadata")
             if isinstance(usage, dict):
@@ -207,14 +219,16 @@ class GeminiProvider:
                 for part in parts
                 if isinstance(part, dict) and isinstance(part.get("text"), str)
             )
-            return JobAnalysis.model_validate_json(content).model_copy(
-                update={"source": "ai"}
+            return self._finish_call(
+                JobAnalysis.model_validate_json(content).model_copy(
+                    update={"source": "ai"}
+                )
             )
         except Exception as exc:
+            self._fail_attempt(exc, schema_requested=True)
             raise ProviderError("模型服务暂时不可用，请检查配置后重试。") from exc
 
 
 def _model_name(value: object, fallback: str) -> str:
-    if isinstance(value, str) and value.strip():
-        return value.strip()[:200]
-    return fallback
+    # Accounting/display compatibility only; identity evidence lives in last_trace.
+    return returned_model_id(value) or fallback

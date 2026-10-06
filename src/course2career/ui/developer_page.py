@@ -37,6 +37,7 @@ from course2career.provider_registry import (
     ProviderPreset,
     ui_provider_presets,
 )
+from course2career.provider_verification import get_record
 from course2career.ui.byok_mode_controls import render_byok_mode_controls
 
 
@@ -148,7 +149,7 @@ def _render_developer_page(
         if preset.provider_id in keys
     )
     st.caption(
-        f"支持预设：{len(presets)} · 已配置：{configured} · 已验证模型：{verified}"
+        f"支持预设：{len(presets)} · 已配置：{configured} · 实现认证模型：{verified}"
     )
 
     def save_provider(
@@ -284,7 +285,9 @@ def _render_provider_card(
     catalog_choice_key = f"provider_catalog_choice_{name}_{version}"
     with st.container(border=True):
         st.markdown(f"### {preset.display_name}")
-        st.caption(f"协议：{preset.primary_protocol.value} · 官方端点")
+        st.caption(
+            f"访问模式：API Key · 协议：{preset.access().protocol.value} · 官方端点"
+        )
         st.write("状态：已配置" if key_metadata is not None else "状态：未配置")
         if key_metadata is not None:
             st.write(f"API Key：••••{key_metadata.last_four}")
@@ -304,12 +307,40 @@ def _render_provider_card(
             Verification.UNKNOWN: "未验证",
             Verification.CONNECTED: "已连接",
             Verification.SCHEMA_COMPATIBLE: "Schema 兼容",
-            Verification.VERIFIED: "✓ Course2Career 已验证",
+            Verification.VERIFIED: "✓ Course2Career 实现认证（身份版本待核实）",
             Verification.UNSUPPORTED: "当前模型不支持",
         }
-        st.caption(
-            f"模型：{selected_model or '待填写'} · {labels[capability.verification]}"
+        record = get_record(provider, selected_endpoint, selected_model)
+        legacy_verified = (
+            record is not None
+            and record.result == Verification.VERIFIED
+            and record.legacy_model_identity_evidence
         )
+        if legacy_verified:
+            labels[Verification.VERIFIED] = "✓ Course2Career 实现认证（历史记录）"
+        elif (
+            record is not None
+            and record.result == Verification.VERIFIED
+            and record.identity_evidence_version == 1
+        ):
+            labels[Verification.VERIFIED] = "✓ Course2Career 精确模型实现认证"
+        st.caption(
+            f"模型：{selected_model or '待填写'} · "
+            f"实现认证：{labels[capability.verification]}"
+        )
+        if capability.verification == Verification.VERIFIED:
+            if legacy_verified:
+                st.caption(
+                    "实现认证不证明当前 Key 可用；"
+                    f"{record.verified_at[:10]} 旧记录的返回模型身份证据有限，"
+                    "待重新认证。"
+                )
+            elif record is not None and record.identity_evidence_version == 1:
+                st.caption(
+                    "精确模型实现认证具有逐次身份与固定集证据；不证明当前 Key 可用。"
+                )
+            else:
+                st.caption("实现认证的模型身份证据版本待核实；不证明当前 Key 可用。")
         if capability.lifecycle_status == LifecycleStatus.COMPATIBILITY_ALIAS:
             st.warning(
                 f"{selected_model} 是兼容旧名称，建议主动选择 "
@@ -353,10 +384,12 @@ def _render_provider_card(
         if (
             key_metadata is not None
             and last_connection is not None
+            and len(last_connection) == 5
+            and last_connection[4] == key_metadata.updated_time
             and last_connection[:3]
             == (principal.user_id, selected_endpoint, selected_model)
         ):
-            st.caption(last_connection[3])
+            st.caption(f"当前凭证最近测试：{last_connection[3]}（仅测试时有效）")
         st.link_button("获取官方 API Key / 文档", preset.api_key_help_url)
         if capability.source_url:
             st.link_button("官方模型来源", capability.source_url)
@@ -463,17 +496,26 @@ def _render_provider_card(
                 if result.request_ok
                 else "连接未通过"
             )
+            connection_label += f" · 模型身份：{result.model_match.value}"
             st.session_state[f"provider_connection_{name}"] = (
                 principal.user_id,
                 selected_endpoint,
                 selected_model,
                 connection_label,
+                key_metadata.updated_time,
             )
             if result.schema_ok:
                 st.success(
-                    f"{connection_label}：模型 {result.model}，"
+                    f"{connection_label}：请求模型 {result.model}，"
                     f"耗时 {result.latency_ms} ms。"
                     "完整固定验证集通过后才标为 Course2Career 已验证。"
+                )
+                st.caption(
+                    f"AUTH_OK={result.auth_ok} · REQUEST_OK={result.request_ok} · "
+                    f"SCHEMA_OK={result.schema_ok} · "
+                    f"JOB_ANALYSIS_OK={result.job_analysis_ok} · "
+                    f"USAGE_OK={result.usage_ok} · "
+                    f"RETURNED_MODEL={result.returned_model or 'UNKNOWN'}"
                 )
             else:
                 st.error(result.sanitized_error or "连接测试未通过。")

@@ -1,5 +1,13 @@
 # Course2Career 开发日志
 
+PR #8 review fix（已审查起点 a6ee491）：恢复显式 AI auto_safe 的一次必要目录刷新，保留默认纯读取、warm/pinned 零刷新与原 fallback policy；AccessMode 到 resolver/cache 全程传递；卡片按真实证据版本区分旧限制与精确认证。未实现 Subscription/OAuth、未真实推理；验证结果见候选报告。
+
+## 2026-10-05 Provider 访问语义与精确身份实施（独立候选）
+
+从重新 fetch 的 main 526faf920eba68634d58be75504e3140235c3414 开始，保留原工作区未跟踪文件，在独立 fix/provider-model-identity-verification 工作树实施。实际阅读 Pi main 200387122ca450d6387f033949423114a270b96c 的 Provider/Auth/Catalog/Compatibility/Faux/OAuth 设计与 MIT 许可证；只借设计，未复制非 trivial 实现或添加 Pi 依赖。
+
+新增 API AccessDefinition、独立 CredentialKind/Resolver、显式兼容策略、不可变运行时 ModelTrace 和统一 JobAnalysis 结果。修复缺失/陌生模型假精确认证、SDK 提前解析丢失 usage/identity、fallback 外发次数少计及新记录默认 legacy 旁路。历史两条认证数据不改写；页面明确限制。官方 Copilot 服务端多用户路径许可清楚，但安全 OAuth/runtime 与 JobAnalysis 接入超出本次小 PR；其他候选许可未充分或受限，订阅模式保持关闭。保留 PR #7 的 DB/nav 结构指标与全部权限边界。未修改生产、schema、默认模型、价格或 System AI quota；没有真实推理。[实现、测试和证据](provider-access-upgrade-20261005.md)。
+
 ## 2026-10-04 性能修复实施（独立候选，未部署）
 
 重新 fetch 确认 main `62336cc9ea8541d670b054dc936a59d2d275773b`，保留原工作区所有文件，在独立 `perf/reduce-rerun-database-overhead` 分支依次实施 render Provider view / Key-version 复用、有界 PostgreSQL pool、普通导航单轮、同轮 restore 去重；每步单独 benchmark。Developer 58 SQL / 58 新连接 / 2 轮 / 2383 ms → 8 / 0 / 1 / 149 ms，规则整页 1440 → 221 ms，均为三次本地 warm 中位数。

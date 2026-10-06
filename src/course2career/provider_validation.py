@@ -21,6 +21,7 @@ from course2career.permissions import Plan, Principal, Role
 from course2career.provider_connection import test_provider_connection
 from course2career.provider_error_classification import classify_provider_error
 from course2career.provider_registry import get_provider_preset
+from course2career.provider_runtime import ModelMatch, ModelTrace
 from course2career.provider_verification import (
     DEFAULT_RECORD_PATH,
     ProviderErrorCode,
@@ -194,6 +195,7 @@ def build_validation_client(
     if provider == ProviderName.OPENAI:
         sdk = OpenAI(
             api_key=api_key,
+            base_url=endpoint,
             timeout=30,
             max_retries=0,
             http_client=DefaultHttpxClient(follow_redirects=False),
@@ -298,18 +300,22 @@ def validate_provider(
     output_tokens = 0
     usage_count = 0
     returned_model: str | None = None
-    model_consistent = True
+    traces: list[ModelTrace] = []
     error_code: ProviderErrorCode | None = None
     http_status: int | None = None
     connection = test_provider_connection(
         factory, principal, provider, model, endpoint_id
     )
+    if connection.model_trace is not None:
+        traces.append(connection.model_trace)
+    returned_model = connection.returned_model
+    model_consistent = bool(
+        connection.model_trace and connection.model_trace.proves_exact_model(model)
+    )
     if client.last_usage is not None:
         input_tokens += client.last_usage.input_tokens
         output_tokens += client.last_usage.output_tokens
         usage_count += 1
-        returned_model = client.last_usage.model
-        model_consistent = returned_model == model
     if connection.schema_ok:
         result = Verification.SCHEMA_COMPATIBLE
     elif connection.request_ok:
@@ -325,12 +331,17 @@ def validate_provider(
             calls += 1
             try:
                 analysis = client.extract_job_skills(fixture.jd)
+                trace = getattr(client, "last_trace", None)
+                if trace is not None:
+                    traces.append(trace)
+                returned_model = trace.returned_model if trace else None
+                model_consistent = model_consistent and bool(
+                    trace and trace.proves_exact_model(model)
+                )
                 if client.last_usage is not None:
                     input_tokens += client.last_usage.input_tokens
                     output_tokens += client.last_usage.output_tokens
                     usage_count += 1
-                    returned_model = client.last_usage.model
-                    model_consistent = model_consistent and returned_model == model
                 diagnosis = diagnose_fixture(fixture, analysis)
                 if diagnostics is not None:
                     diagnostics.append(diagnosis)
@@ -339,6 +350,15 @@ def validate_provider(
                     break
                 passed += 1
             except Exception as exc:
+                trace = getattr(client, "last_trace", None)
+                if trace is not None:
+                    traces.append(trace)
+                returned_model = trace.returned_model if trace else None
+                model_consistent = False
+                if client.last_usage is not None:
+                    input_tokens += client.last_usage.input_tokens
+                    output_tokens += client.last_usage.output_tokens
+                    usage_count += 1
                 classified = classify_provider_error(
                     exc,
                     schema_requested=strategy
@@ -363,7 +383,7 @@ def validate_provider(
             result = Verification.VERIFIED
             error_code = None
     rates = _COST_RATES.get((provider, model))
-    cost_available = rates is not None and usage_count == calls
+    cost_available = rates is not None and usage_count == calls and model_consistent
     cost = (
         round((input_tokens * rates[0] + output_tokens * rates[1]) / 1_000_000, 8)
         if cost_available and rates is not None
@@ -386,8 +406,21 @@ def validate_provider(
         result=result,
         error_code=error_code,
         http_status=http_status,
-        external_calls=calls,
+        external_calls=max(calls, sum(len(trace.attempts) for trace in traces)),
         approximate_cost_usd=cost,
         cost_source=rates[2] if cost_available and rates is not None else None,
         returned_model=returned_model,
+        identity_evidence_version=1,
+        model_traces=tuple(traces),
+        model_match=(
+            ModelMatch.MATCH
+            if model_consistent
+            else ModelMatch.MISMATCH
+            if any(
+                trace.model_match == ModelMatch.MISMATCH
+                or any(attempt.requested_model != model for attempt in trace.attempts)
+                for trace in traces
+            )
+            else ModelMatch.UNKNOWN
+        ),
     )

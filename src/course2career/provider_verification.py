@@ -8,6 +8,7 @@ from pathlib import Path
 
 from course2career.llm_provider import ProviderName
 from course2career.provider_registry import ProviderProtocol
+from course2career.provider_runtime import ModelAttempt, ModelMatch, ModelTrace
 from course2career.structured_output import StructuredOutputStrategy
 
 DEFAULT_RECORD_PATH = (
@@ -38,6 +39,10 @@ class ProviderErrorCode(StrEnum):
     PROVIDER_ERROR = "PROVIDER_ERROR"
     NETWORK_ERROR = "NETWORK_ERROR"
     UNKNOWN_ERROR = "UNKNOWN_ERROR"
+    MODEL_NOT_INCLUDED = "MODEL_NOT_INCLUDED"
+    USAGE_LIMIT = "USAGE_LIMIT"
+    QUOTA_EXHAUSTED = "QUOTA_EXHAUSTED"
+    PROVIDER_UNAVAILABLE = "PROVIDER_UNAVAILABLE"
 
 
 @dataclass(frozen=True)
@@ -62,6 +67,13 @@ class VerificationRecord:
     approximate_cost_usd: float | None = None
     cost_source: str | None = None
     returned_model: str | None = None
+    identity_evidence_version: int = 1
+    model_match: ModelMatch = ModelMatch.UNKNOWN
+    model_traces: tuple[ModelTrace, ...] = ()
+
+    @property
+    def legacy_model_identity_evidence(self) -> bool:
+        return self.identity_evidence_version == 0
 
     def __post_init__(self) -> None:
         if self.result == Verification.VERIFIED and (
@@ -73,6 +85,21 @@ class VerificationRecord:
             or self.error_code is not None
         ):
             raise ValueError("VERIFIED 需要完整 fixture 与 usage 证据")
+        if (
+            self.result == Verification.VERIFIED
+            and self.identity_evidence_version != 0
+            and (
+                self.identity_evidence_version != 1
+                or self.model_match != ModelMatch.MATCH
+                or len(self.model_traces) != self.fixture_count + 1
+                or sum(len(trace.attempts) for trace in self.model_traces)
+                != self.external_calls
+                or not all(
+                    trace.proves_exact_model(self.model) for trace in self.model_traces
+                )
+            )
+        ):
+            raise ValueError("VERIFIED 需要逐次真实返回模型身份的 trace 证据")
 
 
 def now_utc() -> str:
@@ -105,6 +132,22 @@ def load_records(path: Path = DEFAULT_RECORD_PATH) -> dict[str, VerificationReco
                         "error_code": ProviderErrorCode(value["error_code"])
                         if value.get("error_code")
                         else None,
+                        "model_match": ModelMatch(value.get("model_match", "UNKNOWN")),
+                        "identity_evidence_version": value.get(
+                            "identity_evidence_version", 0
+                        ),
+                        "model_traces": tuple(
+                            ModelTrace(
+                                **{
+                                    **trace,
+                                    "attempts": tuple(
+                                        ModelAttempt(**attempt)
+                                        for attempt in trace["attempts"]
+                                    ),
+                                }
+                            )
+                            for trace in value.get("model_traces", [])
+                        ),
                     }
                 )
                 if key == _record_key(
@@ -129,7 +172,14 @@ def get_record(
 
 def save_record(record: VerificationRecord, path: Path = DEFAULT_RECORD_PATH) -> None:
     records = load_records(path)
-    records[_record_key(record.provider, record.endpoint_id, record.model)] = record
+    key = _record_key(record.provider, record.endpoint_id, record.model)
+    if (
+        record.result == Verification.VERIFIED
+        and record.legacy_model_identity_evidence
+        and records.get(key) != record
+    ):
+        raise ValueError("新增认证不能使用旧模型身份证据。")
+    records[key] = record
     path.parent.mkdir(parents=True, exist_ok=True)
     staged = path.with_suffix(".tmp")
     staged.write_text(

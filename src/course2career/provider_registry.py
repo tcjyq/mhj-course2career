@@ -8,6 +8,7 @@ from types import MappingProxyType
 from course2career.config import Settings
 from course2career.llm_provider import ProviderName
 from course2career.model_catalog import DEEPSEEK_BASE_URL
+from course2career.provider_access import AccessMode, CredentialKind
 from course2career.structured_output import StructuredOutputStrategy
 
 
@@ -42,6 +43,44 @@ BAILIAN_BASE_URLS = MappingProxyType(
 
 
 @dataclass(frozen=True)
+class ProviderCompatibility:
+    """Only declared, existing wire differences; no URL-based inference or aliases."""
+
+    strict_model_prefixes: tuple[str, ...] = ()
+    reasoning_split: bool = False
+    disable_thinking: bool = False
+    require_schema_parameters: bool = False
+    returned_model_field: str = "model"
+
+    def extra_body(self, strategy: StructuredOutputStrategy) -> dict:
+        body = {}
+        if self.reasoning_split:
+            body["reasoning_split"] = True
+        if self.disable_thinking:
+            body["thinking"] = {"type": "disabled"}
+        if (
+            self.require_schema_parameters
+            and strategy == StructuredOutputStrategy.STRICT_JSON_SCHEMA
+        ):
+            body["provider"] = {"require_parameters": True}
+        return body
+
+
+@dataclass(frozen=True)
+class AccessDefinition:
+    mode: AccessMode
+    credential_kind: CredentialKind
+    protocol: ProviderProtocol
+    endpoints: Mapping[str, str]
+    auth_scheme: str
+    discovery: DiscoveryStrategy
+    structured_output: StructuredOutputStrategy
+    reasoning: str
+    usage: str
+    compatibility: ProviderCompatibility
+
+
+@dataclass(frozen=True)
 class ProviderPreset:
     provider_id: ProviderName
     display_name: str
@@ -61,6 +100,27 @@ class ProviderPreset:
     system_key_setting: str | None = None
     cost_setting_prefix: str | None = None
     model_setting: str | None = None
+    compatibility: ProviderCompatibility = ProviderCompatibility()
+
+    @property
+    def supported_access_modes(self) -> tuple[AccessMode, ...]:
+        return (AccessMode.API,)
+
+    def access(self, mode: AccessMode = AccessMode.API) -> AccessDefinition:
+        if mode not in self.supported_access_modes:
+            raise ValueError("该访问模式尚未开放。")
+        return AccessDefinition(
+            mode,
+            CredentialKind.API_KEY,
+            self.primary_protocol,
+            self.official_endpoint_by_region,
+            self.auth_scheme,
+            self.model_discovery_strategy,
+            self.structured_output_strategy,
+            self.reasoning_strategy,
+            self.usage_strategy,
+            self.compatibility,
+        )
 
     @property
     def allowed_endpoint_ids(self) -> tuple[str, ...]:
@@ -87,8 +147,8 @@ class ProviderPreset:
         return self.structured_output_strategy == StructuredOutputStrategy.JSON_OBJECT
 
     def strategy_for_model(self, model: str) -> StructuredOutputStrategy:
-        if self.provider_id == ProviderName.BAILIAN:
-            if model.startswith(("qwen3.8-flash", "qwen3.7-flash")):
+        if self.compatibility.strict_model_prefixes:
+            if model.startswith(self.compatibility.strict_model_prefixes):
                 return StructuredOutputStrategy.STRICT_JSON_SCHEMA
             return StructuredOutputStrategy.PROMPT_JSON
         return self.structured_output_strategy
@@ -162,6 +222,7 @@ PROVIDER_PRESETS: Mapping[ProviderName, ProviderPreset] = MappingProxyType(
             "deepseek_api_key",
             "deepseek",
             "deepseek_model",
+            compatibility=ProviderCompatibility(disable_thinking=True),
         ),
         ProviderName.BAILIAN: ProviderPreset(
             ProviderName.BAILIAN,
@@ -180,6 +241,9 @@ PROVIDER_PRESETS: Mapping[ProviderName, ProviderPreset] = MappingProxyType(
             "configured_rates",
             "candidate",
             cost_setting_prefix="bailian",
+            compatibility=ProviderCompatibility(
+                strict_model_prefixes=("qwen3.8-flash", "qwen3.7-flash")
+            ),
         ),
         ProviderName.OPENROUTER: ProviderPreset(
             ProviderName.OPENROUTER,
@@ -198,6 +262,7 @@ PROVIDER_PRESETS: Mapping[ProviderName, ProviderPreset] = MappingProxyType(
             "configured_rates",
             "candidate",
             cost_setting_prefix="openrouter",
+            compatibility=ProviderCompatibility(require_schema_parameters=True),
         ),
         ProviderName.SILICONFLOW: ProviderPreset(
             ProviderName.SILICONFLOW,
@@ -268,6 +333,7 @@ PROVIDER_PRESETS: Mapping[ProviderName, ProviderPreset] = MappingProxyType(
             "minimax_text_only",
             "unknown",
             "candidate",
+            compatibility=ProviderCompatibility(reasoning_split=True),
         ),
         ProviderName.GEMINI: ProviderPreset(
             ProviderName.GEMINI,
@@ -285,6 +351,7 @@ PROVIDER_PRESETS: Mapping[ProviderName, ProviderPreset] = MappingProxyType(
             None,
             "unknown",
             "candidate",
+            compatibility=ProviderCompatibility(returned_model_field="modelVersion"),
         ),
         ProviderName.ANTHROPIC: ProviderPreset(
             ProviderName.ANTHROPIC,

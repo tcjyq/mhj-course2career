@@ -10,6 +10,7 @@ import httpx
 
 from course2career.api_key_service import APIKeyNotFoundError, APIKeyService
 from course2career.byok_mode import require_current_byok_access
+from course2career.config import Settings
 from course2career.key_encryption import KeyDecryptionError
 from course2career.llm_provider import ProviderName
 from course2career.model_capability import (
@@ -20,6 +21,11 @@ from course2career.model_capability import (
     model_capability,
 )
 from course2career.permissions import Principal
+from course2career.provider_access import (
+    AccessMode,
+    CredentialResolutionError,
+    CredentialResolver,
+)
 from course2career.provider_display import ProviderDisplayView
 from course2career.provider_profile import MODEL_ID_PATTERN, WORKSPACE_ID_PATTERN
 from course2career.provider_registry import (
@@ -283,12 +289,13 @@ class ModelCatalogService:
         now: Callable[[], datetime] = lambda: datetime.now(UTC),
     ) -> None:
         self.api_keys = api_keys
+        self.credentials = CredentialResolver(Settings(), api_keys)
         self.getter = getter
         self.ttl_seconds = max(ttl_seconds, 1)
         self.clock = clock
         self.now = now
         self._cache: dict[
-            tuple[str, str, str, str, str], tuple[CatalogSnapshot, float]
+            tuple[str, str, str, str, str, str], tuple[CatalogSnapshot, float]
         ] = {}
 
     def _cache_key(
@@ -298,7 +305,9 @@ class ModelCatalogService:
         endpoint_id: str,
         workspace_id: str | None,
         display_view: ProviderDisplayView | None = None,
-    ) -> tuple[str, str, str, str, str] | None:
+        *,
+        access_mode: AccessMode = AccessMode.API,
+    ) -> tuple[str, str, str, str, str, str] | None:
         if principal.user_id is None:
             return None
         version = "static"
@@ -316,6 +325,7 @@ class ModelCatalogService:
         return (
             principal.user_id,
             preset.provider_id.value,
+            access_mode.value,
             endpoint_id,
             workspace_id or "",
             version,
@@ -329,7 +339,9 @@ class ModelCatalogService:
         *,
         workspace_id: str | None = None,
         display_view: ProviderDisplayView | None = None,
+        access_mode: AccessMode = AccessMode.API,
     ) -> CatalogSnapshot | None:
+        get_provider_preset(provider).access(access_mode)
         if display_view is None:
             require_current_byok_access(principal, self.api_keys.repository)
         else:
@@ -337,7 +349,12 @@ class ModelCatalogService:
         preset = get_provider_preset(provider)
         preset.endpoint(endpoint_id)
         key = self._cache_key(
-            principal, preset, endpoint_id, workspace_id, display_view
+            principal,
+            preset,
+            endpoint_id,
+            workspace_id,
+            display_view,
+            access_mode=access_mode,
         )
         entry = self._cache.get(key) if key is not None else None
         if entry is None:
@@ -356,13 +373,17 @@ class ModelCatalogService:
         *,
         workspace_id: str | None = None,
         force_refresh: bool = False,
+        access_mode: AccessMode = AccessMode.API,
     ) -> CatalogSnapshot:
+        get_provider_preset(provider).access(access_mode)
         require_current_byok_access(principal, self.api_keys.repository)
         preset = get_provider_preset(provider)
         preset.endpoint(endpoint_id)
         if workspace_id and not WORKSPACE_ID_PATTERN.fullmatch(workspace_id):
             raise CatalogError("业务空间 ID 格式无效。")
-        key = self._cache_key(principal, preset, endpoint_id, workspace_id)
+        key = self._cache_key(
+            principal, preset, endpoint_id, workspace_id, access_mode=access_mode
+        )
         entry = self._cache.get(key) if key is not None else None
         if entry and not force_refresh and self.clock() - entry[1] <= self.ttl_seconds:
             return entry[0]
@@ -374,13 +395,16 @@ class ModelCatalogService:
             ):
                 models = _static_catalog(provider, endpoint_id, CHECKED_AT)
             else:
-                api_key = self.api_keys.get_key(principal, provider)
+                api_key = self.credentials.resolve(
+                    principal, preset, "user", access_mode=access_mode
+                ).require_usable()
                 rows = self._fetch_rows(preset, endpoint_id, workspace_id, api_key)
                 models = self._map_rows(provider, endpoint_id, rows, checked_at)
             if not models:
                 raise CatalogError("官方目录没有可用于文本生成的模型。")
         except (
             APIKeyNotFoundError,
+            CredentialResolutionError,
             KeyDecryptionError,
             CatalogError,
             httpx.HTTPError,
@@ -397,12 +421,17 @@ class ModelCatalogService:
                 return stale
             if isinstance(exc, APIKeyNotFoundError):
                 raise CatalogError("请先保存该供应商的 API Key。") from None
-            if isinstance(exc, KeyDecryptionError):
+            if isinstance(exc, KeyDecryptionError) or (
+                isinstance(exc, CredentialResolutionError)
+                and isinstance(exc.__cause__, KeyDecryptionError)
+            ):
                 raise CatalogError(
                     "已保存的 API Key 无法解密，请检查加密配置。"
                 ) from None
             if isinstance(exc, CatalogError):
                 raise
+            if isinstance(exc, CredentialResolutionError):
+                raise CatalogError(str(exc)) from None
             if isinstance(exc, httpx.HTTPStatusError) and exc.response.status_code in {
                 401,
                 403,
